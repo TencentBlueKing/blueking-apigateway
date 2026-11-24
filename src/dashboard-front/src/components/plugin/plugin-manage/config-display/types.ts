@@ -25,7 +25,8 @@ interface IPlugin<T> {
   type?: string // 插件类型，可选
   name: string // 插件名称
   config: T // 插件配置
-  config_id: number // 插件配置ID
+  // 配置展示不依赖 ID；资源版本快照只带插件绑定 id，没有 config_id。
+  config_id?: number // 插件配置ID
 }
 
 /**

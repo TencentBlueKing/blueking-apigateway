@@ -66,14 +66,12 @@
           type="search"
           @enter="handleSearch"
           @clear="handleClear"
-          @change="updateTableEmptyConfig"
         />
         <BkSelect
           v-model="searchParams.diffType"
           class="w-140px"
           clearable
           :placeholder="t('全部差异类型')"
-          @change="updateTableEmptyConfig"
         >
           <BkOption
             v-for="option in diffTypeList"
@@ -93,7 +91,6 @@
           v-model="searchParams.hideOnlyDiffInDocUpdatedTime"
           true-value
           :false-value="false"
-          @change="updateTableEmptyConfig"
         >
           {{ t('隐藏仅文档更新的资源') }}
         </BkCheckbox>
@@ -245,223 +242,215 @@
         >
           <!-- 新增 -->
           <div
-            v-for="addItem in diffData.add"
+            v-for="addItem in filteredDiffData.add"
             :key="addItem.id"
             class="diff-item"
           >
-            <template v-if="checkMatch(addItem, 'add')">
-              <div class="source-box">
-                <div
-                  class="metadata pl-10px"
-                  @click="() => handleToggle(addItem)"
-                >
-                  <AgIcon
-                    v-if="!addItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span class="resource-title">--</span>
-                </div>
-                <div class="resource-box">
-                  <BkException
-                    v-show="addItem.isExpanded"
-                    class="exception-part"
-                    type="empty"
-                    scene="part"
-                  >
-                    {{ t('此版本无该资源') }}
-                  </BkException>
-                </div>
+            <div class="source-box">
+              <div
+                class="metadata pl-10px"
+                @click="() => handleToggle(addItem)"
+              >
+                <AgIcon
+                  v-if="!addItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span class="resource-title">--</span>
               </div>
-              <div class="target-box">
-                <div
-                  class="metadata success"
-                  @click="() => handleToggle(addItem)"
+              <div class="resource-box">
+                <BkException
+                  v-show="addItem.isExpanded"
+                  class="exception-part"
+                  type="empty"
+                  scene="part"
                 >
-                  <AgIcon
-                    v-if="!addItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(addItem)"
-                    class="resource-title"
-                    :title="`【${addItem?.method}】${addItem?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="addItem.isExpanded"
-                    :cur-resource="addItem"
-                    :backends-list="backendsList"
-                  />
-                </div>
+                  {{ t('此版本无该资源') }}
+                </BkException>
               </div>
-            </template>
+            </div>
+            <div class="target-box">
+              <div
+                class="metadata success"
+                @click="() => handleToggle(addItem)"
+              >
+                <AgIcon
+                  v-if="!addItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(addItem)"
+                  class="resource-title"
+                  :title="`【${addItem?.method}】${addItem?.path}`"
+                />
+              </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="addItem.isExpanded"
+                  :cur-resource="addItem"
+                  :backends-list="backendsList"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- 删除 -->
           <div
-            v-for="deleteItem in diffData.delete"
+            v-for="deleteItem in filteredDiffData.delete"
             :key="deleteItem.id"
             class="diff-item"
           >
-            <template v-if="checkMatch(deleteItem, 'delete')">
-              <div class="source-box">
-                <div
-                  class="metadata"
-                  @click="() => handleToggle(deleteItem)"
-                >
-                  <AgIcon
-                    v-if="!deleteItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(deleteItem)"
-                    class="resource-title"
-                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <!-- <bk-transition :name="animation"> -->
-                  <ResourceDiffDetail
-                    v-show="deleteItem.isExpanded"
-                    :cur-resource="deleteItem"
-                    :backends-list="backendsList"
-                  />
-                  <!-- </bk-transition> -->
-                </div>
+            <div class="source-box">
+              <div
+                class="metadata"
+                @click="() => handleToggle(deleteItem)"
+              >
+                <AgIcon
+                  v-if="!deleteItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(deleteItem)"
+                  class="resource-title"
+                  :title="`【${deleteItem?.method}】${deleteItem?.path}`"
+                />
               </div>
-              <div class="target-box">
-                <div
-                  class="metadata danger"
-                  @click="() => handleToggle(deleteItem)"
-                >
-                  <AgIcon
-                    v-if="!deleteItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(deleteItem)"
-                    class="resource-title"
-                    :title="`【${deleteItem?.method}】${deleteItem?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="deleteItem.isExpanded"
-                    style="opacity: 35%"
-                    :cur-resource="deleteItem"
-                    :backends-list="backendsList"
-                  />
-                </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="deleteItem.isExpanded"
+                  :cur-resource="deleteItem"
+                  :backends-list="backendsList"
+                />
               </div>
-            </template>
+            </div>
+            <div class="target-box">
+              <div
+                class="metadata danger"
+                @click="() => handleToggle(deleteItem)"
+              >
+                <AgIcon
+                  v-if="!deleteItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(deleteItem)"
+                  class="resource-title"
+                  :title="`【${deleteItem?.method}】${deleteItem?.path}`"
+                />
+              </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="deleteItem.isExpanded"
+                  style="opacity: 35%"
+                  :cur-resource="deleteItem"
+                  :backends-list="backendsList"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- 更新 -->
           <div
-            v-for="updateItem in diffData.update"
+            v-for="updateItem in filteredDiffData.update"
             :key="`${updateItem.source.id}:${updateItem.target.id}`"
             class="diff-item"
           >
-            <template v-if="checkMatch(updateItem.source, 'update') || checkMatch(updateItem.target, 'update')">
-              <div class="source-box">
-                <div
-                  class="metadata"
-                  @click="() => handleToggle(updateItem)"
-                >
-                  <AgIcon
-                    v-if="!updateItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(updateItem.source)"
-                    class="resource-title"
-                    :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
-                  />
-                </div>
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="updateItem.isExpanded"
-                    class="source-version"
-                    :cur-resource="updateItem.source"
-                    :backends-list="backendsList"
-                    :diff-data="updateItem.target.diff"
-                    :only-show-diff="searchParams.onlyUpdated"
-                    is-source
-                  />
-                </div>
+            <div class="source-box">
+              <div
+                class="metadata"
+                @click="() => handleToggle(updateItem)"
+              >
+                <AgIcon
+                  v-if="!updateItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(updateItem.source)"
+                  class="resource-title"
+                  :title="`【${updateItem?.source?.method}】${updateItem?.source?.path}`"
+                />
               </div>
-              <div class="target-box">
-                <div
-                  class="metadata warning"
-                  @click="() => handleToggle(updateItem)"
-                >
-                  <AgIcon
-                    v-if="!updateItem.isExpanded"
-                    name="right-shape"
-                    class="expand-icon"
-                  />
-                  <AgIcon
-                    v-else
-                    name="down-shape"
-                    class="expand-icon"
-                  />
-                  <span
-                    v-bk-xss-html="renderTitle(updateItem.target)"
-                    class="resource-title"
-                    :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
-                  />
-                </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="updateItem.isExpanded"
+                  class="source-version"
+                  :cur-resource="updateItem.source"
+                  :backends-list="backendsList"
+                  :diff-data="updateItem.target.diff"
+                  :only-show-diff="searchParams.onlyUpdated"
+                  is-source
+                />
+              </div>
+            </div>
+            <div class="target-box">
+              <div
+                class="metadata warning"
+                @click="() => handleToggle(updateItem)"
+              >
+                <AgIcon
+                  v-if="!updateItem.isExpanded"
+                  name="right-shape"
+                  class="expand-icon"
+                />
+                <AgIcon
+                  v-else
+                  name="down-shape"
+                  class="expand-icon"
+                />
+                <span
+                  v-bk-xss-html="renderTitle(updateItem.target)"
+                  class="resource-title"
+                  :title="`【${updateItem?.target?.method}】${updateItem?.target?.path}`"
+                />
+              </div>
 
-                <div class="resource-box">
-                  <ResourceDiffDetail
-                    v-show="updateItem.isExpanded"
-                    :cur-resource="updateItem.target"
-                    :backends-list="backendsList"
-                    :diff-data="updateItem.source.diff"
-                    :only-show-diff="searchParams.onlyUpdated"
-                  />
-                </div>
+              <div class="resource-box">
+                <ResourceDiffDetail
+                  v-show="updateItem.isExpanded"
+                  :cur-resource="updateItem.target"
+                  :backends-list="backendsList"
+                  :diff-data="updateItem.source.diff"
+                  :only-show-diff="searchParams.onlyUpdated"
+                />
               </div>
-            </template>
+            </div>
           </div>
 
           <template v-if="!hasResult && !isDataLoading">
             <!-- 无数据 -->
             <AgTableEmpty
               v-if="hasFilter"
-              :empty-type="tableEmptyConf.emptyType"
-              :abnormal="tableEmptyConf.isAbnormal"
+              :empty-type="emptyType"
+              :abnormal="false"
               @refresh="getDiffData"
               @clear-filter="handleClearFilterKey"
             />
@@ -485,16 +474,18 @@
 </template>
 
 <script setup lang="ts">
-import ResourceDiffDetail from './components/ResourceDiffDetail.vue';
 import { Spinner } from 'bkui-vue/lib/icon';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
+import { getBackendServiceList } from '@/services/source/gateway/backend';
 import { getLabelList } from '@/services/source/gateway/label';
 import { getVersionDiff, getVersionList } from '@/services/source/gateway/resource-version';
-import type { IDiffData, IVersionItem } from '@/types/resource-version';
-import { getBackendServiceList } from '@/services/source/gateway/backend';
-import { useGateway } from '@/stores';
 import type { IBackendListOutput } from '@/services/types/gateway/backend.ts';
+import type { IResourceVersionDiffResource } from '@/services/types/gateway/resource-version';
+import { useGateway } from '@/stores';
 import type { ITableEmptyType } from '@/types/common';
+import type { IDiffData, IVersionItem } from '@/types/resource-version';
+import ResourceDiffDetail from './components/ResourceDiffDetail.vue';
+import { type ResourceDiffType, filterDiffData } from './resource-diff';
 
 interface IProps {
   versionList?: IVersionItem[]
@@ -503,7 +494,7 @@ interface IProps {
   sourceSwitch?: boolean
   targetSwitch?: boolean
   curDiffEnabled?: boolean
-  // createVersion: 生成资源版本  publishEnvironment: 发布到环境
+  /** 业务场景：createVersion（生成资源版本）/ publishEnvironment（发布到环境） */
   pageType?: string
 }
 
@@ -512,6 +503,9 @@ interface ILocalVersionItem extends IVersionItem {
   resource_version_display?: string
   stage_text?: string[]
 }
+
+/** 列表条目（新增 / 更新 / 删除）的联合类型，均带有展开状态 */
+type DiffListItem = IDiffData['add'][number] | IDiffData['update'][number] | IDiffData['delete'][number];
 
 const {
   versionList = [],
@@ -523,39 +517,54 @@ const {
   pageType = '',
 } = defineProps<IProps>();
 
+const gatewayStore = useGateway();
 const { t } = useI18n();
 const route = useRoute();
-const gatewayStore = useGateway();
 
-// 网关id
-const apigwId = computed(() => +route.params.id);
-const tableEmptyConf = ref<{
-  emptyType: ITableEmptyType
-  isAbnormal: boolean
-}>({
-  emptyType: 'empty',
-  isAbnormal: false,
-});
+/** HTTP 请求方法对应的标签样式类 */
+const HTTP_METHOD_TAG_CLASS: Record<string, string> = {
+  POST: 'bk-tag-info',
+  GET: 'bk-tag-success',
+  DELETE: 'bk-tag-danger',
+  PUT: 'bk-tag-warning',
+  PATCH: 'bk-tag-info',
+  ANY: 'bk-tag-success',
+};
 
-const width = ref(1240);
+const EMPTY_VERSION = {
+  id: '',
+  comment: '',
+  version: '',
+};
+
 const isDataLoading = ref(false);
 const localSourceId = ref(sourceId);
 const localTargetId = ref(targetId || 'current');
 const localVersionList = ref<Partial<ILocalVersionItem>[]>(versionList);
+const backendsList = ref<IBackendListOutput[]>([]);
 const diffData = reactive<IDiffData>({
   add: [],
   delete: [],
   update: [],
 });
-const searchKeyword = ref('');
-const searchParams = reactive({
+// 回车确认后生效的搜索词，与输入框草稿值 searchParams.keyword 区分
+const appliedKeyword = ref('');
+const searchParams = reactive<{
+  keyword: string
+  diffType: ResourceDiffType | ''
+  onlyUpdated: boolean
+  hideOnlyDiffInDocUpdatedTime: boolean
+}>({
   keyword: '',
   diffType: '',
   onlyUpdated: false,
-  // 是否隐藏仅存在文档更新的资源，默认显示
+  // 是否隐藏仅存在文档更新的资源，默认展示
   hideOnlyDiffInDocUpdatedTime: false,
 });
-const diffTypeList = reactive([
+const diffTypeList = reactive<{
+  id: ResourceDiffType
+  name: string
+}[]>([
   {
     id: 'add',
     name: t('新增'),
@@ -570,86 +579,73 @@ const diffTypeList = reactive([
   },
 ]);
 
-const backendsList = ref<IBackendListOutput[]>([]);
+// 递增请求序号：标识最新一次版本对比请求，用于丢弃过期响应并避免旧请求误关 loading
+let latestDiffRequestId = 0;
 
-const hasResult = computed(() => {
-  const addItem = diffData.add.some((item: any) => checkMatch(item, 'add'));
+// 当前网关 ID
+const apigwId = computed(() => +route.params.id);
 
-  const deleteItem = diffData.delete.some((item: any) => checkMatch(item, 'delete'));
+// 筛选结果同时用于列表渲染和空状态判断，避免两处重复过滤或结果不一致
+const filteredDiffData = computed(() => filterDiffData(diffData, {
+  keyword: appliedKeyword.value,
+  diffType: searchParams.diffType,
+  hideOnlyDiffInDocUpdatedTime: searchParams.hideOnlyDiffInDocUpdatedTime,
+}));
 
-  const updateItem = diffData.update.some((item: any) =>
-    checkMatch(item.source, 'update') || checkMatch(item.target, 'update'));
-
-  return addItem || deleteItem || updateItem || isDataLoading.value;
-});
-
-const hasFilter = computed(() =>
-  searchKeyword.value || searchParams.diffType || searchParams.hideOnlyDiffInDocUpdatedTime,
+const hasResult = computed(() =>
+  Object.values(filteredDiffData.value).some(items => items.length > 0) || isDataLoading.value,
 );
 
-const sourceVersion = computed(() => {
-  const match = localVersionList.value.find((item: any) => item.id === localSourceId.value);
-  if (match) {
-    return match;
-  }
-  return {
-    id: '',
-    comment: '',
-    version: '',
-  };
-});
+const hasFilter = computed(() =>
+  Boolean(appliedKeyword.value || searchParams.diffType || searchParams.hideOnlyDiffInDocUpdatedTime),
+);
 
-const targetVersion = computed(() => {
-  const match = localVersionList.value.find((item: any) => item.id === localTargetId.value);
-  if (match) {
-    return match;
-  }
-  return {
-    id: '',
-    comment: '',
-    version: '',
-  };
-});
+// 空状态类型直接由筛选状态派生，避免回车搜索或切换筛选后未同步更新
+const emptyType = computed<ITableEmptyType>(() =>
+  (hasFilter.value && !hasResult.value ? 'searchEmpty' : 'empty'),
+);
 
+const sourceVersion = computed(() =>
+  localVersionList.value.find(item => item.id === localSourceId.value) ?? EMPTY_VERSION,
+);
+
+const targetVersion = computed(() =>
+  localVersionList.value.find(item => item.id === localTargetId.value) ?? EMPTY_VERSION,
+);
+
+// 下拉触发器文案按数值 ID 匹配：'current' 转为 NaN 不命中，自动回落为「当前最新资源列表」
 const localSourceTriggerLabel = computed(() => {
-  const match = localVersionList.value.find((item: any) => Number(item.id) === Number(localSourceId.value));
-  if (match) {
-    return match.resource_version_display;
-  }
-  return t('当前最新资源列表');
+  const match = localVersionList.value.find(item => Number(item.id) === Number(localSourceId.value));
+  return match ? match.resource_version_display : t('当前最新资源列表');
 });
 
 const localTargetTriggerLabel = computed(() => {
-  const match = localVersionList.value.find((item: any) => Number(item.id) === Number(localTargetId.value));
-  if (match) {
-    return match.resource_version_display;
-  }
-  return t('当前最新资源列表');
+  const match = localVersionList.value.find(item => Number(item.id) === Number(localTargetId.value));
+  return match ? match.resource_version_display : t('当前最新资源列表');
 });
 
 watch(
   () => [sourceId, targetId],
-  async (newArr: any) => {
-    const [sourceId, targetId] = newArr;
-    localSourceId.value = sourceId;
-    localTargetId.value = targetId || 'current';
-    isDataLoading.value = false;
+  async ([nextSourceId, nextTargetId]) => {
+    localSourceId.value = nextSourceId;
+    localTargetId.value = nextTargetId || 'current';
     await getDiffData();
   },
 );
 
-width.value = window.innerWidth <= 1280 ? 1000 : 1240;
+/** 转义正则元字符，避免搜索路径含 `[`、`(`、`+` 等符号时触发 RegExp 语法异常 */
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const handleToggle = (item: IDiffData['add'][number] | IDiffData['update'][number] | IDiffData['delete'][number]) => {
+const handleToggle = (item: DiffListItem) => {
   item.isExpanded = !item.isExpanded;
 };
 
 const handleSearch = (keyword?: string) => {
-  searchKeyword.value = keyword || '';
+  appliedKeyword.value = keyword || '';
 };
 
 const handleClear = () => {
-  searchKeyword.value = '';
+  appliedKeyword.value = '';
 };
 
 const handleSwitch = async () => {
@@ -660,109 +656,57 @@ const handleSwitch = async () => {
   await getDiffData();
 };
 
-const checkMatch = (item: any, type: string) => {
-  if (searchParams.diffType && searchParams.diffType !== type) {
-    return false;
-  }
-  // 检查是否匹配搜索关键词
-  const keyword = searchKeyword.value.toLowerCase();
-  const method = item?.method?.toLowerCase() ?? '';
-  const path = item?.path?.toLowerCase() ?? '';
-  const backendPath = item?.proxy?.config?.path?.toLowerCase() ?? '';
-  const name = item?.name?.toLowerCase() ?? '';
-  const isKeywordMatched = method.indexOf(keyword) > -1
-    || path.indexOf(keyword) > -1
-    || backendPath.indexOf(keyword) > -1
-    || name.indexOf(keyword) > -1;
-
-  // 检查是否满足文档更新时间过滤
-  const shouldBlockDocTimeDiffOnly = type === 'update' && searchParams.hideOnlyDiffInDocUpdatedTime;
-  const hasOnlyDocTimeDiff = Object.keys(item.diff || {}).length === 1 && item.diff.doc_updated_time;
-  const shouldShow = shouldBlockDocTimeDiffOnly ? !hasOnlyDocTimeDiff : true;
-
-  return isKeywordMatched && shouldShow;
-};
-
-const renderTitle = (item: any) => {
+/** 渲染单条资源头部（方法标签 + 路径），命中搜索词时高亮关键词 */
+const renderTitle = (item: Pick<IResourceVersionDiffResource, 'method' | 'path'>) => {
+  // 先根据原始请求方法确定标签颜色，再做关键词高亮，避免 HTML 标签破坏方法匹配
+  const tagClass = HTTP_METHOD_TAG_CLASS[item.method] ?? 'bk-tag-info';
   let { method, path } = item;
-  if (searchKeyword.value) {
-    const reg = new RegExp(`(${searchKeyword.value})`, 'ig');
-    method = method.replace(reg, '<i class="keyword font-bold color-#3a84ff">$1</i>');
-    path = path.replace(reg, '<i class="keyword font-bold color-#3a84ff">$1</i>');
+
+  if (appliedKeyword.value) {
+    const keywordReg = new RegExp(`(${escapeRegExp(appliedKeyword.value)})`, 'ig');
+    method = method.replace(keywordReg, '<i class="keyword font-bold color-#3a84ff">$1</i>');
+    path = path.replace(keywordReg, '<i class="keyword font-bold color-#3a84ff">$1</i>');
   }
 
-  // return `【${method}】${path}`;
-
-  // POST = 'info', GET = 'success', DELETE = 'danger', PUT = 'warning', PATCH = 'info', ANY = 'success',
-  let tagCls = 'bk-tag-info';
-  switch (method) {
-    case 'POST':
-      tagCls = 'bk-tag-info';
-      break;
-    case 'GET':
-      tagCls = 'bk-tag-success';
-      break;
-    case 'DELETE':
-      tagCls = 'bk-tag-danger';
-      break;
-    case 'PUT':
-      tagCls = 'bk-tag-warning';
-      break;
-    case 'PATCH':
-      tagCls = 'bk-tag-info';
-      break;
-    case 'ANY':
-      tagCls = 'bk-tag-success';
-      break;
-    default:
-      break;
-  }
-  return `<div class="bk-tag ${tagCls} bk-tag--default" style="border-radius: 2px;margin-right: 4px;">`
+  return `<div class="bk-tag ${tagClass} bk-tag--default" style="border-radius: 2px;margin-right: 4px;">`
     + `<span class="bk-tag-text">${method}</span>`
     + `</div><span class="title-content">${path}</span>`;
 };
 
-const updateTableEmptyConfig = () => {
-  const isSearch = !!searchParams.keyword || !!searchParams.diffType || searchParams.hideOnlyDiffInDocUpdatedTime;
-  if (isSearch && !hasResult.value) {
-    tableEmptyConf.value.emptyType = 'searchEmpty';
-    return;
+const resetFilters = (includeOnlyUpdated = false) => {
+  searchParams.keyword = '';
+  searchParams.diffType = '';
+  searchParams.hideOnlyDiffInDocUpdatedTime = false;
+  if (includeOnlyUpdated) {
+    searchParams.onlyUpdated = false;
   }
-  if (isSearch) {
-    tableEmptyConf.value.emptyType = 'empty';
-    return;
-  }
-  tableEmptyConf.value.emptyType = 'empty';
+  appliedKeyword.value = '';
 };
 
 const handleClearFilterKey = async () => {
-  searchParams.keyword = '';
-  searchParams.diffType = '';
-  searchParams.hideOnlyDiffInDocUpdatedTime = false;
-  searchKeyword.value = '';
+  resetFilters();
   await getDiffData();
-  updateTableEmptyConfig();
 };
 
 const handleVersionChange = async () => {
-  searchParams.keyword = '';
-  searchParams.diffType = '';
-  searchParams.onlyUpdated = false;
-  searchParams.hideOnlyDiffInDocUpdatedTime = false;
-  searchKeyword.value = '';
+  resetFilters(true);
   await getDiffData();
 };
 
 const getDiffData = async () => {
-  if (isDataLoading.value || !localSourceId.value) {
-    return false;
-  }
-
-  isDataLoading.value = true;
+  // 每次触发均递增序号，确保切换版本时立即发起新查询且正在飞行的旧请求自然失效
+  const requestId = ++latestDiffRequestId;
 
   diffData.add = [];
   diffData.delete = [];
   diffData.update = [];
+
+  if (!localSourceId.value) {
+    isDataLoading.value = false;
+    return false;
+  }
+
+  isDataLoading.value = true;
 
   try {
     const res = await getVersionDiff(apigwId.value, {
@@ -770,25 +714,11 @@ const getDiffData = async () => {
       target_resource_version_id: String(localTargetId.value).replace('current', ''),
     });
 
-    const update = res.update.map((item) => {
-      if (item?.source?.diff?.proxy?.backend_id) {
-        const curBackend = backendsList.value.find((backend) => {
-          return backend.id === item.source.diff.proxy.backend_id;
-        });
-        item.source.diff.proxy.backend_name = curBackend?.name || '';
-      }
+    // 若期间已发起新的对比请求，丢弃过期响应，避免旧结果覆盖最新选择
+    if (requestId !== latestDiffRequestId) {
+      return false;
+    }
 
-      if (item?.target?.diff?.proxy?.backend_id) {
-        const curBackend = backendsList.value.find((backend) => {
-          return backend.id === item.target.diff.proxy.backend_id;
-        });
-        item.target.diff.proxy.backend_name = curBackend?.name || '';
-      }
-      return {
-        ...item,
-        isExpanded: false,
-      };
-    });
     Object.assign(diffData, {
       add: res.add.map(item => ({
         ...item,
@@ -798,13 +728,17 @@ const getDiffData = async () => {
         ...item,
         isExpanded: false,
       })),
-      update,
+      update: res.update.map(item => ({
+        ...item,
+        isExpanded: false,
+      })),
     } satisfies IDiffData);
   }
   finally {
-    setTimeout(() => {
+    // 仅由最新一次请求解除加载态，避免旧请求提前关闭新请求的 loading
+    if (requestId === latestDiffRequestId) {
       isDataLoading.value = false;
-    }, 1000);
+    }
   }
 };
 
@@ -855,6 +789,11 @@ const init = async () => {
 
 onMounted(() => {
   init();
+});
+
+onUnmounted(() => {
+  // 组件卸载时使飞行中的请求失效，避免异步回调继续修改状态
+  latestDiffRequestId += 1;
 });
 </script>
 
