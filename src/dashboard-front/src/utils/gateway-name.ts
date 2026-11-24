@@ -13,14 +13,15 @@ export const getGatewayDisplayName = (gateway?: IGatewayName | null) =>
  */
 export const hasDistinctDisplayName = (gateway?: IGatewayName | null) => {
   const displayName = gateway?.display_name?.trim();
-  return Boolean(displayName);
+  const name = gateway?.name?.trim();
+  return Boolean(displayName && name && displayName !== name);
 };
 
 export const getGatewayFullName = (gateway?: IGatewayName | null) => {
   const displayName = getGatewayDisplayName(gateway);
   const name = gateway?.name?.trim();
 
-  if (!name) {
+  if (!name || displayName === name) {
     return displayName;
   }
 
