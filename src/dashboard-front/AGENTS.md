@@ -38,6 +38,7 @@
 | 代码编辑器   | Monaco Editor             | ^0.52      |
 | 图表      | ECharts（按需引入）            | ^6.1       |
 | 工具库     | @vueuse/*                 | ^15.0      |
+| 自动化测试   | Vitest（happy-dom + Playwright Browser） | ^5.1       |
 
 ## 常用命令
 
@@ -59,6 +60,16 @@ pnpm build-only
 # 仅类型检查
 pnpm type-check    # vue-tsc --build
 
+# 单元测试（unit project，CI 会跑 test:unit，覆盖率报告输出到 coverage/）
+pnpm test:unit
+pnpm test:unit:watch
+pnpm test:unit:coverage
+
+# 浏览器组件测试（browser project，真实无头 Chromium，CI 会跑 test:browser）
+pnpm test:browser
+pnpm test:browser:watch
+pnpm test:ag-table
+
 # 代码检查（CI 会跑 lint:ci 和 lint:ci:oxlint，提交时 lint-staged 也会对暂存文件跑 oxlint 和 eslint）
 pnpm lint:eslint
 pnpm lint:ci:oxlint
@@ -67,7 +78,9 @@ pnpm lint:ci:oxlint
 pnpm preview
 ```
 
-AgTable 的组件回归用例使用实际 BKUI、TDesign 和无头 Chromium。执行 `pnpm test:ag-table`，可通过 `CHROME_BIN` 指定浏览器可执行文件。
+测试配置位于 `vitest.config.ts`，通过 `projects` 拆分为两层，类型检查均由 `tsconfig.vitest.json` 独立承接：
+- **`unit`**：匹配 `src/**/*.{test,spec}.{ts,tsx}`（排除 `*.browser.*`），默认在 `happy-dom` 环境下运行，纯 Node 用例可按文件通过 `// @vitest-environment node` 覆盖。
+- **`browser`**：匹配 `src/**/*.browser.{test,spec}.{ts,tsx}`，使用 `@vitest/browser-playwright` 在真实无头 Chromium（视口 `1280×920`）中运行（`AgTable` 回归用例位于 `src/components/base/ag-table/__tests__/*.browser.spec.ts`）。执行 `pnpm test:browser` 或 `pnpm test:ag-table` 时，默认优先使用 Playwright Chromium 或自动回退至本机 Chrome，也可通过 `CHROME_BIN` 指定浏览器可执行文件。
 
 ### 暂缓升级的依赖
 
@@ -125,8 +138,10 @@ src/dashboard-front/
 ├── eslint.config.ts            # ESLint 9 扁平化配置
 ├── stylelint.config.js         # SCSS/CSS 检查
 ├── tsconfig.json               # TypeScript 配置入口
+├── tsconfig.vitest.json        # 单元测试 TypeScript 配置
 ├── uno.config.ts               # UnoCSS 配置
 ├── vite.config.ts              # Vite 配置
+├── vitest.config.ts            # Vitest 单元测试配置
 ├── Dockerfile                  # 多阶段构建（Node 24 + pnpm → Nginx）
 └── package.json                # 依赖与脚本
 ```

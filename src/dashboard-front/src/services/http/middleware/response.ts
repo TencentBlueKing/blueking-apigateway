@@ -88,19 +88,23 @@ export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
         }
       }> & { __CANCEL__: any },
     ) => {
-      // 超时取消
+      // 请求取消
       if (error.__CANCEL__) {
         return Promise.reject(new RequestError('CANCEL', '请求已取消'));
+      }
+      // 请求超时（无 HTTP 响应体，保留 ECONNABORTED 供二层统一提示）
+      if (error.code === 'ECONNABORTED') {
+        return Promise.reject(new RequestError('ECONNABORTED', t('请求超时'), error.response));
       }
       // 处理 http 错误响应逻辑
       if (error.response) {
         // 登录状态失效
-        if (error.response.data.error?.code === 'UNAUTHENTICATED') {
+        if (error.response.data?.error?.code === 'UNAUTHENTICATED') {
           return Promise.reject(new RequestError(401, '登录状态失效', error.response));
         }
         // 默认使用 http 错误描述，如果有自定义错误描述优先使用
         let errorMessage = error.response.statusText;
-        if (error.response.data && error.response.data.error?.code) {
+        if (error.response.data?.error?.code) {
           errorMessage = error.response.data.error.message;
         }
         return Promise.reject(new RequestError(error.response.status || -1, errorMessage, error.response));
@@ -111,11 +115,13 @@ export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
 
   // 统一错误处理逻辑
   interceptors.use(undefined, (error: RequestError) => {
-    const errorObj = error.response.data.error;
+    const errorObj = error.response?.data?.error;
     switch (error.code) {
       // 未登陆
       case 401:
-        redirectLogin(errorObj.data.login_url);
+        if (errorObj?.data?.login_url) {
+          redirectLogin(errorObj.data.login_url);
+        }
         break;
       case 'CANCEL':
         return Promise.reject(error);
@@ -124,28 +130,33 @@ export default (interceptors: AxiosInterceptorManager<AxiosResponse>) => {
         messageError(t('请求超时'));
         break;
       default:
-        if (!error.response.config.payload.catchError) {
-          Message({
-            theme: 'error',
-            actions: [
-              {
-                id: 'assistant',
-                disabled: true,
+        if (!error.response?.config?.payload?.catchError) {
+          if (errorObj) {
+            Message({
+              theme: 'error',
+              actions: [
+                {
+                  id: 'assistant',
+                  disabled: true,
+                },
+              ],
+              message: {
+                code: errorObj.code,
+                overview: errorMessageMap[errorObj.code as keyof typeof errorMessageMap]?.overview || t('系统错误'),
+                suggestion: errorObj.message
+                  ? JSON.stringify(errorObj.message)
+                  : errorMessageMap[errorObj.code as keyof typeof errorMessageMap]?.suggestion || '',
+                type: 'json',
+                details: errorObj,
+                assistant: '',
               },
-            ],
-            message: {
-              code: errorObj.code,
-              overview: errorMessageMap[errorObj.code as keyof typeof errorMessageMap]?.overview || t('系统错误'),
-              suggestion: errorObj.message
-                ? JSON.stringify(errorObj.message)
-                : errorMessageMap[errorObj.code as keyof typeof errorMessageMap]?.suggestion || '',
-              type: 'json',
-              details: errorObj,
-              assistant: '',
-            },
-          });
+            });
+          }
+          else {
+            messageError(error.message || t('系统错误'));
+          }
         }
     }
-    return Promise.reject(error.response.data);
+    return Promise.reject(error.response?.data ?? error);
   });
 };
