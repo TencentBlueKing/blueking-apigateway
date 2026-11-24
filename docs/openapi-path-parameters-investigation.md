@@ -2,7 +2,7 @@
 
 复核日期：2026-11-24。源码基线：`8f30c8c4769d6425c5308ccbad12435a169e628b`。
 
-**Path Item 层的共享 `parameters` 确实会丢失。** 当前实现只把 HTTP operation 传给资源解析器，
+针对本次 OpenAPI 3 场景，**Path Item 层的共享 `parameters` 确实会丢失。** 当前实现只把 HTTP operation 传给资源解析器，
 operation 不继承共享参数。已明确声明的参数类型、必填、描述和示例因此无法进入资源接口协议，
 再次使用 OpenAPI 导出器导出时也无法恢复。没有找到将此丢弃行为定义为兼容约定的源码依据，
 结合标准和对照复现，应按解析遗漏处理；这不证明历史作者的主观意图。
@@ -37,9 +37,10 @@ operation 不继承共享参数。已明确声明的参数类型、必填、描�
   [V2 Sync](../src/dashboard/apigateway/apigateway/apis/v2/sync/views.py) 都调用
   [sync_openapi_resources_from_content](../src/dashboard/apigateway/apigateway/biz/resource/importer/sync.py)，
   使用同一导入管理器，之后交由资源导入器保存。
-- [OpenAPIImportManager](../src/dashboard/apigateway/apigateway/biz/openapi/openapi.py) 解析文档内部引用后选用
-  `OpenAPIV3Parser`。其继承的 [BaseParser](../src/dashboard/apigateway/apigateway/biz/openapi/parser.py)
-  走 `get_resources → get_paths → _remove_invalid_method`，只保留方法白名单。
+- [OpenAPIImportManager](../src/dashboard/apigateway/apigateway/biz/openapi/openapi.py) 解析文档内部引用后按版本选择解析器：
+  Swagger 2.0（`OPENAPIV2`）使用 [BaseParser](../src/dashboard/apigateway/apigateway/biz/openapi/parser.py)，
+  OpenAPI 3.0/3.1 使用其子类 `OpenAPIV3Parser`。两者共用
+  `get_resources → get_paths → _remove_invalid_method`，只保留方法白名单。
   `Path Item.parameters` 在调用 `_get_openapi_schema` 前消失；后者仅读取 operation 的字段。
 - [ApigwOperationValidator](../src/dashboard/apigateway/apigateway/biz/openapi/schema.py) 的注释和实现明确放宽
   路径参数声明检查；导入管理器也排除 `UnresolvableParameterError`。这解释省略声明的兼容性，
@@ -52,6 +53,13 @@ operation 不继承共享参数。已明确声明的参数类型、必填、描�
   [BaseExporter](../src/dashboard/apigateway/apigateway/service/resource_version/openapi_export.py) 将协议写入 operation；
   不会恢复共享参数。[资源文档解析器](../src/dashboard/apigateway/apigateway/biz/resource_doc/importer/parsers.py)
   的原始文件入口也消费 `parser.get_paths()`，Web 文档入口则消费标准化 DTO，因此两者都有丢失链路。
+
+Swagger 2.0 也会丢失共享参数：`BaseParser` 只从 operation 读取 path/query/header 参数，
+并将 operation 的 `body/formData` 参数转换为 `requestBody`；共享请求体参数不会进入该转换。
+与 OpenAPI 3 分支不同，当 operation 没有 `parameters` 键时，它会通过
+[extract_openapi_parameters_from_path](../src/dashboard/apigateway/apigateway/utils/openapi.py)
+从路径模板补出 string 类型、必填、空描述的路径参数，但不能恢复共享参数的原始元数据。
+显式 `parameters: []` 不触发补全。这一分支说明来自源码核对，下方复现和额外隔离检查均针对 OpenAPI 3。
 
 ## 可运行复现
 
@@ -111,10 +119,17 @@ SH
 
 ## 后续修复的验收边界
 
+以下验收首先针对原请求的 OpenAPI 3 场景。
+
 建议在解析时将共享参数合并到各 operation，按 `(name, in)` 保留或覆盖；方法遍历仍只处理 operation。
 需验证多方法继承、同名同位置覆盖、同名不同位置保留、空数组不能删除继承项、内部引用、输入不被修改，
 以及导入保存后再次 OpenAPI 导出。保留允许省略路径参数声明的现有兼容行为；若要改为严格校验，应单独确认兼容影响。
 文档解析器直接消费 `get_paths()`，修复方案也必须保证该消费者收到有效 operation 和合并后的参数。
+
+若后续修复修改两版本共用的 `get_paths()` 过滤逻辑，还需明确 Swagger 2.0 的兼容验收范围：
+共享 path/query/header 元数据、共享 `body/formData` 到 `requestBody` 的转换，以及缺少 operation
+`parameters` 键时的模板变量补全与显式空数组行为。本文未完成 Swagger 2.0 的导入保存和往返导出验收，
+是否同批修复应在后续请求中确定。
 
 本次验证覆盖解析、引用解析、自定义标准校验和内存导出；数据库保存与文档生成影响来自上述源码链路。
 未执行真实 MySQL、浏览器导入、APISIX 路由调用或 SDK/MCP 使用验证，也未把协议参数类型解释为数据面校验规则。
