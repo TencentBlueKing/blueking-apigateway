@@ -89,6 +89,30 @@ def test_scope_is_rechecked_after_enqueue(fake_gateway, documents, ai, change):
     assert not ResourceDoc.objects.filter(language="en").exists()
 
 
+def test_deleted_document_aborts_valid_batch_and_survivor_can_be_resubmitted(fake_gateway, documents, ai):
+    local_doc, foreign_doc = documents
+    deleted_doc = G(ResourceDoc, gateway=fake_gateway, resource_id=2, language="zh", content="deleted source")
+    queued_ids = [local_doc.id, deleted_doc.id]
+    assert ResourceDoc.objects.filter(gateway=fake_gateway, id__in=queued_ids).count() == 2
+
+    deleted_doc.delete()
+    result = batch_translate_docs.run(queued_ids, "en", gateway_id=fake_gateway.id)
+    assert result["success"] is False
+    ai.assert_not_called()
+    assert not ResourceDoc.objects.filter(language="en").exists()
+    local_doc.refresh_from_db()
+    assert local_doc.content == "local source"
+
+    retry = batch_translate_docs.run([local_doc.id], "en", gateway_id=fake_gateway.id)
+    assert retry["success"] is True
+    assert retry["success_count"] == 1
+    ai.assert_called_once_with(content_type=AIContentTypeEnum.DOC_TRANSLATE, content="local source", language="en")
+    assert ResourceDoc.objects.get(gateway=fake_gateway, resource_id=local_doc.resource_id, language="en").content == (
+        "translated"
+    )
+    assert not ResourceDoc.objects.filter(gateway=foreign_doc.gateway, language="en").exists()
+
+
 @pytest.mark.parametrize("target_content", ["missing", "", "   ", None])
 def test_translate_local_missing_or_empty_target_only(fake_gateway, documents, ai, target_content):
     local_doc, foreign_doc = documents
