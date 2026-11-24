@@ -322,6 +322,7 @@ ignore_imports = [
     "apigateway.apps.data_plane.management.commands.create_data_plane -> apigateway.controller.distributor.etcd",
     "apigateway.apps.permission.management.commands.reconcile_oauth2_builtin_permissions -> apigateway.controller.tasks.oauth2_builtin",
     "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
+    "apigateway.apps.skill.management.commands.sync_platform_skills -> apigateway.biz.skill",
     # -- celery task
     "apigateway.apps.permission.tasks -> apigateway.components.*",
     "apigateway.apps.permission.tasks -> apigateway.biz.permission",
@@ -416,6 +417,8 @@ forbidden_modules = [
     "apigateway.biz.mcp_server_log.*.*",
     "apigateway.biz.release.*",
     "apigateway.biz.release.*.*",
+    "apigateway.biz.skill.*",
+    "apigateway.biz.skill.*.*",
     "apigateway.biz.esb.board_config",
     "apigateway.biz.esb.component_resource_binding",
     "apigateway.biz.esb.decorators",
@@ -485,6 +488,7 @@ ignore_imports = [
     "apigateway.apps.permission.management.commands.reconcile_oauth2_builtin_permissions -> apigateway.controller.tasks.oauth2_builtin",
     "apigateway.apps.plugin.management.commands.export_plugin_binding_statistics -> apigateway.core.constants",
     "apigateway.apps.bk_itsm.management.commands.* -> apigateway.components.bkitsm",
+    "apigateway.apps.skill.management.commands.sync_platform_skills -> apigateway.biz.skill",
     # -- esb legacy
     "apigateway.apps.esb.*.* -> apigateway.core.models",
     "apigateway.apps.esb.*.* -> apigateway.core.constants",

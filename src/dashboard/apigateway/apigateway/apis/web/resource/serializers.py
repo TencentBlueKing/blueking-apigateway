@@ -41,13 +41,18 @@ from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.gateway_limits import get_max_resource_count
-from apigateway.core.constants import HTTP_METHOD_ANY, RESOURCE_METHOD_CHOICES, ResourceKindEnum
+from apigateway.core.constants import (
+    HTTP_METHOD_ANY,
+    RESOURCE_METHOD_CHOICES,
+    RESOURCE_NAME_PATTERN,
+    ResourceKindEnum,
+)
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
 from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
-from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN, RESOURCE_NAME_PATTERN
+from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN
 from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
 
 if TYPE_CHECKING:
