@@ -80,7 +80,8 @@ pnpm preview
 
 测试配置位于 `vitest.config.ts`，通过 `projects` 拆分为两层，类型检查均由 `tsconfig.vitest.json` 独立承接：
 - **`unit`**：匹配 `src/**/*.{test,spec}.{ts,tsx}`（排除 `*.browser.*`），默认在 `happy-dom` 环境下运行，纯 Node 用例可按文件通过 `// @vitest-environment node` 覆盖。
-- **`browser`**：匹配 `src/**/*.browser.{test,spec}.{ts,tsx}`，使用 `@vitest/browser-playwright` 在真实无头 Chromium（视口 `1280×920`）中运行（`AgTable` 回归用例位于 `src/components/base/ag-table/__tests__/*.browser.spec.ts`）。执行 `pnpm test:browser` 或 `pnpm test:ag-table` 时，默认优先使用 Playwright Chromium 或自动回退至本机 Chrome，也可通过 `CHROME_BIN` 指定浏览器可执行文件。
+- **`browser`**：匹配 `src/**/*.browser.{test,spec}.{ts,tsx}`，使用 `@vitest/browser-playwright` 在真实无头 Chromium（视口 `1280×920`）中运行，覆盖基础组件与核心业务表单（`AgTable` 回归用例位于 `src/components/base/ag-table/__tests__/*.browser.spec.ts`）。执行 `pnpm test:browser` 或 `pnpm test:ag-table` 时，默认优先使用 Playwright Chromium 或自动回退至本机 Chrome，也可通过 `CHROME_BIN` 指定浏览器可执行文件。
+- **浏览器测试挂载辅助**：`src/components/__tests__/browser-render.ts` 提供 `renderWithApp`，统一装配 Pinia、按需 `bkui-vue` 组件（避免全量注册产生重复组件告警）、`i18n`、`BkXssFilterDirective`、自定义指令及全局基础组件（`AgIcon`、`AgIconButton`、`AgCopyButton`）；若新增浏览器组件测试引入了未预构建的新依赖，可同步补充到 `vitest.config.ts` 中 `browser` project 的 `optimizeDeps.include`。
 
 ### 暂缓升级的依赖
 

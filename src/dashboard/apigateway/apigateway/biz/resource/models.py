@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from enum import StrEnum
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -22,6 +23,14 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from apigateway.biz.plugin import PluginConfigData
 from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Backend, Resource
+
+
+class ResourceAuthFilterType(StrEnum):
+    NONE = "none"
+    APP = "app"
+    PERSONAL = "personal"
+    PUBLIC = "public"
+    OAUTH = "oauth"
 
 
 class ResourceAuthConfig(BaseModel):
