@@ -167,10 +167,10 @@ const { t } = useI18n();
 
 // 默认展开
 const activeIndex = ref(['baseInfo', 'authConfig', 'frontConfig', 'backConfig']);
-const baseInfoRef = ref();
-const authConfigRef = ref();
-const frontConfigRef = ref();
-const backConfigRef = ref();
+const baseInfoRef = useTemplateRef('baseInfoRef');
+const authConfigRef = useTemplateRef('authConfigRef');
+const frontConfigRef = useTemplateRef('frontConfigRef');
+const backConfigRef = useTemplateRef('backConfigRef');
 const renderShow = ref(isSliderShow);
 
 watch(() => isSliderShow, (val: any) => {
@@ -184,16 +184,22 @@ const handleSubmit = async () => {
     frontConfigRef.value?.validate(),
     backConfigRef.value?.validate(),
   ]);
+  if (!resource || !baseInfoRef.value || !authConfigRef.value || !frontConfigRef.value || !backConfigRef.value) {
+    return;
+  }
   const baseFormData = baseInfoRef.value.formData;
   const authFormData = authConfigRef.value.formData;
   const frontFormData = frontConfigRef.value.frontConfigData;
   const backFormData = backConfigRef.value.backConfigData;
-  const payload = {
+  const payload: ILocalImportedResource = {
     ...baseFormData,
     ...authFormData,
     ...frontFormData,
+    method: frontFormData.method as ILocalImportedResource['method'],
+    kind: (baseFormData.kind === 'ai' || baseFormData.kind === 'standard') ? baseFormData.kind : resource.kind,
     backend: { ...backFormData },
-    _localId: resource?._localId,
+    _localId: resource._localId,
+    _unchecked: resource._unchecked,
   };
   emits('submit', payload);
   emits('on-hidden');

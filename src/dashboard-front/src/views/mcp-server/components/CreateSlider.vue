@@ -67,7 +67,7 @@
                 :is-show="isShowPublicClient"
                 :title="t('OAuth2 公开客户端模式')"
                 :description="t('开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。')"
-                :icon="'oauth2'"
+                icon="oauth2"
                 @oauth-change="updateSliderContentHeight"
               />
               <OAuthSwitcher
@@ -76,7 +76,7 @@
                 :is-show="isShowPersonalClient"
                 :title="t('个人令牌')"
                 :description="t('开启后，用户可以使用个人令牌调用该 MCP Server。')"
-                :icon="'user-token'"
+                icon="user-token"
                 @oauth-change="updateSliderContentHeight"
               >
                 <template
@@ -233,7 +233,7 @@
                                   v-model="filterPromptValues"
                                   :data="filterPromptConditions"
                                   :placeholder="t('搜索中英文名、标签、内容、修改人')"
-                                  :value-split-code="'+'"
+                                  value-split-code="+"
                                   class="mb-16px"
                                   clearable
                                   unique-select
@@ -566,19 +566,19 @@ let clearMapTimer: ReturnType<typeof setTimeout> | null = null;
 const resourceNameToIndexMap = new Map<string, number>();
 const authorizedPromptIds = new Set<number>();
 
-const footerRef = ref<HTMLDivElement | null>(null);
-const resourceRef = ref<HTMLDivElement | null>(null);
-const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
+const footerRef = useTemplateRef<HTMLDivElement>('footerRef');
+const resourceRef = useTemplateRef<HTMLDivElement>('resourceRef');
+const resizeLayoutRef = useTemplateRef<InstanceType<typeof ResizeLayout>>('resizeLayoutRef');
 const toolTableRef = useTemplateRef<IAgTableInstance<IMCPServerTool>>('toolTableRef');
 const promptTableRef = useTemplateRef<IAgTableInstance<IMCPServerPrompt>>('promptTableRef');
 const toolTableRegion = useTemplateRef<ComponentPublicInstance>('toolTableRegion');
 const promptTableRegion = useTemplateRef<ComponentPublicInstance>('promptTableRegion');
 const { height: toolTableHeight } = useElementSize(toolTableRegion, undefined, { box: 'border-box' });
 const { height: promptTableHeight } = useElementSize(promptTableRegion, undefined, { box: 'border-box' });
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 const toolNameRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
-const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
+const serverBasicFormRef = useTemplateRef<InstanceType<typeof ServerBasicForm>>('serverBasicFormRef');
 const toolNameInputRef = ref<InstanceType<typeof Input> & { focus: () => void }>();
 const defaultFormData = ref<IMCPFormData>({
   name: '',
@@ -2090,6 +2090,7 @@ defineExpose({
 
 </script>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的提示框与气泡弹层样式 -->
 <style lang="scss">
 .prompt-info-box {
 

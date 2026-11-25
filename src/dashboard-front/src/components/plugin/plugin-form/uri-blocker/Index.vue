@@ -69,8 +69,8 @@ const { data } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const blockRulesInputRef = ref();
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
+const blockRulesInputRef = useTemplateRef('blockRulesInputRef');
 
 const form = ref<IFormModel>({
   block_rules: [''],
@@ -117,7 +117,7 @@ watch(
 
 defineExpose({
   getValue: async () => {
-    const rules = await blockRulesInputRef.value?.getValue();
+    const rules = (await blockRulesInputRef.value?.getValue()) ?? [];
     await formRef.value!.validate();
     const result: IFormModel = {
       block_rules: rules,

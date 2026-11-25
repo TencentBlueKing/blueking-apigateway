@@ -228,7 +228,7 @@ const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 const defaultFormData = ref(toGatewayFormData(initData));
 const formData = ref(cloneDeep(defaultFormData.value));
 const submitLoading = ref(false);

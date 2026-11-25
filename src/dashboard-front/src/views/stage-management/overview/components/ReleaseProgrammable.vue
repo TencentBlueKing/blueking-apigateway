@@ -277,8 +277,8 @@ const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 
 const isShow = ref(false);
-const formRef = ref();
-const logDetailsRef = ref();
+const formRef = useTemplateRef('formRef');
+const logDetailsRef = useTemplateRef('logDetailsRef');
 
 // 提交数据
 const formData = ref<FormData>({
@@ -420,7 +420,7 @@ const handlePublish = async () => {
     const res = await deployReleases(apigwId.value, params);
     deployId.value = res.deploy_id;
     isShow.value = false;
-    logDetailsRef.value.showSideslider();
+    logDetailsRef.value?.showSideslider();
     emit('closed-on-publishing');
   }
   catch (e: any) {
@@ -677,6 +677,7 @@ defineExpose({ showReleaseSideslider });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的错误消息提示条样式 -->
 <style lang="scss">
 .customize-error-message-cls .bk-message-content .overview .tools {
 

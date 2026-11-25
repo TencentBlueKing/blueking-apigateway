@@ -288,10 +288,10 @@ const emit = defineEmits<IEmits>();
 const envStore = useEnv();
 const gatewayStore = useGateway();
 
-const nameRef = ref<BkInputInstance | null>(null);
-const titleRef = ref<BkInputInstance | null>(null);
-const descriptionRef = ref<BkInputInstance | null>(null);
-const categoriesRef = ref<InstanceType<typeof TagInput> | null>(null);
+const nameRef = useTemplateRef<BkInputInstance>('nameRef');
+const titleRef = useTemplateRef<BkInputInstance>('titleRef');
+const descriptionRef = useTemplateRef<BkInputInstance>('descriptionRef');
+const categoriesRef = useTemplateRef<InstanceType<typeof TagInput>>('categoriesRef');
 const isOverflow = ref(false);
 const isCategoryFocus = ref(false);
 

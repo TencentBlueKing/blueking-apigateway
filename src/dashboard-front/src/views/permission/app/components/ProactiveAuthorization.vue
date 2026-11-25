@@ -118,8 +118,8 @@
                 <BkTransfer
                   ref="dimensionRef"
                   :source-list="resourceTransferList"
-                  :display-key="'name'"
-                  :setting-key="'id'"
+                  display-key="name"
+                  setting-key="id"
                   :title="[t('未选资源'), t('已选资源')]"
                   class="proactive-auth-transfer"
                   searchable
@@ -242,10 +242,10 @@ const MAX_EXPIRE_DAYS = Math.floor((NEVER_EXPIRES_AT - Date.now()) / DAY_MS) - 1
 
 const route = useRoute();
 
-const authFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const appCodeRef = ref<InstanceType<typeof Input> | null>(null);
-const expireTypeRef = ref<InstanceType<typeof Input> | null>(null);
-const dimensionRef = ref<InstanceType<typeof Transfer> | null>(null);
+const authFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('authFormRef');
+const appCodeRef = useTemplateRef<InstanceType<typeof Input>>('appCodeRef');
+const expireTypeRef = useTemplateRef<InstanceType<typeof Input>>('expireTypeRef');
+const dimensionRef = useTemplateRef<InstanceType<typeof Transfer>>('dimensionRef');
 const transferIsAllEl = ref<Element | null>(null);
 const transferInputEl = ref<HTMLInputElement | null>(null);
 const clearIconEl = ref<Element | null>(null);

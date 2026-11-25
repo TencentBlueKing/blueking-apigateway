@@ -36,6 +36,8 @@ import BaseTable from './BaseTable.vue';
 interface IGenericConfig { [key: string]: unknown }
 
 interface IProps {
+  // 动态插件展示组件公共入参占位，避免透传到根 DOM
+  // eslint-disable-next-line vue/no-unused-properties
   plugin: IPlugin<IGenericConfig>
   firstColWidth: string
   valueRender: ValueRenderType

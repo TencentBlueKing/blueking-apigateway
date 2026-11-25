@@ -116,10 +116,10 @@ const emit = defineEmits<{ change: [data: any ] }>();
 
 const type = ref<string>('raw');
 const rawType = ref<string>('JSON');
-const dataRef = ref();
+const dataRef = useTemplateRef('dataRef');
 const fromDataList = ref([]);
 const urlencodedList = ref([]);
-const urlencodedRef = ref();
+const urlencodedRef = useTemplateRef('urlencodedRef');
 const datasource = ref([
   {
     value: 'JSON',
@@ -138,7 +138,7 @@ const datasource = ref([
     label: 'TEXT',
   },
 ]);
-const resourceEditorRef = ref<InstanceType<typeof AgCodeEditor>>();
+const resourceEditorRef = useTemplateRef<InstanceType<typeof AgCodeEditor>>('resourceEditorRef');
 const editorText = ref(JSON.stringify(rawPayload, null, 2));
 
 const validate = async () => {
@@ -172,12 +172,12 @@ const handleListChange = (list: any) => {
 const handleTabChange = (key: string) => {
   type.value = key;
 
-  let list = [];
+  let list: any[] = [];
   if (key === 'fromData') {
-    list = dataRef.value?.getTableData();
+    list = dataRef.value?.getTableData() ?? [];
   }
   else if (key === 'urlencoded') {
-    list = urlencodedRef.value?.getTableData();
+    list = urlencodedRef.value?.getTableData() ?? [];
   }
   list = list?.filter((item: any) => item.name);
 

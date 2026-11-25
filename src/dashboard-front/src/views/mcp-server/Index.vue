@@ -237,9 +237,9 @@ const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 const { hasAppPermissionRisk, getAppPermissionRiskTips } = useMcpAuthRisk();
 
-const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
-const serverCardTableRef = ref<InstanceType<typeof ServerCardTable>>();
-const mcpListRef = ref<HTMLDivElement | null>(null);
+const createSliderRef = useTemplateRef<InstanceType<typeof CreateSlider>>('createSliderRef');
+const serverCardTableRef = useTemplateRef<InstanceType<typeof ServerCardTable>>('serverCardTableRef');
+const mcpListRef = useTemplateRef<HTMLDivElement>('mcpListRef');
 const mcpList = ref<any[]>([]);
 const editingServerId = ref();
 const activeStatusTab = ref('all');

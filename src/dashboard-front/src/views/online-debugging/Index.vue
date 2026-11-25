@@ -274,7 +274,7 @@
                           <BkInput
                             class="auth-value"
                             prefix="bk_app_secret"
-                            :value="'******'"
+                            value="******"
                             disabled
                           />
                         </template>
@@ -438,12 +438,11 @@
         </div>
 
         <BkResizeLayout
-          style="height: 100%; overflow: hidden;"
           initial-divide="52px"
           :border="false"
           :min="52"
           placement="bottom"
-          class="request-resize"
+          class="request-resize h-full overflow-hidden"
         >
           <template #aside>
             <div class="request-response">
@@ -610,8 +609,8 @@ const defaultValue = {
 };
 const formData = ref<any>({ ...defaultValue.formData });
 const isShowDoc = ref(false);
-const requestPayloadRef = ref();
-const responseContentRef = ref();
+const requestPayloadRef = useTemplateRef('requestPayloadRef');
+const responseContentRef = useTemplateRef('responseContentRef');
 const payloadType = reactive<any>({
   rawPayload: {},
   queryPayload: [],
@@ -621,7 +620,7 @@ const payloadType = reactive<any>({
   fromDataPayload: [],
 });
 const tab = ref('Params');
-const docContentRef = ref();
+const docContentRef = useTemplateRef('docContentRef');
 
 // 编辑应用认证
 const appAuthorization = reactive<any>({
@@ -657,7 +656,7 @@ const dropdownList = ref([
   },
 ]);
 const selectedResourceId = ref('');
-const tabContainerRef = ref<HTMLElement | null>(null);
+const tabContainerRef = useTemplateRef<HTMLElement>('tabContainerRef');
 const containerWidth = ref(0);
 const toolsWidth = ref(0);
 
@@ -1219,9 +1218,10 @@ const handleDebuggingCacheData = (resource: any, save = true) => {
   // 将当前资源的调试数据保存
   if (save) {
     const payload = requestPayloadRef.value?.getData();
+    if (!payload) return;
     const { headers } = payload;
-    const { path, query } = payload.params;
-    const { raw } = payload.body;
+    const { path, query } = payload.params ?? {};
+    const { raw } = payload.body ?? {};
     const payloadCache = {
       headersPayload: headers,
       queryPayload: query,
@@ -1457,9 +1457,10 @@ const checkFormData = (data: IAPITestInputSLZ & { authorization: IAPITestAuthori
 
 const formatPayload = () => {
   const payload = requestPayloadRef.value?.getData();
-  const { headers } = payload;
-  const { path, query } = payload.params;
-  const { raw } = payload.body;
+  if (!payload) return false;
+  const { headers = [] } = payload;
+  const { path = [], query = [] } = payload.params ?? {};
+  const { raw = '' } = payload.body ?? {};
   // formData: formDataList, urlencoded,
 
   const stageId = stage.value;

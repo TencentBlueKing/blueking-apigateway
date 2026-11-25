@@ -47,10 +47,10 @@
       <BkTable
         :data="pagingList"
         remote-pagination
-        :size="'small'"
+        size="small"
         :max-height="600"
         :pagination="pagination"
-        style="margin-top: 15px;"
+        class="mt-15px"
         border="outer"
         @header-dragend="dragendColumn"
         @row-click="tableRowClick"
@@ -125,7 +125,7 @@
                     </div>
                   </div>
                   <template #content>
-                    <div style="white-space: normal;">
+                    <div class="whitespace-normal">
                       <p
                         v-for="item in formattedData(row.resource_ids)"
                         :key="item.id"
@@ -223,9 +223,9 @@
               :label="t('蓝鲸应用 ID')"
               required
               :label-width="150"
-              :property="'bkAppCode'"
+              property="bkAppCode"
               :rules="rules.bkAppCode"
-              :error-display-type="'normal'"
+              error-display-type="normal"
             >
               <BkInput
                 v-model="curResource.bkAppCode"
@@ -244,7 +244,7 @@
             >
               <BkRadioGroup
                 v-model="manner"
-                style="display: block;"
+                class="block"
               >
                 <BkRadio label="api">
                   {{ t('全部资源') }}
@@ -256,7 +256,7 @@
                 <br>
                 <BkRadio
                   label="resource"
-                  style="margin-left: 0;"
+                  class="ml-0!"
                 >
                   {{ t('具体资源') }}
                   <i
@@ -275,8 +275,8 @@
                   ext-cls="resource-transfer-wrapper"
                   :target-list="resourceTargetList"
                   :source-list="resourceList"
-                  :display-key="'name'"
-                  :setting-key="'id'"
+                  display-key="name"
+                  setting-key="id"
                   :title="[t('未选资源'), t('已选资源')]"
                   searchable
                   @change="handleResourceChange"
@@ -349,7 +349,7 @@ const {
 const { t } = useI18n();
 
 const gatewayId = useRouteParams('id', 0, { transform: Number });
-const validateForm1 = ref();
+const validateForm1 = useTemplateRef('validateForm1');
 const keyword = ref('');
 const dataList = ref<any>([]);
 const pagingList = ref<any>([]);

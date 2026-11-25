@@ -274,7 +274,7 @@ const language = ref<'zh' | 'en'>('zh');
 const isSaving = ref(false);
 const isLoading = ref(true);
 const docId = ref<any>('');
-const markdownRef = ref(null);
+const markdownRef = useTemplateRef('markdownRef');
 const toolbars = ref<any>({
   bold: true,
   italic: true,

@@ -25,7 +25,6 @@
       :gateway-id="gatewayId"
       :current-source="curResource"
       :is-detail="!isCollapsed"
-      :latest="versionConfigs.needNewVersion"
       :show-new-tips="!!tableData.length"
     />
     <div
@@ -620,7 +619,7 @@ const exportDropData = ref<ApigwIDropList[]>([
   // { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') },
 ]);
 
-const createResourceVersionRef = ref();
+const createResourceVersionRef = useTemplateRef('createResourceVersionRef');
 const selectCheckBoxParentRef = ref();
 // 导出参数
 const exportParams: IExportParams = reactive({
@@ -1311,7 +1310,7 @@ const handleConfirmDelete = (row: IResourceRow) => {
 };
 
 // 标记为弃用 / 取消弃用标记
-const deprecationFormRef = ref<InstanceType<typeof import('bkui-vue')['Form']>>();
+const deprecationFormRef = useTemplateRef<InstanceType<typeof import('bkui-vue')['Form']>>('deprecationFormRef');
 const deprecationDialog = reactive({
   isShow: false,
   loading: false,
@@ -1652,7 +1651,7 @@ const handleCreateResourceVersion = async () => {
   else {
     diffSourceId.value = response.results[0]?.id || '';
   }
-  createResourceVersionRef.value.showReleaseSideslider();
+  createResourceVersionRef.value?.showReleaseSideslider();
 };
 
 // 获取标签数据
@@ -1899,6 +1898,7 @@ onMounted(() => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的筛选弹层与确认气泡样式 -->
 <style lang="scss">
 .content-footer {
   justify-content: flex-end;

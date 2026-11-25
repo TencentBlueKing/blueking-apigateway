@@ -247,7 +247,6 @@ type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];
 
 interface IProps {
   curResource?: Record<string, any>
-  height: string
   source?: string
   docRootClass?: string
   showFooter?: boolean
@@ -257,7 +256,6 @@ interface IProps {
 
 const {
   curResource = {},
-  // height = 'calc(100vh - 104px)',
   source = '', // side 侧边栏引用
   docRootClass = '',
   // 自定义类
@@ -296,7 +294,7 @@ const language = ref('zh');
 const isSaving = ref(false);
 const docId = ref<any>('');
 // const hasResourceDoc = ref(false); // 是否有文档内容
-const markdownRef = ref(null);
+const markdownRef = useTemplateRef('markdownRef');
 const toolbars = ref<any>({
   bold: true,
   italic: true,

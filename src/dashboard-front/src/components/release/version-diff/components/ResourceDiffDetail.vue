@@ -74,7 +74,7 @@
           <label class="ag-key">{{ t('标签') }}:</label>
         </BkCol>
         <BkCol
-          style="margin-bottom: -4px;"
+          class="-mb-4px"
           :span="10"
         >
           <template v-if="matchedLabels.length">
@@ -806,6 +806,7 @@ const hasMockHeaders = computed(() =>
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 跨父子版本对比组件共享差异高亮样式 -->
 <style lang="scss">
 .bk-button-group .readonly-value {
   height: 32px;

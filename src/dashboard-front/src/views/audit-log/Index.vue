@@ -46,14 +46,13 @@
           <BkSearchSelect
             v-if="!featureFlagStore.isTenantMode"
             v-model="searchValue"
-            style="width: 100%"
             unique-select
-            class="audit-log-search"
+            class="audit-log-search w-full"
             :data="searchData"
             :placeholder="t('请输入关键字或选择条件搜索')"
             :clearable="false"
-            :value-split-code="'+'"
-            :value-behavior="'need-key'"
+            value-split-code="+"
+            value-behavior="need-key"
           />
           <BkSearchSelect
             v-else
@@ -62,10 +61,9 @@
             :data="searchData"
             :get-menu-list="getMenuList"
             :placeholder="t('请输入关键字或选择条件搜索')"
-            :value-behavior="'need-key'"
-            :value-split-code="'+'"
-            class="audit-log-search"
-            style="width: 100%"
+            value-behavior="need-key"
+            value-split-code="+"
+            class="audit-log-search w-full"
             unique-select
           />
         </BkFormItem>

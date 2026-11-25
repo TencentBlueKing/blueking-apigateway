@@ -972,7 +972,10 @@ const frontWsEdit = ref(false); // 是否启用websocket的编辑态
 const backMethodEdit = ref(false);
 const backServicesEdit = ref(false);
 const backPathEdit = ref(false);
-const nameInputRef = ref();
+const nameInputRef = useTemplateRef<{
+  focus?: () => void
+  blur?: () => void
+}>('nameInputRef');
 // 服务列表下拉框数据
 const backendsList = ref<IBackendListOutput[]>([]);
 const popoverConfirmRef = ref<InstanceType<typeof BkPopConfirm>>();
@@ -1313,14 +1316,14 @@ const handleNameBlur = (name: string) => {
 
 const handleEditEnter = () => {
   nextTick(() => {
-    nameInputRef.value.blur();
+    nameInputRef.value?.blur?.();
   });
 };
 
 const toggleEdit = () => {
   nameEdit.value = true;
   nextTick(() => {
-    nameInputRef.value.focus();
+    nameInputRef.value?.focus?.();
   });
 };
 

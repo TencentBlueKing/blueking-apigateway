@@ -31,7 +31,7 @@
             :key="dateKey"
             v-model="dateValue"
             type="datetimerange"
-            style="max-width: 290px;"
+            class="max-w-290px"
             :clearable="false"
             :placeholder="t('选择日期时间范围')"
             use-shortcut-text
@@ -125,7 +125,7 @@
           </template>
           <SearchInput
             v-model:mode-value="keyword"
-            style="min-width: 220px;"
+            class="min-w-220px"
             @search="handleSearch"
           />
         </BkFormItem>
@@ -450,7 +450,7 @@ const queryHistory = useStorage('access-log-query-history', []);
 const activeIndex = ref<number[]>([1, 2, 3]);
 const keyword = ref('');
 const chartInstance = ref<ECharts | null>(null);
-const chartContainer = ref<HTMLDivElement | null>(null);
+const chartContainer = useTemplateRef<HTMLDivElement>('chartContainer');
 // 柱状图各桶起点（秒），框选时按下标换算时间，不解析坐标轴文本
 const chartTimeline = shallowRef<number[]>([]);
 const isPageLoading = ref(false);
@@ -1626,7 +1626,8 @@ onBeforeUnmount(() => {
 }
 </style>
 
-<style>
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的表格列设置与气泡弹层样式 -->
+<style lang="scss">
 .hide-table-setting-line-height .setting-body-line-height {
   display: none !important;
 }

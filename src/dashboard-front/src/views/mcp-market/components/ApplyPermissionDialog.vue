@@ -119,7 +119,7 @@ const {
 const { t } = useI18n();
 const envStore = useEnv();
 
-const formRef = ref<InstanceType<typeof Form>>();
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 const applicableApps = ref<IUserApplicationOutput[]>([]);
 const itsmTicketUrl = ref('');
 const isSubmitting = ref(false);

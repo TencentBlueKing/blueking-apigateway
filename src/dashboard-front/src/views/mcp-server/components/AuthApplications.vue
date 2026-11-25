@@ -156,7 +156,7 @@ const {
 } = useMcpPermission();
 
 const tableRef = useTemplateRef<IAgTableInstance<IMCPServerAppPermissionListOutput>>('tableRef');
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 const tableColumns = shallowRef<ITableColumn<IMCPServerAppPermissionListOutput>[]>([
   {
     title: t('蓝鲸应用 ID'),

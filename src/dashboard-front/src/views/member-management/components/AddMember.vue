@@ -36,7 +36,7 @@
           :label="t('用户名')"
           property="usernames"
           required
-          :error-display-type="'normal'"
+          error-display-type="normal"
         >
           <UserSelector
             v-model="formData.usernames"

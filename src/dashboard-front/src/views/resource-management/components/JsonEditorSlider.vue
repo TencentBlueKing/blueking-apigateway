@@ -94,7 +94,7 @@ const { data: importedJsonText, fileSize, open } = useFileSystemAccess({
   }],
 });
 
-const editorRef = ref<InstanceType<typeof AgCodeEditor>>();
+const editorRef = useTemplateRef<InstanceType<typeof AgCodeEditor>>('editorRef');
 
 const alertText = computed(() => (type === 'request'
   ? t('请粘贴接口真实的请求体 JSON，或通过「导入 JSON」上传文件。内容可从接口文档、调试工具或实际调用中获取，系统将据此自动生成参数结构。')

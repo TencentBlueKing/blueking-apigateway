@@ -24,7 +24,7 @@
       :min="locale === 'en' ? 472 : 360"
       :border="false"
       collapsible
-      style="height: 100%;"
+      class="h-full"
     >
       <template #aside>
         <div class="resize-left-wrapper">

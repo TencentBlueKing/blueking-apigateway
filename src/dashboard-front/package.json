@@ -19,9 +19,11 @@
     "test:ag-table": "vitest run --project browser src/components/base/ag-table",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
-    "lint:ci": "eslint .",
+    "lint:ci": "eslint . --max-warnings 0",
     "lint:ci:oxlint": "oxlint . -D correctness --ignore-path .gitignore",
     "lint": "run-s lint:*",
+    "stylelint": "stylelint \"src/**/*.{vue,scss,css}\"",
+    "stylelint:fix": "stylelint \"src/**/*.{vue,scss,css}\" --fix",
     "symlink-dot-agents:codebuddy": "node create-codebuddy-symlink.js"
   },
   "dependencies": {
@@ -108,7 +110,7 @@
     "vue-tsc": "~3.2.9"
   },
   "simple-git-hooks": {
-    "pre-commit": "cd src/dashboard-front && npx lint-staged && npm run type-check",
+    "pre-commit": "cd src/dashboard-front && npx lint-staged --relative --max-arg-length 4096 && npm run type-check",
     "commit-msg": "cd src/dashboard-front && npx commitlint --edit $1"
   },
   "lint-staged": {

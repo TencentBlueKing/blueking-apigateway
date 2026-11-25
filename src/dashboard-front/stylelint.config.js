@@ -8,10 +8,9 @@ export default {
       true,
       { ignoreFunctions: ['extend', 'v-bind'] },
     ],
-    'at-rule-no-unknown': [
-      true,
-      { ignoreAtRules: ['function', 'if', 'each', 'include', 'mixin', 'define-mixin', 'extend'] },
-    ],
+    // 由 stylelint-config-standard-scss 的 scss/at-rule-no-unknown 接管，支持 @use / @forward / @mixin 等 Sass 语法
+    'at-rule-no-unknown': null,
+    'no-empty-source': null,
     'selector-pseudo-class-no-unknown': [
       true,
       { ignorePseudoClasses: ['/deep/', '/global/', '/slotted/'] },

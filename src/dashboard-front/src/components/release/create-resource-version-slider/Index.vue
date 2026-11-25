@@ -296,7 +296,7 @@ const isShow = ref(false);
 // 弹窗dialog
 const dialogShow = ref(false);
 const versionList = ref<IResourceVersionListOutput[]>([]);
-const formRef = ref();
+const formRef = useTemplateRef('formRef');
 const diffSourceId = ref('');
 const diffTargetId = ref('');
 const loading = ref(false);
@@ -609,6 +609,7 @@ defineExpose({ showReleaseSideslider });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的弹窗与下拉弹层样式 -->
 <style lang="scss">
 .custom-option-disabled {
   color: #c4c6cc !important;

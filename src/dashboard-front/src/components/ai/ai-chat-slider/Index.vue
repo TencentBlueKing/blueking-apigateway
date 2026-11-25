@@ -42,7 +42,7 @@
         </div>
         <BkLoading
           v-if="loading"
-          style="width: 100%; justify-content: center;"
+          class="w-full justify-center"
         />
       </div>
     </template>

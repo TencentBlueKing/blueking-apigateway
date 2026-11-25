@@ -107,7 +107,7 @@ import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 const { t } = useI18n();
 
-const urlInputRef = ref<InstanceType<typeof Input>>();
+const urlInputRef = useTemplateRef<InstanceType<typeof Input>>('urlInputRef');
 const urlContent = ref('');
 const result = ref('');
 const errorMsg = ref('');

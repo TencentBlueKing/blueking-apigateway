@@ -60,14 +60,14 @@
             :exclude-self-tips="false"
             :placeholder="t('请选择联系人')"
             :content="docForm.contacts"
-            :is-error-class="'maintainers-error-tip'"
+            is-error-class="maintainers-error-tip"
             @on-change="(e: any) => handleContactsChange(e)"
           />
           <TenantUserEditor
             v-else
             ref="selectorRef"
             :content="docForm.contacts"
-            :is-error-class="'maintainers-error-tip'"
+            is-error-class="maintainers-error-tip"
             is-required
             :placeholder="t('请选择联系人')"
             field="contacts"
@@ -304,9 +304,9 @@ const InitForm = (): IForm => {
   };
 };
 
-const formRef = ref<InstanceType<typeof Form> & { clearValidate: () => void }>();
-const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserEditor> & { isShowError: boolean
-  isEditable: boolean }>();
+const formRef = useTemplateRef<InstanceType<typeof Form> & { clearValidate: () => void }>('formRef');
+const selectorRef = useTemplateRef<InstanceType<typeof EditMember | typeof TenantUserEditor> & { isShowError: boolean
+  isEditable: boolean }>('selectorRef');
 const loading = ref<boolean>(false);
 const docForm = ref<IForm>(InitForm());
 
