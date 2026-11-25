@@ -16,6 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import io
 import logging
 import operator
 import time
@@ -29,7 +30,7 @@ from django.db.models import Exists, OuterRef, Q, Subquery
 from django.http import Http404, JsonResponse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics, status
 
 from apigateway.apis.v2.permissions import OpenAPIV2GatewayNamePermission, OpenAPIV2Permission
@@ -51,6 +52,7 @@ from apigateway.biz.permission import PermissionDimensionManager
 from apigateway.biz.released_resource_doc import DocGenerator, ReleasedResourceDocHandler
 from apigateway.biz.resource_doc import ResourceDocHandler
 from apigateway.biz.resource_version import ResourceVersionHandler
+from apigateway.biz.skill import SkillHandler, build_skill_package_zip, get_skill_package_filename
 from apigateway.common.django.translation import get_current_language_code
 from apigateway.common.env import Env
 from apigateway.common.error_codes import error_codes
@@ -73,7 +75,7 @@ from apigateway.service.bk_itsm import ItsmPermissionApplyHelper
 from apigateway.service.contexts import ResourceAuthContext
 from apigateway.service.resource import get_resource_id_to_labels, get_resource_url_tmpl
 from apigateway.service.resource_version import get_resource_schema
-from apigateway.utils.responses import OKJsonResponse
+from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from . import serializers
 from .serializers import (
@@ -1235,3 +1237,24 @@ class OAuthProtectedResourceApi(generics.RetrieveAPIView):
                 "bearer_methods_supported": ["header"],
             }
         )
+
+
+@method_decorator(
+    name="get",
+    decorator=extend_schema(
+        description="免登录下载 Skill",
+        responses={status.HTTP_200_OK: OpenApiResponse(description="zip 文件")},
+        tags=["OpenAPI.V2.Open"],
+    ),
+)
+class SkillDownloadApi(generics.RetrieveAPIView):
+    schema_response_envelope = False
+
+    permission_classes = []  # type: ignore  # No permission check required
+
+    def retrieve(self, request, *args, **kwargs):
+        metadata = SkillHandler.get_open_skill(kwargs["skill_id"])
+        version = SkillHandler.get_version(metadata, kwargs.get("version"))
+        version, content = build_skill_package_zip(metadata, version)
+        SkillHandler.increase_download_count(metadata.id)
+        return DownloadableResponse(io.BytesIO(content), filename=get_skill_package_filename(metadata, version))

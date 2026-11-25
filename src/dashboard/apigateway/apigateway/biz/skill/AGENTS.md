@@ -8,7 +8,9 @@ Flow: `declaration.parse_declaration` → `validator.validate_declaration` →
 `renderer.render_skill_body` → `writer.save_skill_version`. `syncer` runs that
 flow for built-in declarations in `data/skill/declarations/`; the
 `sync_platform_skills` command (`apps/skill/management/commands/`) wraps it and
-runs from `bin/post_migrate`.
+runs from `bin/post_migrate`. Gateway Skill upload (`uploader`) runs the same
+flow on the `declaration.yaml` of an uploaded package; downloads and file
+previews rebuild the package from the stored version (`package`).
 
 | Module | Owns |
 | --- | --- |
@@ -18,8 +20,14 @@ runs from `bin/post_migrate`.
 | `resource_loader.py` | `SkillResource`, `ResourceProvider`, and loading the current release |
 | `validator.py` | cross-checks between the orchestration and resource definitions |
 | `renderer.py` | template context and the per-step OpenAPI snippet |
-| `writer.py` | one transactional publish: metadata, tags, config, version, relations |
+| `writer.py` | one transactional publish: metadata, tags, config, version, relations; version rules for both Skill types |
 | `syncer.py` | per-declaration status for built-in injection |
+| `frontmatter.py` | SKILL.md frontmatter rendering for download packages |
+| `package.py` | download package: SKILL.md (frontmatter, H1 replaced by the display name, body) plus filled `references/`; optionally a `declaration.yaml` regenerated from the database |
+| `archive.py` | in-memory zip reading: path, symlink, layout, declaration size and UTF-8 checks; lists ignored files |
+| `uploader.py` | gateway Skill precheck and publish: package checks, ignored-file warning, form overlay, gateway-only `uses` |
+| `manager.py` | basic info, current version, archive/restore and delete of an existing Skill |
+| `skill.py` | `SkillHandler`: market/gateway/open querysets, filters, ordering, counts, tags, detail context, download count |
 
 ## Where to change what
 
@@ -132,6 +140,24 @@ together with the code.
   before rendering and `save_skill_version` calls it again under the metadata
   row lock. Platform injection passes `overwrite_existing=True`; other callers
   still reject a duplicate version.
+- Gateway Skills use `writer.check_gateway_version` instead: any existing
+  version (not only the current one) may be overwritten when the uploader
+  confirms `overwrite`, and that version becomes current; a new version must
+  be higher than the highest existing version. Writing to an archived Skill
+  raises `SkillArchivedError`.
+- Injection skips and upload rejects. Built-in injection records a reason and
+  leaves the declaration for the next deploy; a gateway upload returns every
+  error to the uploader and writes nothing. Upload warnings do not block; the
+  gateway rendering is always the stored body. An upload package and its
+  uncompressed `declaration.yaml` are each at most
+  `constants.SKILL_PACKAGE_MAX_SIZE`, and the package must contain `declaration.yaml`;
+  other files, including `SKILL.md` and `references/`,
+  pass the path checks but are never read or stored, and one warning lists
+  them. A top-level `__MACOSX/` is ignored. `references/` always comes from
+  `data/skill/references/`. The directory name must equal the package
+  declaration's `name` before the form overrides `display_name`,
+  `display_name_en`, `description`, `tags` and `version`; `name` and
+  `changelog` come only from the declaration.
 - `changelog` is one `{date, content}` mapping describing the declaration
   `version`; history lives in git. `date` is `YYYY-MM-DD` or
   `YYYY-MM-DD HH:MM:SS` without a time zone or fractional seconds; unquoted
@@ -153,11 +179,20 @@ together with the code.
   and passes it as `gateway_names`; `syncer` maps `uses` and `tags` with it.
 - Rendering is deterministic: no timestamps or environment URLs in the body.
 - The stored artifact is the body only; `SKILL.md.j2` does not render frontmatter.
-  A download package's frontmatter follows the Agent Skills spec and contains
-  only `name`, `description`, and `metadata`. `metadata` contains only `type`,
-  `version`, `author`, `datetime`, and `source`. `datetime` is
-  `SkillVersion.created_time`. Do not write `display_name`, `SkillMetadata.code`,
-  or the `SkillMetadata.metadata` extension JSON into `SKILL.md`.
+  A download package's frontmatter is built from the Agent Skills spec and
+  contains, in order, only `name`, `description`, `display_name`,
+  `display_name_en` (`""` when empty) and `metadata`. `metadata` contains only
+  `type`, `version`, `author`, `datetime`, and `source`. `datetime` is
+  `SkillVersion.created_time`. Basic info is read from `SkillMetadata` at
+  download time, so editing it changes the frontmatter and the H1 without a new
+  version. Do not write `SkillMetadata.code` or the `SkillMetadata.metadata`
+  extension JSON into `SKILL.md`. Only the gateway Skill management download
+  and file list (`with_declaration=True`, file name suffix
+  `constants.SKILL_DECLARATION_PACKAGE_SUFFIX`) include `declaration.yaml`;
+  market and open downloads do not. The declaration is not stored: it is
+  regenerated from current basic info plus the version's `version`,
+  `changelog` and `orchestration`, without YAML anchors or aliases, so the
+  package can be uploaded again as is.
 - Steps follow the GitHub Actions composite-action shape (`id`, `name`, `uses`,
   `description`, `with`) without `if`. Run conditions, polling and which
   elements a per-item call covers are natural language in `description`; do not

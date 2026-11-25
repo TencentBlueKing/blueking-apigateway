@@ -91,8 +91,11 @@ urlpatterns = [
         "backend/gateways/<int:gateway_id>/mcp-servers/-/logs/",
         include("apigateway.apis.web.mcp_server_log.urls"),
     ),
+    path("backend/gateways/<int:gateway_id>/skills/", include("apigateway.apis.web.skill.urls")),
     # mcp server marketplace
     path("backend/mcp-marketplace/", include("apigateway.apis.web.mcp_marketplace.urls")),
+    # skill marketplace
+    path("backend/skill-marketplace/", include("apigateway.apis.web.skill_marketplace.urls")),
     # applications managed by the current user
     path("backend/me/applications/", include("apigateway.apis.web.user_application.urls")),
     # personal workbench: /me/workbench/

@@ -131,8 +131,8 @@ class SkillConfig(TimestampedModelMixin, OperatorModelMixin):
 class SkillVersion(TimestampedModelMixin, OperatorModelMixin):
     """Skill 的一次发版
 
-    内置 Skill 注入在版本号与当前版本一致时覆盖 changelog、orchestration、artifact 和关联资源，不新增行。
-    其他写入创建后不再修改这三项。
+    内置 Skill 注入在版本号与当前版本一致时覆盖 changelog、orchestration、artifact 和关联资源，不新增行；
+    网关 Skill 带 overwrite 上传时可以覆盖任意已有版本的这几项。覆盖都不改 created_by、created_time。
     changelog: {"version": "1.0.0", "date": "2026-11-11 11:00:00", "content": "<说明>"}，声明的 version 加上声明 changelog 的 date、content
     artifact: {"SKILL.md": "<正文>"}，键为包内相对路径，值为正文（含一级标题，不含 frontmatter）
     """

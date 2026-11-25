@@ -30,6 +30,8 @@ from apigateway.apps.metrics.models import StatisticsGatewayRequestByDay
 from apigateway.apps.monitor.models import AlarmStrategy
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
+from apigateway.apps.skill.constants import SkillStatusEnum
+from apigateway.apps.skill.models import SkillMetadata, SkillVersion
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.gateway import OPERATION_STATUS_DELTA_DAYS, GatewayHandler
 from apigateway.biz.iam.constants import BK_IAM_V4_SYSTEM_ID
@@ -51,6 +53,7 @@ from apigateway.core.models import (
     Resource,
     Stage,
 )
+from apigateway.tests.biz.skill.conftest import create_skill
 
 
 class TestGatewayHandler:
@@ -411,6 +414,19 @@ class TestGatewayHandler:
         ]:
             with pytest.raises(ObjectDoesNotExist):
                 model.refresh_from_db()
+
+    def test_delete_gateway_cascades_gateway_skills(self, fake_gateway):
+        published = create_skill("published", gateway=fake_gateway)
+        archived = create_skill("archived", gateway=fake_gateway)
+        SkillMetadata.objects.filter(id=archived.id).update(status=SkillStatusEnum.ARCHIVED.value)
+        other = create_skill("published", gateway=G(Gateway, name="other-gateway"))
+        platform = create_skill("platform-skill")
+
+        GatewayHandler.delete_gateway(gateway_id=fake_gateway.pk)
+
+        assert not SkillMetadata.objects.filter(id__in=[published.id, archived.id]).exists()
+        assert not SkillVersion.objects.filter(metadata_id__in=[published.id, archived.id]).exists()
+        assert set(SkillMetadata.objects.values_list("id", flat=True)) == {other.id, platform.id}
 
     def test_delete_gateway_revokes_member_authorizations(self, settings, mocker, fake_gateway):
         settings.BK_IAM_V4_ENABLED = True

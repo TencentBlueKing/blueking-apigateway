@@ -12,6 +12,8 @@ known_special_cases:
   - v2_open_get_gateway_public_key
   - v2_open_get_gateway_public_key_new
   - v2_open_oauth_protected_resource
+  - v2_open_download_skill
+  - v2_open_download_skill_version
 
 # 分页参数名称，DRF 分页器自动处理，不需要在 Serializer 中声明
 pagination_params:

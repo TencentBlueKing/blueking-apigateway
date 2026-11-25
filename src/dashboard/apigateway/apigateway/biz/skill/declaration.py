@@ -54,10 +54,7 @@ from apigateway.apps.skill.constants import (
 from apigateway.common.constants import GATEWAY_NAME_PATTERN
 from apigateway.core.constants import RESOURCE_NAME_PATTERN, STAGE_NAME_PATTERN
 
-from .constants import (
-    SKILL_NAME_PATTERN,
-    SKILL_STEP_NAME_PATTERN,
-)
+from .constants import SKILL_NAME_PATTERN
 from .refs import INPUT_NAME, parse_ref
 from .schema_converter import TYPE_NAMES, SchemaType
 
@@ -284,7 +281,7 @@ class SkillStep(_DeclarationModel):
 
         例如：合规 "list-tasks"；不合规 "List_Tasks"、"list--tasks"
         """
-        if not SKILL_STEP_NAME_PATTERN.fullmatch(value):
+        if not SKILL_NAME_PATTERN.fullmatch(value):
             raise ValueError(_("步骤 id 不合规：{value}").format(value=value))
         return value
 

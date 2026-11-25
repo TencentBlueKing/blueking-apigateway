@@ -153,3 +153,22 @@ def gateway_mcp_server_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_
         Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
         | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
     )
+
+
+def skill_filter_by_user_tenant_id(queryset: QuerySet, user_tenant_id: str) -> QuerySet:
+    """按用户租户 ID 过滤 SkillMetadata QuerySet
+
+    内置 Skill 没有所属网关，所有人可见；网关 Skill 只保留全租户网关 + 本租户网关下的。
+
+    Args:
+        queryset (QuerySet): skill_metadata queryset
+        user_tenant_id (str): user tenant id
+
+    Returns:
+        QuerySet: filtered queryset
+    """
+    return queryset.filter(
+        Q(gateway__isnull=True)
+        | Q(gateway__tenant_mode=TenantModeEnum.GLOBAL.value)
+        | Q(gateway__tenant_mode=TenantModeEnum.SINGLE.value, gateway__tenant_id=user_tenant_id)
+    )

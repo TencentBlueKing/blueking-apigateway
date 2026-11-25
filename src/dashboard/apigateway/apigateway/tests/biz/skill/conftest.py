@@ -15,15 +15,21 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+import copy
+import io
 import json
+import zipfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import pytest
 import yaml
 from ddf import G
 
 from apigateway.apps.openapi.models import OpenAPIResourceSchemaVersion
+from apigateway.apps.skill.constants import SkillTypeEnum
+from apigateway.biz.skill.declaration import parse_declaration
+from apigateway.biz.skill.writer import save_skill_version
 from apigateway.core.constants import GatewayStatusEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, ReleasedResource, ResourceVersion, Stage
 from apigateway.tests.biz.skill.static_provider import (
@@ -31,6 +37,9 @@ from apigateway.tests.biz.skill.static_provider import (
     fixture_resource_schema,
     released_resource_payload,
 )
+
+if TYPE_CHECKING:
+    from apigateway.apps.skill.models import SkillMetadata
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 DECLARATIONS_DIR = FIXTURES_DIR / "declarations"
@@ -46,6 +55,56 @@ def set_version(data: dict, version: str) -> dict:
     """改 version，changelog 换成这个版本的说明"""
     data["version"] = version
     data["changelog"] = {"date": "2026-11-12", "content": f"发布 {version}"}
+    return data
+
+
+def create_skill(
+    name: str,
+    gateway: Optional[Gateway] = None,
+    version: str = "1.0.0",
+    operator: str = "admin",
+    body: Optional[str] = None,
+    **fields,
+) -> SkillMetadata:
+    """用 golden 声明写一条 Skill：gateway 为空时是内置 Skill，否则是该网关的网关 Skill；fields 覆盖声明字段"""
+    data = set_version(load_declaration_data("job-plan-run-and-log"), version)
+    data.update(name=name, **fields)
+    declaration = parse_declaration(data)
+    skill_type = SkillTypeEnum.GATEWAY.value if gateway else SkillTypeEnum.PLATFORM.value
+    body = body if body is not None else f"# {declaration.display_name}\n\n正文\n"
+    return save_skill_version(declaration, body, skill_type=skill_type, gateway=gateway, operator=operator).metadata
+
+
+def build_skill_zip(
+    data: dict,
+    root: Optional[str] = None,
+    declaration_text: Optional[str] = None,
+    extra_files: Optional[Dict[str, Union[str, bytes]]] = None,
+    exclude: Tuple[str, ...] = (),
+) -> io.BytesIO:
+    """按声明 data 打一个上传包：默认只有 declaration.yaml，extra_files 加其他文件；root 默认为声明的 name"""
+    root = root or data["name"]
+    files: Dict[str, Union[str, bytes]] = {
+        "declaration.yaml": declaration_text
+        if declaration_text is not None
+        else yaml.safe_dump(data, allow_unicode=True, sort_keys=False),
+    }
+    files.update(extra_files or {})
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for path, content in files.items():
+            if path in exclude:
+                continue
+            archive.writestr(f"{root}/{path}", content)
+    buffer.seek(0)
+    return buffer
+
+
+def gateway_skill_data(job_plan_data: dict, gateway_name: str = "jobv3-cloud") -> dict:
+    """把 golden 声明改成网关 gateway_name 的网关 Skill：步骤都调用该网关"""
+    data = set_version(copy.deepcopy(job_plan_data), "1.0.0")
+    for step in data["orchestration"]["steps"]:
+        step["uses"] = step["uses"].replace("jobv3-cloud/", f"{gateway_name}/", 1)
     return data
 
 

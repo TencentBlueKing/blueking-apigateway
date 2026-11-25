@@ -29,11 +29,11 @@ class SkillTypeEnum(StructuredEnum):
 
 
 class SkillStatusEnum(StructuredEnum):
-    """Skill 状态"""
+    """Skill 状态；unpublished 只作模型默认值，写库流程在同一事务里改为 published"""
 
     UNPUBLISHED = EnumField("unpublished", label=_("未发布"))
-    PUBLISHED = EnumField("published", label=_("已发布"))
-    OFFLINE = EnumField("offline", label=_("已下架"))
+    PUBLISHED = EnumField("published", label=_("使用中"))
+    ARCHIVED = EnumField("archived", label=_("已归档"))
 
 
 SKILL_CODE_PREFIXES = {
