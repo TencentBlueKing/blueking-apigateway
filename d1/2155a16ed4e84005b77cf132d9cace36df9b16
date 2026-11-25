@@ -1,0 +1,66 @@
+src/dashboard/apigateway/apigateway/biz/skill/skill.py
+  s_06f475e1de22e8::t_29e0ab712094b7 190-191,193,196-207
+  s_06f475e1de22e8::t_8e11d610a6b340 230,234
+src/dashboard/apigateway/apigateway/apis/web/skill/serializers.py
+  s_f34d6d56bd1161::t_9118c3d771ca4d 18,23-33
+  s_f34d6d56bd1161::t_4a1849e7010936 122,124-127,131,133,135,142-143,148-150,152-157,160
+  s_f34d6d56bd1161::t_c728df3d88a8dd 123
+src/dashboard/apigateway/apigateway/biz/skill/declaration.py
+  s_f34d6d56bd1161::t_fc8ce972cfd1b8 174-218,223-225
+  s_f34d6d56bd1161::t_db43c31924ebcc 488-491
+src/dashboard/apigateway/apigateway/tests/apis/web/skill/test_serializers.py
+  s_f34d6d56bd1161::t_38935764d5242a 1-66
+src/dashboard/apigateway/apigateway/apis/web/skill_marketplace/views.py
+  s_f34d6d56bd1161::t_65f601b1376ee4 161
+  s_f34d6d56bd1161::t_f310c1d6a44b1a 182
+src/dashboard/apigateway/apigateway/biz/skill/package.py
+  s_f34d6d56bd1161::t_e77ee586472858 194-196,202
+  s_f34d6d56bd1161::t_230c76f77a6475 222,225-226,231
+  s_f34d6d56bd1161::t_5956f088afb799 240
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_package.py
+  s_f34d6d56bd1161::t_7c846a06d40e0a 269-271,273
+  s_f34d6d56bd1161::t_78a36b2c7d707f 174,179-180,184
+  s_f34d6d56bd1161::t_aff416eaac7065 247-248
+  s_f34d6d56bd1161::t_d4741444026306 122-123
+  s_f34d6d56bd1161::t_6f21e23845eb4b 262
+  s_f34d6d56bd1161::t_4a7d31e2a608a1 144
+  s_f34d6d56bd1161::t_da5faa5b94202c 257
+  s_f34d6d56bd1161::t_11c8063d439e1d 156
+src/dashboard/apigateway/apigateway/apis/v2/open/views.py
+  s_f34d6d56bd1161::t_0d1cdf2a78a899 1258
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_declaration.py
+  s_f34d6d56bd1161::t_034de557f0d0d7 100
+src/dashboard/apigateway/apigateway/apis/web/skill/views.py
+  s_f34d6d56bd1161::t_3db83ddd1102f7 458
+  s_f34d6d56bd1161::t_86fd93f38b4ed5 145
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_manager.py
+  s_f34d6d56bd1161::t_d11bf9cc9d3a90 76
+src/dashboard/apigateway/apigateway/biz/skill/__init__.py
+  s_f34d6d56bd1161::t_1b51e2f28aa014 29
+  s_f34d6d56bd1161::t_09de0ba745ad51 53-54,56
+  s_f34d6d56bd1161::t_7ef26cb4e5b7ca 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d12155a16ed4e84005b77cf132d9cace36df9b16",
+  "prompts": {},
+  "sessions": {
+    "s_06f475e1de22e8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ee97dd82-f7b9-43a1-895c-434a7ca86d49",
+        "model": "grok-4.7"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    },
+    "s_f34d6d56bd1161": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1f96be0a-bebc-468e-99ec-5c24969b5bf8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
