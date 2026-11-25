@@ -453,4 +453,33 @@ describe('AgTable 行选择、跨页多选与视图数据隔离', () => {
     await waitUntil(() => selectedKeys.value.length === 1 && selectedKeys.value[0] === 1, fixture.errors);
     expect(fixture.errors).toEqual([]);
   });
+
+  it('开启 show-selection 时表头全选复选框在表头单元格内垂直居中（含表单行高环境）', async () => {
+    const fixture = track(mountIsolated(() => h('div', { class: 'bk-form-content' }, [
+      h(AgTable, {
+        tableData: FIXTURE_ROWS,
+        localPage: true,
+        showSelection: true,
+        showSettings: true,
+        columns: createDefaultColumns(),
+      }),
+    ])));
+
+    const headerCell = () => fixture.container.querySelector<HTMLElement>('thead th.t-table__th-row-select');
+    const checkboxInput = () =>
+      fixture.container.querySelector<HTMLElement>('thead th.t-table__th-row-select .bk-checkbox-input');
+
+    await waitUntil(() => {
+      const th = headerCell();
+      const box = checkboxInput();
+      return Boolean(th && box && th.getBoundingClientRect().height > 0 && box.getBoundingClientRect().height > 0);
+    }, fixture.errors);
+
+    const thRect = headerCell()!.getBoundingClientRect();
+    const boxRect = checkboxInput()!.getBoundingClientRect();
+    const topGap = boxRect.top - thRect.top;
+    const bottomGap = thRect.bottom - boxRect.bottom;
+    expect(Math.abs(topGap - bottomGap)).toBeLessThanOrEqual(1.5);
+    expect(fixture.errors).toEqual([]);
+  });
 });

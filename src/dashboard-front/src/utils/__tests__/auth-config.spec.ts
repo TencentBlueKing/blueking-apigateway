@@ -25,11 +25,13 @@ import {
   canConfigureResourcePerm,
   getAuthKind,
   getAuthTypeLabel,
+  getResourceAuthFilterOptions,
   getUserAuthMethodLabels,
   getUserAuthMethods,
   getUserAuthMethodsLabel,
   isAuthConfigEmpty,
   normalizeAuthConfig,
+  parseAuthTypeQuery,
   parseResourceAuthConfig,
 } from '@/utils/auth-config';
 
@@ -214,6 +216,48 @@ describe('utils/auth-config', () => {
         app_verified_required: true,
         resource_perm_required: false,
       })).toBe(false);
+    });
+  });
+
+  describe('getResourceAuthFilterOptions & parseAuthTypeQuery', () => {
+    it('按约定顺序返回 5 项认证方式筛选选项及区分认证大类的文案', () => {
+      expect(getResourceAuthFilterOptions(t)).toEqual([
+        {
+          id: 'app',
+          name: '应用认证',
+        },
+        {
+          id: 'personal',
+          name: '用户认证-个人令牌',
+        },
+        {
+          id: 'public',
+          name: '用户认证-公开客户端',
+        },
+        {
+          id: 'oauth',
+          name: '用户认证-OAuth 授权',
+        },
+        {
+          id: 'none',
+          name: '不认证',
+        },
+      ]);
+    });
+
+    it('解析字符串与数组形式的 auth_type 参数，自动去重、去空白并过滤非法值', () => {
+      expect(parseAuthTypeQuery('personal,public')).toEqual(['personal', 'public']);
+      expect(parseAuthTypeQuery(' oauth , app , invalid , oauth , , none ')).toEqual(['oauth', 'app', 'none']);
+      expect(parseAuthTypeQuery(['personal,public', 'public', 'unknown', 'app'])).toEqual([
+        'personal',
+        'public',
+        'app',
+      ]);
+      expect(parseAuthTypeQuery('')).toEqual([]);
+      expect(parseAuthTypeQuery('invalid,foo')).toEqual([]);
+      expect(parseAuthTypeQuery(null)).toEqual([]);
+      expect(parseAuthTypeQuery(undefined)).toEqual([]);
+      expect(parseAuthTypeQuery(123)).toEqual([]);
     });
   });
 });
