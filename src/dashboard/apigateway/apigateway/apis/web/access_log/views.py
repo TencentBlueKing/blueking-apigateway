@@ -186,6 +186,9 @@ class LogExportApi(generics.RetrieveAPIView):
         if not stage_name:
             raise Http404
 
+        # 提前解析时间范围，确保查询与导出文件名使用相同的时间边界。
+        # LogSearchClient 底层也使用 SmartTimeRange，当前存在重复的时间范围处理。
+        # TODO: 后续重构需统一收归时间范围处理逻辑。
         time_start, time_end = SmartTimeRange(
             time_start=data.get("time_start"),
             time_end=data.get("time_end"),
