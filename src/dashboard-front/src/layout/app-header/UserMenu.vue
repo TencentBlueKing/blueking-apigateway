@@ -16,41 +16,6 @@
 * to the current version of the project delivered to anyone in the future.
 */
 
-<script setup lang="ts">
-import { CollapseLeft } from 'bkui-vue/lib/icon';
-import { getLoginURL } from '@/utils';
-import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
-
-import BkLoginUserinfo, { ActionItem } from '@blueking/login-userinfo';
-import '@blueking/login-userinfo/vue3/vue3.css';
-
-const { t } = useI18n();
-const userInfoStore = useUserInfo();
-const envStore = useEnv();
-const featureFlagStore = useFeatureFlag();
-
-const userinfo = computed(() => ({
-  name: userInfoStore?.info?.display_name || userInfoStore?.info?.username,
-  email: '',
-  organization: userInfoStore.info.tenant_id ? userInfoStore.info.tenant_id : undefined,
-  timezone: userInfoStore.info.time_zone,
-}));
-
-const handleBkUserClick = () => {
-  window.open(envStore.env.BK_USER_PERSONAL_CENTER_LINK);
-};
-
-const handleLogout = () => {
-  // 处理配置配置了子路径时的情况
-  const currentPath = (!window.BK_SITE_PATH || window.BK_SITE_PATH === '/')
-    ? location.origin
-    : `${location.origin}${window.BK_SITE_PATH.startsWith('/')
-      ? window.BK_SITE_PATH
-      : `/${window.BK_SITE_PATH}`}`;
-  location.href = getLoginURL(envStore.env.BK_LOGIN_URL, currentPath, 'small');
-};
-</script>
-
 <template>
   <div>
     <BkLoginUserinfo :userinfo="userinfo">
@@ -86,3 +51,38 @@ const handleLogout = () => {
     </BkLoginUserinfo>
   </div>
 </template>
+
+<script setup lang="ts">
+import { CollapseLeft } from 'bkui-vue/lib/icon';
+import { getLoginURL } from '@/utils';
+import { useEnv, useFeatureFlag, useUserInfo } from '@/stores';
+
+import BkLoginUserinfo, { ActionItem } from '@blueking/login-userinfo';
+import '@blueking/login-userinfo/vue3/vue3.css';
+
+const { t } = useI18n();
+const userInfoStore = useUserInfo();
+const envStore = useEnv();
+const featureFlagStore = useFeatureFlag();
+
+const userinfo = computed(() => ({
+  name: userInfoStore?.info?.display_name || userInfoStore?.info?.username,
+  email: '',
+  organization: userInfoStore.info.tenant_id ? userInfoStore.info.tenant_id : undefined,
+  timezone: userInfoStore.info.time_zone,
+}));
+
+const handleBkUserClick = () => {
+  window.open(envStore.env.BK_USER_PERSONAL_CENTER_LINK);
+};
+
+const handleLogout = () => {
+  // 处理配置配置了子路径时的情况
+  const currentPath = (!window.BK_SITE_PATH || window.BK_SITE_PATH === '/')
+    ? location.origin
+    : `${location.origin}${window.BK_SITE_PATH.startsWith('/')
+      ? window.BK_SITE_PATH
+      : `/${window.BK_SITE_PATH}`}`;
+  location.href = getLoginURL(envStore.env.BK_LOGIN_URL, currentPath, 'small');
+};
+</script>

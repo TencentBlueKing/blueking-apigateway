@@ -1,0 +1,37 @@
+spec_version: 2
+
+release:
+  version: 1.0.0
+  title: "oauth2 app channel for testing"
+  comment: ""
+
+apigateway:
+  description: "oauth2 app channel enabled"
+  description_en: "oauth2 app channel enabled"
+  is_public: true
+  allow_auth_from_params: true
+  oauth2_app_enabled: true
+  maintainers:
+    - "admin"
+
+stages:
+  - name: "prod"
+    description: "描述"
+    description_en: "English description"
+    backends:
+      - name: "default"
+        config:
+          timeout: 60
+          loadbalance: "roundrobin"
+          hosts:
+            - host: "http://httpbin"
+              weight: 100
+
+grant_permissions:
+  - bk_app_code: "bk_apigateway"
+    grant_dimension: "gateway"
+  - bk_app_code: "bk_apigw_test"
+    grant_dimension: "gateway"
+
+related_apps:
+  - "bk_apigateway"

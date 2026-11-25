@@ -36,6 +36,7 @@
             class="gateway-select"
             filterable
             :clearable="false"
+            :scroll-height="408"
             :search-placeholder="t('请搜索网关')"
             :popover-options="{
               extCls: 'gateway-select-popover',

@@ -86,6 +86,7 @@
     "eslint-plugin-vue": "^10.12.1",
     "happy-dom": "^21.0.4",
     "jiti": "^2.7.0",
+    "less": "^4.9.1",
     "lint-staged": "^17.6.0",
     "npm-run-all2": "^9.0.4",
     "oxlint": "^1.93.0",

@@ -187,43 +187,12 @@
       theme="warning"
       :title="t('网关不校验调用方身份，请确认接口可以完全公开。')"
     />
-
-    <BkDialog
-      v-if="hasSavedAuthorization"
-      :is-show="!!pendingOAuthRemoval"
-      :width="480"
-      class="oauth-removal-dialog"
-      dialog-type="operation"
-      header-align="center"
-      footer-align="center"
-      confirm-button-theme="danger"
-      :confirm-text="t('确定取消')"
-      :cancel-text="t('取消')"
-      :quick-close="false"
-      esc-close
-      @confirm="finishOAuthRemoval(true)"
-      @closed="finishOAuthRemoval(false)"
-    >
-      <template #header>
-        <div class="oauth-confirm-header">
-          <AgIcon
-            name="exclamation-circle-fill"
-            size="40"
-            color="#ff9c01"
-          />
-          <span>{{ t('确定取消 OAuth 授权？') }}</span>
-        </div>
-      </template>
-      <div class="oauth-confirm-content">
-        <p>{{ t('取消 OAuth 授权后，网关不再校验应用 ID、应用密钥。') }}</p>
-        <p>{{ t('已按应用配置的频率限制、权限校验都会失效。') }}</p>
-      </div>
-    </BkDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { createReusableTemplate } from '@vueuse/core';
+import { usePopInfoBox } from '@/hooks';
 import { useEnv } from '@/stores';
 import type { IResourceAuthFormConfig } from '@/types/resource';
 import {
@@ -320,20 +289,34 @@ watch(userAuthMethods, (methods) => {
   }
 }, { immediate: true });
 
+const finishOAuthRemoval = (confirmed: boolean) => {
+  const resolve = pendingOAuthRemoval.value;
+  pendingOAuthRemoval.value = undefined;
+  resolve?.(confirmed);
+};
+
 // 只有直接取消已保存的 OAuth 授权才需要确认。
 const beforeOAuthChange = (checked: boolean | string | number) => {
   if (checked || !hasSavedAuthorization) return true;
   return new Promise<boolean>((resolve) => {
+    finishOAuthRemoval(false);
     pendingOAuthRemoval.value = resolve;
+    usePopInfoBox({
+      isShow: true,
+      type: 'warning',
+      title: t('确定取消 OAuth 授权？'),
+      subTitle: () => h('div', [
+        h('div', t('取消 OAuth 授权后，网关不再校验应用 ID、应用密钥。')),
+        h('div', { class: 'mt-8px' }, t('已按应用配置的频率限制、权限校验都会失效。')),
+      ]),
+      confirmText: t('确定取消'),
+      cancelText: t('取消'),
+      confirmButtonTheme: 'danger',
+      onConfirm: () => finishOAuthRemoval(true),
+      onCancel: () => finishOAuthRemoval(false),
+    });
   });
 };
-
-const finishOAuthRemoval = (confirmed: boolean) => {
-  pendingOAuthRemoval.value?.(confirmed);
-  pendingOAuthRemoval.value = undefined;
-};
-
-onBeforeUnmount(() => finishOAuthRemoval(false));
 
 const handleSelectKind = (kind: AuthKind) => {
   selectedAuthKind.value = kind;
@@ -362,51 +345,11 @@ const handleViewPermGuide = () => {
   });
   window.open(href, '_blank');
 };
+
+onBeforeUnmount(() => finishOAuthRemoval(false));
 </script>
 
 <style lang="scss" scoped>
-.oauth-removal-dialog {
-
-  :deep(.bk-dialog-footer) {
-    padding: 0 24px 24px;
-    background: #fff;
-    border-top: 0;
-
-    .bk-button {
-      min-width: 88px;
-    }
-  }
-}
-
-.oauth-confirm-header {
-  display: grid;
-  gap: 24px;
-  justify-items: center;
-  padding-top: 8px;
-  font-size: 20px;
-  line-height: 32px;
-
-  .apigateway-icon {
-    line-height: 42px;
-  }
-}
-
-.oauth-confirm-content {
-  padding: 12px 16px;
-  margin: 0 8px;
-  font-size: 14px;
-  line-height: 22px;
-  background: #f5f6fa;
-
-  p {
-    margin: 0;
-  }
-
-  p + p {
-    margin-top: 8px;
-  }
-}
-
 .resource-auth-selector {
   display: flex;
   flex-direction: column;

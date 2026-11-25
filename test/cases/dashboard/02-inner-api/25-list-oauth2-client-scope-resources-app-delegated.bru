@@ -1,0 +1,48 @@
+meta {
+  name: v2-inner-list-oauth2-client-scope-resources-app-delegated
+  type: http
+  seq: 25
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/oauth2/client-scopes/resources/?oauth_client_type=app_delegated&gateway_name=oauth2-app&limit=100
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.results: isArray
+}
+
+tests {
+  // gateway_name matches by substring, so both oauth2-app and oauth2-app-off are in range
+  function findGateway(gatewayName) {
+    return res.getBody().data.results.find(function(item) { return item.name === gatewayName; });
+  }
+
+  function resourceNames(gatewayName) {
+    var gateway = findGateway(gatewayName);
+    expect(gateway, "gateway " + gatewayName + " is listed").to.exist;
+    return gateway.resources.map(function(item) { return item.name; });
+  }
+
+  test("user and app verified resources are listed", function() {
+    expect(resourceNames("oauth2-app")).to.include.members(["ua_p1", "ua_personal"]);
+  });
+
+  test("app-only, user-only, bk-access-token-source and no-auth resources are not listed", function() {
+    var names = resourceNames("oauth2-app");
+    ["app_p1", "u_personal", "ats_apikey", "ats_bearer", "none"].forEach(function(name) {
+      expect(names).to.not.include(name);
+    });
+  });
+
+  test("a gateway with the app channel switched off is not listed", function() {
+    expect(findGateway("oauth2-app-off")).to.be.undefined;
+  });
+}

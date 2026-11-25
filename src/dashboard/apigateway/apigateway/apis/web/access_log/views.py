@@ -43,6 +43,7 @@ from apigateway.biz.access_log import (
 )
 from apigateway.common.signature import SignatureGenerator, SignatureValidator
 from apigateway.core.models import Stage
+from apigateway.utils.csv import sanitize_csv_cell
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
@@ -218,7 +219,7 @@ class LogExportApi(generics.RetrieveAPIView):
         formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
 
         output = StringIO()
-        writer = csv.writer(output)
+        writer = csv.writer(output, quoting=csv.QUOTE_NONNUMERIC)
 
         # 写入CSV头部
         writer.writerow(field_dict["field"] for field_dict in ES_LOG_FIELDS)
@@ -227,7 +228,7 @@ class LogExportApi(generics.RetrieveAPIView):
                 [
                     json.dumps(log.get(field_dict["field"]), ensure_ascii=False)
                     if isinstance(log.get(field_dict["field"]), dict)
-                    else log.get(field_dict["field"])
+                    else sanitize_csv_cell(log.get(field_dict["field"]))
                     for field_dict in ES_LOG_FIELDS
                 ]
             )
