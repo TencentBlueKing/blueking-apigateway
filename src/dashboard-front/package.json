@@ -17,10 +17,10 @@
     "test:browser": "vitest run --project browser",
     "test:browser:watch": "vitest --project browser",
     "test:ag-table": "vitest run --project browser src/components/base/ag-table",
-    "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
+    "lint:oxlint": "oxlint . --fix --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
     "lint:ci": "eslint . --max-warnings 0",
-    "lint:ci:oxlint": "oxlint . -D correctness --ignore-path .gitignore",
+    "lint:ci:oxlint": "oxlint . --ignore-path .gitignore",
     "lint": "run-s lint:*",
     "stylelint": "stylelint \"src/**/*.{vue,scss,css}\"",
     "stylelint:fix": "stylelint \"src/**/*.{vue,scss,css}\" --fix",
@@ -115,7 +115,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,vue}": [
-      "oxlint -D correctness --no-error-on-unmatched-pattern",
+      "oxlint --no-error-on-unmatched-pattern",
       "eslint --fix"
     ]
   },

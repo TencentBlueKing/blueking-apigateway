@@ -419,7 +419,7 @@ Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方
 
 ### Vue 规则
 
-> Oxlint（`.oxlintrc.json`）已启用 `vue` 插件负责 31 条 Vue 核心正确性规则（`no-side-effects-in-computed-properties`、`no-lifecycle-after-await`、`no-watch-after-await`、`no-expose-after-await`、`valid-define-props` 等），ESLint 通过 `pluginOxlint.buildFromOxlintConfigFile('./.oxlintrc.json')` 精准去重，避免两头落空；`lint:ci` 启用 `--max-warnings 0`。
+> Oxlint（`.oxlintrc.json`）已启用 `vue` 插件负责 Vue 核心 `correctness` 规则（`no-side-effects-in-computed-properties`、`no-lifecycle-after-await`、`no-watch-after-await`、`no-expose-after-await`、`valid-define-props` 等），ESLint 通过 `pluginOxlint.buildFromOxlintConfigFile('./.oxlintrc.json')` 精准去重，避免两头落空；`lint:ci` 启用 `--max-warnings 0`。
 
 | 规则           | 要求                                                                                                   |
 |--------------|------------------------------------------------------------------------------------------------------|

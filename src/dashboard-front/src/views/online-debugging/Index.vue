@@ -1218,27 +1218,28 @@ const handleDebuggingCacheData = (resource: any, save = true) => {
   // 将当前资源的调试数据保存
   if (save) {
     const payload = requestPayloadRef.value?.getData();
-    if (!payload) return;
-    const { headers } = payload;
-    const { path, query } = payload.params ?? {};
-    const { raw } = payload.body ?? {};
-    const payloadCache = {
-      headersPayload: headers,
-      queryPayload: query,
-      pathPayload: path,
-      rawPayload: raw,
-      priorityPath: [],
-      fromDataPayload: [],
-    };
-    // formData: formDataList, urlencoded,
+    if (payload) {
+      const { headers } = payload;
+      const { path, query } = payload.params ?? {};
+      const { raw } = payload.body ?? {};
+      const payloadCache = {
+        headersPayload: headers,
+        queryPayload: query,
+        pathPayload: path,
+        rawPayload: raw,
+        priorityPath: [],
+        fromDataPayload: [],
+      };
+      // formData: formDataList, urlencoded,
 
-    resourceDebuggingStore.setResourceSettings(
-      curResource.value?.name,
-      {
-        payloadType: payloadCache,
-        response: response.value,
-      },
-    );
+      resourceDebuggingStore.setResourceSettings(
+        curResource.value?.name,
+        {
+          payloadType: payloadCache,
+          response: response.value,
+        },
+      );
+    }
   }
   // 将切换资源的调试数据读取到当前界面
   curResource.value = resource;
