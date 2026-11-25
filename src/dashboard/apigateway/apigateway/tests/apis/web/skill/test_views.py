@@ -128,10 +128,15 @@ class TestSkillListCreateApi:
         assert _audit_comments(metadata.id) == [(OpTypeEnum.CREATE.value, "创建 Skill")]
 
     def test_upload_new_version_and_overwrite(self, upload, skill, data):
-        resp = upload(version="1.1.0")
+        resp = upload(version="1.1.0", display_name="新版本名称")
         assert resp.status_code == 201
         skill.refresh_from_db()
         assert skill.current_version.version == "1.1.0"
+        log = AuditEventLog.objects.filter(
+            op_object_type=OpObjectTypeEnum.SKILL.value, op_object_id=str(skill.id)
+        ).latest("id")
+        assert json.loads(log.data_before)["display_name"] == data["display_name"]
+        assert json.loads(log.data_after)["display_name"] == "新版本名称"
 
         resp = upload(version="1.0.0")
         assert resp.status_code == 409

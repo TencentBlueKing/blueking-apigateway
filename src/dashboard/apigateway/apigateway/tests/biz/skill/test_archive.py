@@ -67,6 +67,10 @@ class TestReadSkillPackage:
     def test_empty(self):
         assert _errors(_zip({})) == [(None, "压缩包是空的")]
 
+    def test_too_many_entries(self):
+        entries = _package(**{f"assets/{index}.txt": "" for index in range(1000)})
+        assert _errors(_zip(entries)) == [(None, "压缩包里的条目不能超过 1000 个")]
+
     def test_missing_declaration(self):
         errors = _errors(_zip(_package(**{"declaration.yaml": None, "SKILL.md": "# 标题\n"})))
         assert errors == [("demo/declaration.yaml", "缺少文件，网关按 declaration.yaml 校验并生成 SKILL.md")]

@@ -30,7 +30,6 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.skill import (
     SkillArchivedError,
     SkillHandler,
-    SkillNotArchivedError,
     SkillPackageInvalidError,
     SkillUploadForm,
     SkillVersionExistsError,
@@ -39,7 +38,6 @@ from apigateway.biz.skill import (
     build_skill_package_zip,
     check_skill_package,
     delete_skill,
-    ensure_not_archived,
     get_skill_package_filename,
     publish_gateway_skill,
     set_current_version,
@@ -82,11 +80,7 @@ class SkillQuerySetMixin(generics.GenericAPIView):
         return SkillHandler.get_gateway_skill(self.request.gateway, self.kwargs["skill_id"])
 
 
-def _archived_error(err: SkillArchivedError):
-    return error_codes.FAILED_PRECONDITION.format(str(err), replace=True)
-
-
-def _publish(request, data: Dict[str, Any], skill_name: Optional[str] = None, data_before: Optional[dict] = None):
+def _publish(request, data: Dict[str, Any], skill_name: Optional[str] = None):
     form = SkillUploadForm(
         display_name=data["display_name"],
         display_name_en=data["display_name_en"],
@@ -119,7 +113,7 @@ def _publish(request, data: Dict[str, Any], skill_name: Optional[str] = None, da
     except SkillVersionNotNewerError as err:
         raise error_codes.INVALID_ARGUMENT.format(str(err), replace=True)
     except SkillArchivedError as err:
-        raise _archived_error(err)
+        raise error_codes.FAILED_PRECONDITION.format(str(err), replace=True)
 
     if saved.created:
         op_type, comment = OpTypeEnum.CREATE, "创建 Skill"
@@ -131,7 +125,7 @@ def _publish(request, data: Dict[str, Any], skill_name: Optional[str] = None, da
         gateway_id=request.gateway.id,
         instance_id=saved.metadata.id,
         instance_name=saved.metadata.code,
-        data_before={} if saved.created else data_before,
+        data_before=saved.data_before,
         data_after=get_model_dict(saved.metadata),
         comment=comment,
     )
@@ -282,10 +276,7 @@ class SkillRetrieveUpdateDestroyApi(SkillQuerySetMixin, generics.RetrieveUpdateD
         slz.is_valid(raise_exception=True)
 
         data_before = get_model_dict(metadata)
-        try:
-            update_skill_basic_info(metadata, operator=request.user.username, **slz.validated_data)
-        except SkillArchivedError as err:
-            raise _archived_error(err)
+        update_skill_basic_info(metadata, operator=request.user.username, **slz.validated_data)
 
         Auditor.record_skill_op_success(
             op_type=OpTypeEnum.MODIFY,
@@ -303,10 +294,7 @@ class SkillRetrieveUpdateDestroyApi(SkillQuerySetMixin, generics.RetrieveUpdateD
         metadata = self.get_skill()
         data_before = get_model_dict(metadata)
         metadata_id, code = metadata.id, metadata.code
-        try:
-            delete_skill(metadata)
-        except SkillNotArchivedError as err:
-            raise error_codes.FAILED_PRECONDITION.format(str(err), replace=True)
+        delete_skill(metadata)
 
         Auditor.record_skill_op_success(
             op_type=OpTypeEnum.DELETE,
@@ -350,14 +338,9 @@ class SkillVersionListCreateApi(SkillQuerySetMixin, generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         metadata = self.get_skill()
-        try:
-            ensure_not_archived(metadata)
-        except SkillArchivedError as err:
-            raise _archived_error(err)
-
         slz = SkillPublishInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
-        return _publish(request, slz.validated_data, skill_name=metadata.name, data_before=get_model_dict(metadata))
+        return _publish(request, slz.validated_data, skill_name=metadata.name)
 
 
 @method_decorator(
@@ -379,10 +362,7 @@ class SkillCurrentVersionUpdateApi(SkillQuerySetMixin, generics.UpdateAPIView):
         version = SkillHandler.get_version(metadata, slz.validated_data["version"])
 
         data_before = get_model_dict(metadata)
-        try:
-            set_current_version(metadata, version, operator=request.user.username)
-        except SkillArchivedError as err:
-            raise _archived_error(err)
+        set_current_version(metadata, version, operator=request.user.username)
 
         Auditor.record_skill_op_success(
             op_type=OpTypeEnum.MODIFY,

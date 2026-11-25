@@ -117,6 +117,7 @@ class TestSaveSkillVersion:
 
         metadata = SkillMetadata.objects.get(id=saved.metadata.id)
         assert saved.created
+        assert saved.data_before == {}
         assert (metadata.type, metadata.gateway, metadata.name) == (
             SkillTypeEnum.PLATFORM.value,
             None,
@@ -159,6 +160,8 @@ class TestSaveSkillVersion:
 
         metadata = SkillMetadata.objects.get(id=first.metadata.id)
         assert not second.created
+        assert second.data_before["display_name"] == first.metadata.display_name
+        assert second.data_before["current_version"] == first.version.id
         assert second.metadata.id == first.metadata.id
         assert second.version.version == "1.1.0"
         assert second.version.changelog["version"] == "1.1.0"

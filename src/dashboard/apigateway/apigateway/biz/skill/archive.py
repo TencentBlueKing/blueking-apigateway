@@ -30,7 +30,7 @@ from typing import IO, Dict, List, Optional, Tuple
 
 from django.utils.translation import gettext as _
 
-from .constants import SKILL_DECLARATION_FILE_NAME, SKILL_PACKAGE_MAX_SIZE
+from .constants import SKILL_DECLARATION_FILE_NAME, SKILL_PACKAGE_MAX_ENTRIES, SKILL_PACKAGE_MAX_SIZE
 
 _WINDOWS_DRIVE_PATTERN = re.compile(r"^[A-Za-z]:")
 _MACOS_METADATA_DIR = "__MACOSX"
@@ -117,12 +117,18 @@ def read_skill_package(fileobj: IO[bytes]) -> SkillPackage:
 
 
 def _check_entries(infos: List[zipfile.ZipInfo]) -> List[ValidationMessage]:
-    """逐条检查路径和类型：不能是绝对路径、不能含 .. 或反斜杠、不能是符号链接；包不能为空
+    """逐条检查路径和类型：不能是绝对路径、不能含 .. 或反斜杠、不能是符号链接；包不能为空，条目数不超过 SKILL_PACKAGE_MAX_ENTRIES
 
     例如：合规 "release-check/declaration.yaml"；不合规 "/etc/passwd"、"release-check/../x"、"C:/x"、符号链接条目
     """
     if not infos:
         return [ValidationMessage(None, None, _("压缩包是空的"))]
+    if len(infos) > SKILL_PACKAGE_MAX_ENTRIES:
+        return [
+            ValidationMessage(
+                None, None, _("压缩包里的条目不能超过 {max_count} 个").format(max_count=SKILL_PACKAGE_MAX_ENTRIES)
+            )
+        ]
     errors = []
     for info in infos:
         name = info.filename

@@ -46,6 +46,8 @@ SKILL_BODY_TEMPLATE_NAME = "SKILL.md.j2"
 
 # 上传的 zip 包大小上限，单位字节
 SKILL_PACKAGE_MAX_SIZE = 2 * 1024 * 1024
+# 上传的 zip 包条目数上限，目录也算一条
+SKILL_PACKAGE_MAX_ENTRIES = 1000
 
 # 网关 Skill 管理页下载的包带 declaration.yaml，包名加这个后缀
 SKILL_DECLARATION_PACKAGE_SUFFIX = "-with-declaration"

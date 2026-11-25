@@ -17,14 +17,15 @@
 #
 """Skill 发版写库：内置 Skill 注入和网关 Skill 上传共用"""
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from django.db import transaction
 from django.utils.translation import gettext as _
 
 from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
+from apigateway.utils.django import get_model_dict
 
 from .constants import SKILL_FILE_NAME
 from .declaration import parse_version
@@ -109,6 +110,7 @@ class SavedSkillVersion:
     version: SkillVersion
     created: bool
     overwritten: bool = False
+    data_before: Dict[str, Any] = field(default_factory=dict)
 
 
 @transaction.atomic
@@ -126,10 +128,11 @@ def save_skill_version(
     调用方需保证同一来源的写入串行执行。能否写入、覆盖哪一版：内置 Skill 由 check_version 判断（只能覆盖当前版本），
     网关 Skill 由 check_gateway_version 判断（可以覆盖任意已有版本），已归档的网关 Skill 抛 SkillArchivedError。
     覆盖时更新那一版的 changelog、编排、正文和关联资源，不新增版本行，created_by、created_time 保持不变。
+    已有 metadata 时，返回值的 data_before 是加锁后、写入前的 metadata 字段。
 
     例如：
-        首次写入 1.0.0 -> created 为真，新建 metadata、编排、版本和关联资源
-        再写入 1.1.0 -> 新增版本行并设为当前版本，download_count 等统计不变
+        首次写入 1.0.0 -> created 为真，新建 metadata、编排、版本和关联资源，data_before 为空
+        再写入 1.1.0 -> 新增版本行并设为当前版本，download_count 等统计不变，data_before 是 1.0.0 时的 metadata
         overwrite_existing 为真时再写入 1.1.0 -> 版本行和 created_time 不变
     """
     # 锁住 metadata 行，同一 Skill 的写入在这里串行，版本规则的结论在事务内不会变
@@ -139,6 +142,7 @@ def save_skill_version(
         .first()
     )
     created = metadata is None
+    data_before = {} if metadata is None else get_model_dict(metadata)
     existing_version: Optional[SkillVersion] = None
     if metadata is None:
         metadata = SkillMetadata(type=skill_type, gateway=gateway, name=declaration.name, created_by=operator)
@@ -193,7 +197,11 @@ def save_skill_version(
     metadata.status = SkillStatusEnum.PUBLISHED.value
     metadata.save(update_fields=["current_version", "status", "updated_time"])
     return SavedSkillVersion(
-        metadata=metadata, version=version, created=created, overwritten=existing_version is not None
+        metadata=metadata,
+        version=version,
+        created=created,
+        overwritten=existing_version is not None,
+        data_before=data_before,
     )
 
 

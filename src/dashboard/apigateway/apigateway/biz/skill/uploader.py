@@ -19,6 +19,9 @@
 
 校验按顺序执行，前一步有 error 就停止：包结构和大小 -> 叠加表单值 -> 声明字段 -> 网关规则 -> 资源读取
 -> 完整校验 -> 渲染 -> 入库大小 -> 版本号。版本号只在提交时、前面都没有 error 时检查。
+两者的校验输入不同：预检没有表单，按包里的声明原样校验，包里的基本信息（display_name、display_name_en、
+description、tags、version）不合规也是 error；提交时这些字段取表单值、覆盖包里的值后再校验，包里的原值不再校验。
+name、changelog、orchestration 始终取包里的声明。
 声明是来源：包里只导入 declaration.yaml，入库的正文是网关按声明和本网关当前发布的资源渲染的结果；
 包里的 SKILL.md、references/ 等其他文件不读取，给一条 warning 列出。
 """
@@ -47,6 +50,8 @@ if TYPE_CHECKING:
 
 # 「字段路径: 说明」或「字段路径：说明」，字段路径不含空白
 _FIELD_MESSAGE_PATTERN = re.compile(r"^([^\s:：]+)(?:: |：)(.+)$", re.S)
+# 不导入的文件在 warning 里最多列出的个数，其余只给总数
+_IGNORED_FILES_DISPLAY_LIMIT = 10
 
 
 class SkillPackageInvalidError(Exception):
@@ -152,7 +157,7 @@ def check_skill_package(
 ) -> SkillPackageCheckResult:
     """上传预检：只校验、不写库；skill_name 为更新侧滑的 Skill 的 name，包里的 name 和它不一致时报 error
 
-    不检查版本号，只在 existing_skill 里返回已有的最高版本，供页面提示。
+    不叠加表单值，包里的基本信息也须合法；不检查版本号，只在 existing_skill 里返回已有的最高版本，供页面提示。
 
     例如：包里是 1.2.0、本网关已有这个 Skill、线上 1.1.0 -> errors 为空，
         existing_skill 为 {"skill_id": "g_demo_release-check", "current_version": "1.1.0", ...}
@@ -192,6 +197,7 @@ def publish_gateway_skill(
 ) -> SavedSkillVersion:
     """上传或发布新版本：校验通过后写库并设为线上版本；本网关没有包里的 name 就新建
 
+    基本信息和版本号取表单，包里的原值不校验；changelog 只取包里声明的 date、content。
     包有 error 时抛 SkillPackageInvalidError，不检查版本号；版本号在写库时、锁住这条 Skill 后判断，
     已存在且没带 overwrite 抛 SkillVersionExistsError，不大于最高版本抛 SkillVersionNotNewerError，
     同名 Skill 已归档抛 SkillArchivedError。
@@ -270,8 +276,8 @@ def _load_package(
 ) -> Optional[Tuple[SkillPackage, Dict[str, Any]]]:
     """读包、解析声明 YAML，并检查目录名；有 error 时写进 result 并返回 None
 
-    包里有不导入的文件时加一条 warning；包里的声明能单独通过字段校验时写入 result.package_declaration，
-    供预检返回包信息。
+    包里有不导入的文件时加一条 warning，最多列出 _IGNORED_FILES_DISPLAY_LIMIT 个；
+    包里的声明能单独通过字段校验时写入 result.package_declaration，供预检返回包信息。
 
     例如：合规的包 -> (包, 声明 dict)；目录名与声明的 name 不同 -> None，带一条 error；
     包里另有 SKILL.md -> 多一条 warning「只导入 declaration.yaml，以下文件不导入：release-check/SKILL.md」
@@ -284,14 +290,11 @@ def _load_package(
     result.package = package
     declaration_file = package.path_of(SKILL_DECLARATION_FILE_NAME)
     if package.ignored:
+        files = "、".join(package.path_of(path) for path in package.ignored[:_IGNORED_FILES_DISPLAY_LIMIT])
+        if len(package.ignored) > _IGNORED_FILES_DISPLAY_LIMIT:
+            files = _("{files} 等 {count} 个文件").format(files=files, count=len(package.ignored))
         result.warnings.append(
-            ValidationMessage(
-                None,
-                None,
-                _("只导入 declaration.yaml，以下文件不导入：{files}").format(
-                    files="、".join(package.path_of(path) for path in package.ignored)
-                ),
-            )
+            ValidationMessage(None, None, _("只导入 declaration.yaml，以下文件不导入：{files}").format(files=files))
         )
 
     try:

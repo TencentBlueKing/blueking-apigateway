@@ -48,6 +48,7 @@ from apigateway.apps.skill.constants import (
     SKILL_DISPLAY_NAME_MAX_LENGTH,
     SKILL_NAME_MAX_LENGTH,
     SKILL_TAG_NAME_MAX_LENGTH,
+    SKILL_TAGS_MAX_COUNT,
     SKILL_VERSION_MAX_LENGTH,
     SKILL_VERSION_PATTERN,
 )
@@ -198,12 +199,14 @@ def check_skill_description(value: str) -> str:
 
 
 def check_skill_tags(value: List[str]) -> List[str]:
-    """至少一个标签；规范化（去首尾空白、转小写）后长度不超限、不重复；声明和基本信息表单共用
+    """1 到 SKILL_TAGS_MAX_COUNT 个标签；规范化（去首尾空白、转小写）后长度不超限、不重复；声明和基本信息表单共用
 
-    例如：合规 ["job", "写操作"]；不合规 []、["JOB", " job "]（规范化后重复）
+    例如：合规 ["job", "写操作"]；不合规 []、11 个标签、["JOB", " job "]（规范化后重复）
     """
     if not value:
         raise ValueError(_("至少需要一个标签"))
+    if len(value) > SKILL_TAGS_MAX_COUNT:
+        raise ValueError(_("标签不能超过 {max_count} 个").format(max_count=SKILL_TAGS_MAX_COUNT))
     normalized = [normalize_tag_name(tag) for tag in value]
     for tag, name in zip(value, normalized):
         if not 1 <= len(name) <= SKILL_TAG_NAME_MAX_LENGTH:

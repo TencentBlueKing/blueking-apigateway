@@ -28,22 +28,21 @@ from django.utils.translation import gettext as _
 
 from apigateway.apps.skill.constants import SkillStatusEnum
 from apigateway.apps.skill.models import SkillMetadata, SkillVersion
+from apigateway.common.error_codes import error_codes
 
 from .declaration import normalize_tag_name
-from .writer import SkillArchivedError, get_or_create_tags
+from .writer import get_or_create_tags
 
 
-class SkillNotArchivedError(Exception):
-    pass
+def _ensure_not_archived(metadata: SkillMetadata) -> None:
+    """已归档时抛 FAILED_PRECONDITION：已归档的 Skill 不能改基本信息、切换版本
 
-
-def ensure_not_archived(metadata: SkillMetadata) -> None:
-    """已归档时抛 SkillArchivedError：已归档的 Skill 不能改基本信息、发布新版本、切换版本
-
-    例如：status 为 published -> 通过；status 为 archived -> SkillArchivedError「请先恢复」
+    例如：status 为 published -> 通过；status 为 archived -> FAILED_PRECONDITION「请先恢复」
     """
     if metadata.status == SkillStatusEnum.ARCHIVED.value:
-        raise SkillArchivedError(_("Skill {name} 已归档，请先恢复").format(name=metadata.name))
+        raise error_codes.FAILED_PRECONDITION.format(
+            _("Skill {name} 已归档，请先恢复").format(name=metadata.name), replace=True
+        )
 
 
 @transaction.atomic
@@ -60,7 +59,7 @@ def update_skill_basic_info(
     例如：把 display_name 改成「发布核对」 -> 下载包 frontmatter 的 display_name 和正文一级标题都变成「发布核对」，
         版本数和 download_count 不变
     """
-    ensure_not_archived(metadata)
+    _ensure_not_archived(metadata)
     metadata.display_name = display_name
     metadata.display_name_en = display_name_en or None
     metadata.description = description
@@ -74,7 +73,7 @@ def set_current_version(metadata: SkillMetadata, version: SkillVersion, operator
 
     例如：线上 1.2.0 切回 1.1.0 -> 市场的「发布于」变成 1.1.0 的发布时间，Skill 的 updated_time 是这次
     """
-    ensure_not_archived(metadata)
+    _ensure_not_archived(metadata)
     metadata.current_version = version
     metadata.updated_by = operator
     metadata.save(update_fields=["current_version", "updated_by", "updated_time"])
@@ -92,13 +91,15 @@ def set_skill_status(metadata: SkillMetadata, status: str, operator: str) -> Non
 
 @transaction.atomic
 def delete_skill(metadata: SkillMetadata) -> None:
-    """删除已归档的 Skill，config、版本、relation、标签中间表级联删除，标签本身保留；未归档时抛 SkillNotArchivedError
+    """删除已归档的 Skill，config、版本、relation、标签中间表级联删除，标签本身保留；未归档时抛 FAILED_PRECONDITION
 
     current_version 是 PROTECT 外键，先清空再删 metadata，否则级联删除版本时被拦住。
 
-    例如：已归档、有 2 个版本 -> metadata 和 2 个版本都删除；使用中 -> SkillNotArchivedError「请先归档」
+    例如：已归档、有 2 个版本 -> metadata 和 2 个版本都删除；使用中 -> FAILED_PRECONDITION「请先归档」
     """
     if metadata.status != SkillStatusEnum.ARCHIVED.value:
-        raise SkillNotArchivedError(_("Skill {name} 未归档，请先归档再删除").format(name=metadata.name))
+        raise error_codes.FAILED_PRECONDITION.format(
+            _("Skill {name} 未归档，请先归档再删除").format(name=metadata.name), replace=True
+        )
     SkillMetadata.objects.filter(id=metadata.id).update(current_version=None)
     SkillMetadata.objects.filter(id=metadata.id).delete()

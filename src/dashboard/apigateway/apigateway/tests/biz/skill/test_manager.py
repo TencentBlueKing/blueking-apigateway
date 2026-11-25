@@ -28,15 +28,9 @@ from apigateway.apps.skill.models import (
     SkillVersion,
     SkillVersionRelation,
 )
-from apigateway.biz.skill.manager import (
-    SkillNotArchivedError,
-    delete_skill,
-    set_current_version,
-    set_skill_status,
-    update_skill_basic_info,
-)
+from apigateway.biz.skill.manager import delete_skill, set_current_version, set_skill_status, update_skill_basic_info
 from apigateway.biz.skill.package import build_skill_package_files
-from apigateway.biz.skill.writer import SkillArchivedError
+from apigateway.common.error_codes import APIError
 from apigateway.core.models import Gateway
 from apigateway.tests.biz.skill.conftest import create_skill
 
@@ -79,7 +73,7 @@ class TestUpdateSkillBasicInfo:
 
     def test_archived(self, metadata):
         metadata.status = SkillStatusEnum.ARCHIVED.value
-        with pytest.raises(SkillArchivedError):
+        with pytest.raises(APIError, match="FAILED_PRECONDITION"):
             update_skill_basic_info(metadata, "x", None, "x", ["x"], operator="bob")
 
 
@@ -98,7 +92,7 @@ class TestSetCurrentVersion:
 
     def test_archived(self, metadata):
         metadata.status = SkillStatusEnum.ARCHIVED.value
-        with pytest.raises(SkillArchivedError):
+        with pytest.raises(APIError, match="FAILED_PRECONDITION"):
             set_current_version(metadata, metadata.current_version, operator="bob")
 
 
@@ -116,7 +110,7 @@ class TestSetSkillStatus:
 
 class TestDeleteSkill:
     def test_not_archived(self, metadata):
-        with pytest.raises(SkillNotArchivedError):
+        with pytest.raises(APIError, match="FAILED_PRECONDITION"):
             delete_skill(metadata)
 
     def test_delete(self, metadata):

@@ -37,9 +37,6 @@ from .declaration import normalize_tag_name, parse_version, split_uses
 # 列表不读版本的大字段，只要版本号和发布时间
 _LIST_DEFERRED_FIELDS = ("current_version__artifact", "current_version__orchestration", "current_version__changelog")
 
-SKILL_DOWNLOAD_GATEWAY_NAME = "bk-apigateway"
-SKILL_DOWNLOAD_GATEWAY_STAGE = "prod"
-
 
 class SkillHandler:
     @staticmethod
@@ -332,15 +329,15 @@ class SkillHandler:
 
     @staticmethod
     def build_download_url(metadata: SkillMetadata) -> Optional[str]:
-        """线上版本的免登录下载地址（bk-apigateway 网关 prod 环境的开放接口）；不是使用中时为 None
+        """线上版本的免登录下载地址（bk-apigateway 网关 prod 环境的开放接口）；不是使用中、BK_API_URL_TMPL 没配时为 None
 
         例如：BK_API_URL_TMPL 为 "https://bkapi.example.com/api/{api_name}" ->
             "https://bkapi.example.com/api/bk-apigateway/prod/api/v2/open/skills/g_demo_release-check/download/"
         """
-        if metadata.status != SkillStatusEnum.PUBLISHED.value:
+        if metadata.status != SkillStatusEnum.PUBLISHED.value or not settings.BK_API_URL_TMPL:
             return None
-        base_url = settings.BK_API_URL_TMPL.format(api_name=SKILL_DOWNLOAD_GATEWAY_NAME)
-        return f"{base_url}/{SKILL_DOWNLOAD_GATEWAY_STAGE}/api/v2/open/skills/{metadata.code}/download/"
+        bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
+        return f"{bk_apigateway_url}/prod/api/v2/open/skills/{metadata.code}/download/"
 
     @staticmethod
     def increase_download_count(metadata_id: int) -> None:

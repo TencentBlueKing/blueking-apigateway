@@ -111,6 +111,7 @@ class TestTopLevelRules:
             ("tags", []),
             ("tags", ["JOB", " job "]),
             ("tags", ["x" * 65]),
+            ("tags", [f"tag-{index}" for index in range(11)]),
         ],
     )
     def test_invalid_field(self, job_plan_data, field, value):

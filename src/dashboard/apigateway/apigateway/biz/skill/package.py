@@ -32,6 +32,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from apigateway.apps.skill.constants import SkillTypeEnum
+from apigateway.biz.gateway import GatewayHandler
 
 from .constants import (
     PLATFORM_SKILL_AUTHOR,
@@ -119,14 +120,13 @@ def _load_reference_templates() -> Tuple[Tuple[str, str], ...]:
     return tuple(templates)
 
 
-def get_reference_placeholder_values() -> Dict[str, str]:
-    """references 占位符 -> 按当前部署环境的设置填充的值；设置项没配时填可读的默认文字
+def get_reference_placeholder_values(url_tmpl: str) -> Dict[str, str]:
+    """references 占位符 -> 按网关访问地址模板和当前部署环境的设置填充的值；模板或设置项没配时填可读的默认文字
 
-    例如：BK_API_URL_TMPL 为 "http://bkapi.example.com/api/{api_name}" ->
+    例如：url_tmpl 为 "http://bkapi.example.com/api/{api_name}" ->
         gateway_url_template: "http://bkapi.example.com/api/{gateway_name}/<stage><path>"
         example_url: "http://bkapi.example.com/api/bk-sops/prod/get_task_list/2/?limit=5"
     """
-    url_tmpl = settings.BK_API_URL_TMPL
     if url_tmpl:
         gateway_url_template = url_tmpl.replace("{api_name}", "{gateway_name}") + "/<stage><path>"
         example_url = f"{url_tmpl.replace('{api_name}', _EXAMPLE_GATEWAY)}/{_EXAMPLE_STAGE}{_EXAMPLE_PATH}"
@@ -142,12 +142,12 @@ def get_reference_placeholder_values() -> Dict[str, str]:
     }
 
 
-def load_references() -> List[Tuple[str, str]]:
-    """references 两个文件按部署环境填好占位符；模板原文缓存，填充每次都做，设置变化时跟着变
+def load_references(url_tmpl: str) -> List[Tuple[str, str]]:
+    """references 两个文件按网关访问地址模板和部署环境填好占位符；模板原文缓存，填充每次都做，设置变化时跟着变
 
     例如：-> [("references/how-to-call-apis.md", "...http://bkapi.example.com/api/{gateway_name}/..."), ...]
     """
-    values = get_reference_placeholder_values()
+    values = get_reference_placeholder_values(url_tmpl)
     references = []
     for path, template in _load_reference_templates():
         text = template
@@ -197,6 +197,7 @@ def build_skill_package_files(
 
     frontmatter 的名称、描述、展示名取 metadata 当前值，版本号、author、datetime 取打包的版本；
     正文取版本冻结的正文，一级标题换成 metadata 当前的 display_name。
+    references 的网关访问地址：网关 Skill 只调本网关，取网关绑定的数据面模板；内置 Skill 跨网关，取全局模板。
     with_declaration 为 True 时（网关 Skill 管理页）另带 declaration.yaml，见 render_declaration_yaml。
 
     例如：网关 Skill 版本 1.2.0、由 admin 发布 ->
@@ -216,7 +217,12 @@ def build_skill_package_files(
         published_at=version.created_time,
     )
     body = replace_title(version.artifact.get(SKILL_FILE_NAME, ""), metadata.display_name)
-    files = [(SKILL_FILE_NAME, f"{frontmatter}\n{body}"), *load_references()]
+    url_tmpl = (
+        GatewayHandler.get_bk_api_url_tmpl(metadata.gateway_id)
+        if metadata.type == SkillTypeEnum.GATEWAY.value
+        else settings.BK_API_URL_TMPL
+    )
+    files = [(SKILL_FILE_NAME, f"{frontmatter}\n{body}"), *load_references(url_tmpl)]
     if with_declaration:
         files.append((SKILL_DECLARATION_FILE_NAME, render_declaration_yaml(metadata, version)))
     return files

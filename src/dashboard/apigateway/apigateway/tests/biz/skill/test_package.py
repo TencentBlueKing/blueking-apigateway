@@ -24,6 +24,7 @@ import pytest
 import yaml
 from ddf import G
 
+from apigateway.apps.data_plane.models import DataPlane, GatewayDataPlaneBinding
 from apigateway.apps.skill.constants import SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata, SkillVersion
 from apigateway.biz.skill.constants import SkillReferencePlaceholderEnum
@@ -92,10 +93,9 @@ class TestTitle:
 
 class TestLoadReferences:
     def test_placeholders_filled(self, settings):
-        settings.BK_API_URL_TMPL = "http://bkapi.example.com/api/{api_name}"
         settings.BK_PAAS3_URL = "http://paas.example.com"
 
-        references = dict(load_references())
+        references = dict(load_references("http://bkapi.example.com/api/{api_name}"))
 
         assert sorted(references) == ["references/how-to-call-apis.md", "references/permissions.md"]
         text = "".join(references.values())
@@ -106,10 +106,9 @@ class TestLoadReferences:
         assert "http://paas.example.com/developer-center" in text
 
     def test_settings_not_configured(self, settings):
-        settings.BK_API_URL_TMPL = ""
         settings.BK_PAAS3_URL = ""
 
-        text = "".join(content for _, content in load_references())
+        text = "".join(content for _, content in load_references(""))
 
         assert "{{ gateway_url_template }}" not in text
         assert "网关访问地址" in text
@@ -146,6 +145,22 @@ class TestBuildSkillPackageFiles:
         data = _frontmatter(files)
         assert data["metadata"]["type"] == "gateway"
         assert data["metadata"]["author"] == "alice"
+
+    def test_gateway_url_from_data_plane(self, settings, gateway_metadata, platform_metadata):
+        settings.BK_API_URL_TMPL = "http://default.example.com/api/{api_name}"
+        data_plane = G(DataPlane, name="dp-demo", bk_api_url_tmpl="http://dp.example.com/api/{api_name}")
+        G(GatewayDataPlaneBinding, gateway=gateway_metadata.gateway, data_plane=data_plane)
+
+        gateway_files = dict(build_skill_package_files(gateway_metadata, gateway_metadata.current_version))
+        platform_files = dict(build_skill_package_files(platform_metadata, platform_metadata.current_version))
+
+        assert (
+            "http://dp.example.com/api/{gateway_name}/<stage><path>" in gateway_files["references/how-to-call-apis.md"]
+        )
+        assert (
+            "http://default.example.com/api/{gateway_name}/<stage><path>"
+            in platform_files["references/how-to-call-apis.md"]
+        )
 
     def test_basic_info_changes(self, platform_metadata):
         platform_metadata.display_name = "新名称"

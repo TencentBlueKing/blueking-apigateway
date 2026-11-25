@@ -184,6 +184,14 @@ class TestCheckSkillPackage:
             (None, None, f"{IGNORED_HINT}{SKILL_FILE}、{NAME}/references/permissions.md")
         ]
 
+    def test_ignored_files_warning_truncated(self, gateway, data):
+        extra = {f"assets/{index:02d}.txt": "" for index in range(12)}
+        result = _check(gateway, build_skill_zip(data, extra_files=extra))
+
+        ignored = [item.message for item in result.warnings if item.message.startswith(IGNORED_HINT)]
+        listed = "、".join(f"{NAME}/assets/{index:02d}.txt" for index in range(10))
+        assert ignored == [f"{IGNORED_HINT}{listed} 等 12 个文件"]
+
     def test_existing_skill(self, gateway, data):
         publish_gateway_skill(gateway, build_skill_zip(data), _form(data), operator="admin")
         set_version(data, "1.1.0")

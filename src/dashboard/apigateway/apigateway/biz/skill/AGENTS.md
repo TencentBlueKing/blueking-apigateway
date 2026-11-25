@@ -150,11 +150,12 @@ together with the code.
   error to the uploader and writes nothing. Upload warnings do not block; the
   gateway rendering is always the stored body. An upload package and its
   uncompressed `declaration.yaml` are each at most
-  `constants.SKILL_PACKAGE_MAX_SIZE`, and the package must contain `declaration.yaml`;
+  `constants.SKILL_PACKAGE_MAX_SIZE`, the package has at most
+  `constants.SKILL_PACKAGE_MAX_ENTRIES` entries, and it must contain `declaration.yaml`;
   other files, including `SKILL.md` and `references/`,
   pass the path checks but are never read or stored, and one warning lists
-  them. A top-level `__MACOSX/` is ignored. `references/` always comes from
-  `data/skill/references/`. The directory name must equal the package
+  them (the first few, then the total). A top-level `__MACOSX/` is ignored.
+  `references/` always comes from `data/skill/references/`. The directory name must equal the package
   declaration's `name` before the form overrides `display_name`,
   `display_name_en`, `description`, `tags` and `version`; `name` and
   `changelog` come only from the declaration.

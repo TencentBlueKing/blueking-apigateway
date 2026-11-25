@@ -269,6 +269,12 @@ class TestContext:
         metadata.status = SkillStatusEnum.ARCHIVED.value
         assert SkillHandler.build_detail_context(metadata)["download_url"] is None
 
+    def test_download_url_without_url_tmpl(self, settings):
+        settings.BK_API_URL_TMPL = ""
+        metadata = create_skill("release-check", gateway=_gateway("demo"))
+
+        assert SkillHandler.build_download_url(metadata) is None
+
     def test_platform_stage_is_none(self):
         assert SkillHandler.build_detail_context(create_skill("platform-skill"))["stage"] is None
 
