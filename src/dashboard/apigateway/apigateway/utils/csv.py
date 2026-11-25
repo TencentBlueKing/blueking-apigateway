@@ -1,0 +1,33 @@
+# -*- coding: utf-8 -*-
+#
+# TencentBlueKing is pleased to support the open source community by making
+# 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+# Copyright (C) Tencent. All rights reserved.
+# Licensed under the MIT License (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+#     http://opensource.org/licenses/MIT
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# We undertake not to change the open source license (MIT license) applicable
+# to the current version of the project delivered to anyone in the future.
+#
+from typing import Any
+
+
+def sanitize_csv_cell(value: Any) -> Any:
+    """Mark formula-like text for spreadsheet CSV downloads.
+
+    Preserve real numbers and ordinary text, including leading whitespace. Only
+    text with a formula prefix after leading whitespace receives an apostrophe.
+    CSV readers retain this marker; spreadsheet import behavior varies between
+    clients. This does not guarantee safety after a spreadsheet saves and reopens
+    the file.
+    """
+    if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@", "＝", "＋", "－", "＠")):
+        return "'" + value
+    return value
