@@ -1,0 +1,20 @@
+meta {
+  name: access-token-source-bearer-legacy-token
+  type: http
+  seq: 35
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/ats_bearer
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{access_token}}
+}
+
+assert {
+  res.status: eq 200
+  res.body.headers["Authorization"]: isUndefined
+}

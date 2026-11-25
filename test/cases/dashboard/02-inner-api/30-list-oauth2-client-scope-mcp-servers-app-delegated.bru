@@ -1,0 +1,29 @@
+meta {
+  name: v2-inner-list-oauth2-client-scope-mcp-servers-app-delegated
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/oauth2/client-scopes/mcp-servers/?oauth_client_type=app_delegated&gateway_name=httpbin&limit=100
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data.results: isArray
+}
+
+tests {
+  test("all visible mcp servers of the gateway are listed", function() {
+    var gateway = res.getBody().data.results.find(function(item) { return item.name === "httpbin"; });
+    expect(gateway, "gateway httpbin is listed").to.exist;
+    var names = gateway.mcp_servers.map(function(item) { return item.name; });
+    expect(names).to.include.members(["httpbin-prod-httpbin-mcp-server", "httpbin-prod-httpbin-mcp-server-sse"]);
+  });
+}

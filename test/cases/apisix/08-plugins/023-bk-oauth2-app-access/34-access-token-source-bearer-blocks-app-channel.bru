@@ -1,0 +1,21 @@
+meta {
+  name: access-token-source-bearer-blocks-app-channel
+  type: http
+  seq: 34
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/ats_bearer
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer bkp_e2einactive0000000000000000000000000
+}
+
+assert {
+  res.status: eq 400
+  res.body.code_name: eq INVALID_ARGS
+  res.headers['www-authenticate']: isUndefined
+}

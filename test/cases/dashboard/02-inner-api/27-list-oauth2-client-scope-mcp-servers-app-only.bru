@@ -1,0 +1,21 @@
+meta {
+  name: v2-inner-list-oauth2-client-scope-mcp-servers-app-only
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/oauth2/client-scopes/mcp-servers/?oauth_client_type=app_only
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 400
+  res.body.error.code: eq INVALID_ARGUMENT
+  res.body.error.message: contains oauth_client_type
+}
