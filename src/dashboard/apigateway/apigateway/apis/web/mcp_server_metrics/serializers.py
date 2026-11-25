@@ -16,9 +16,9 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.web.validators import MetricsTimeRangeValidator
 from apigateway.apps.mcp_server.metrics_constants import (
     MCPServerMetricsInstantEnum,
     MCPServerMetricsRangeEnum,
@@ -30,32 +30,28 @@ class MCPServerMetricsQueryRangeInputSLZ(serializers.Serializer):
     mcp_server_name = serializers.CharField(allow_blank=True, required=False, help_text="MCP Server 名称")
     app_code = serializers.CharField(allow_blank=True, required=False, help_text="调用方应用编码")
     metrics = serializers.ChoiceField(choices=MCPServerMetricsRangeEnum.get_choices(), help_text="metric 类型")
-    time_range = serializers.IntegerField(required=False, min_value=0, help_text="时间范围（秒）")
+    time_range = serializers.IntegerField(
+        required=False, min_value=0, help_text="时间范围（秒，最多 180 天；有效起止时间优先）"
+    )
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间（时间戳）")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间（时间戳）")
     step = serializers.ChoiceField(choices=MetricsStepEnum.get_choices(), required=False, help_text="精度")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server_metrics.serializers.MCPServerMetricsQueryRangeInputSLZ"
-
-    def validate(self, data):
-        if not (data.get("time_start") and data.get("time_end") or data.get("time_range")):
-            raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
-        return data
+        validators = [MetricsTimeRangeValidator()]
 
 
 class MCPServerMetricsQueryInstantInputSLZ(serializers.Serializer):
     mcp_server_name = serializers.CharField(allow_blank=True, required=False, help_text="MCP Server 名称")
     app_code = serializers.CharField(allow_blank=True, required=False, help_text="调用方应用编码")
     metrics = serializers.ChoiceField(choices=MCPServerMetricsInstantEnum.get_choices(), help_text="metric 类型")
-    time_range = serializers.IntegerField(required=False, min_value=0, help_text="时间范围（秒）")
+    time_range = serializers.IntegerField(
+        required=False, min_value=0, help_text="时间范围（秒，最多 180 天；有效起止时间优先）"
+    )
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间（时间戳）")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间（时间戳）")
 
     class Meta:
         ref_name = "apigateway.apis.web.mcp_server_metrics.serializers.MCPServerMetricsQueryInstantInputSLZ"
-
-    def validate(self, data):
-        if not (data.get("time_start") and data.get("time_end") or data.get("time_range")):
-            raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
-        return data
+        validators = [MetricsTimeRangeValidator()]

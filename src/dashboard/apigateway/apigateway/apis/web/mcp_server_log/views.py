@@ -34,6 +34,7 @@ from apigateway.biz.mcp_server_log import (
     search_chain_summary_by_any_id,
     search_chain_with_summary_by_any_id,
 )
+from apigateway.utils.csv import sanitize_csv_cell
 from apigateway.utils.paginator import LimitOffsetPaginator
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import SmartTimeRange
@@ -155,11 +156,11 @@ class MCPServerLogExportApi(generics.RetrieveAPIView):
         formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
 
         output = StringIO()
-        writer = csv.writer(output)
+        writer = csv.writer(output, quoting=csv.QUOTE_NONNUMERIC)
 
         writer.writerow(field_dict["field"] for field_dict in MCP_SERVER_LOG_FIELDS)
         for log in logs:
-            writer.writerow([log.get(field_dict["field"]) for field_dict in MCP_SERVER_LOG_FIELDS])
+            writer.writerow([sanitize_csv_cell(log.get(field_dict["field"])) for field_dict in MCP_SERVER_LOG_FIELDS])
 
         content = output.getvalue()
         output.close()

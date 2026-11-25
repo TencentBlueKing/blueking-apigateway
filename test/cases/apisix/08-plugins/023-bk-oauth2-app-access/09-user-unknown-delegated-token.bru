@@ -1,0 +1,27 @@
+meta {
+  name: user-unknown-delegated-token
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/ua_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer bkp_e2einactive0000000000000000000000000
+}
+
+assert {
+  res.status: eq 401
+  res.headers['www-authenticate']: contains resource_metadata
+  res.body.code_name: eq UNAUTHORIZED
+}
+
+tests {
+  test("bkauth rejects the token", function() {
+    expect(res.getHeader("www-authenticate")).to.contain('error="invalid_token"');
+  });
+}

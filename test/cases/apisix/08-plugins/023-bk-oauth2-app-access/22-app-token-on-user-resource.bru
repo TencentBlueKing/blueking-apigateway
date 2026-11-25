@@ -1,0 +1,39 @@
+meta {
+  name: app-token-on-user-resource
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/ua_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{oauth2_app_only_token}}
+}
+
+script:pre-request {
+  // needs a real bkauth token issued to the test_bk_app_code app;
+  // skipped when the env var is empty, unless oauth2_app_tokens_required is true
+  if (!bru.getEnvVar("oauth2_app_only_token")) {
+    if (String(bru.getEnvVar("oauth2_app_tokens_required")) === "true") {
+      throw new Error("oauth2_app_only_token is required");
+    }
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 401
+  res.headers['www-authenticate']: contains resource_metadata
+  res.body.code_name: eq UNAUTHORIZED
+  res.body.message: contains only OAuth2 delegated tokens are allowed
+}
+
+tests {
+  test("the token mode does not match the resource", function() {
+    expect(res.getHeader("www-authenticate")).to.contain('error="invalid_token"');
+  });
+}

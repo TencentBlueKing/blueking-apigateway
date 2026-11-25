@@ -1,0 +1,25 @@
+meta {
+  name: no-auth-bearer-passthrough
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/none
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer bko_e2einactive0000000000000000000000000
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("the bearer token is passed to the backend", function() {
+    expect(res.getBody().headers["Authorization"]).to.eql("Bearer bko_e2einactive0000000000000000000000000");
+  });
+}

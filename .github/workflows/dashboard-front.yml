@@ -58,6 +58,30 @@ jobs:
       run: pnpm run lint:ci:oxlint
       working-directory: src/dashboard-front
 
+    - name: Unit test
+      run: pnpm run test:unit
+      working-directory: src/dashboard-front
+
+    - name: Ensure Chromium for browser tests
+      run: |
+        CHROME_PATH=""
+        for candidate in google-chrome chromium chromium-browser; do
+          if command -v "$candidate" >/dev/null 2>&1; then
+            CHROME_PATH="$(command -v "$candidate")"
+            break
+          fi
+        done
+        if [ -n "$CHROME_PATH" ]; then
+          echo "CHROME_BIN=$CHROME_PATH" >> "$GITHUB_ENV"
+        else
+          pnpm exec playwright install chromium
+        fi
+      working-directory: src/dashboard-front
+
+    - name: Browser component test
+      run: pnpm run test:browser
+      working-directory: src/dashboard-front
+
     # 构建期问题（Rolldown 报错、依赖互操作等）类型检查发现不了，CI 需实际构建一次
     - name: Build
       run: pnpm run build-only
