@@ -1,0 +1,97 @@
+src/dashboard/apigateway/apigateway/apps/skill/constants.py
+  s_09bb5a04cd1dda::t_e78a78047860ee 50
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_manager.py
+  s_4dca582ac9fdd3::t_46e49ba5ae71f4 31,33
+  s_4dca582ac9fdd3::t_dbad1692448463 76,95,113
+src/dashboard/apigateway/apigateway/biz/skill/writer.py
+  s_4dca582ac9fdd3::t_aba32d8edb54ce 20-21,28
+  s_4dca582ac9fdd3::t_20f94f30e47047 131,134-135
+  s_4dca582ac9fdd3::t_fe806c1cb72d1e 113
+  s_4dca582ac9fdd3::t_5c684bb40eede9 145
+  s_4dca582ac9fdd3::t_5fa32e04334c40 200-204
+src/dashboard/apigateway/apigateway/biz/skill/__init__.py
+  s_4dca582ac9fdd3::t_1125ab56e2c326 21
+src/dashboard/apigateway/apigateway/biz/skill/declaration.py
+  s_09bb5a04cd1dda::t_5dc539b24a9114 202,204,208-209
+  s_09bb5a04cd1dda::t_a81e921ca53730 51
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_writer.py
+  s_4dca582ac9fdd3::t_59191dba8cb77c 120
+  s_4dca582ac9fdd3::t_afc4fbbae067ab 163-164
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_skill.py
+  s_09bb5a04cd1dda::t_4bf3d5989d2648 272-277
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_declaration.py
+  s_09bb5a04cd1dda::t_54e2241b5ffd4a 114
+src/dashboard/apigateway/apigateway/biz/skill/package.py
+  s_09bb5a04cd1dda::t_2295ab3c9aa112 123-124,126
+  s_09bb5a04cd1dda::t_8f7e5bbac61a97 145-146,150
+  s_09bb5a04cd1dda::t_90b0f84535a94b 200
+  s_09bb5a04cd1dda::t_e3ce3cd2d83829 220-225
+  s_09bb5a04cd1dda::t_e7d5d1e9b4d3da 35
+src/dashboard/apigateway/apigateway/biz/skill/constants.py
+  s_09bb5a04cd1dda::t_2b132d301ee8d6 49-50
+src/dashboard/apigateway/apigateway/biz/skill/uploader.py
+  s_4dca582ac9fdd3::t_5ffa411dc36126 160
+  s_09bb5a04cd1dda::t_a4b4464f3af5de 53-54
+  s_09bb5a04cd1dda::t_b08d7fd131a5ef 293-295,297
+  s_4dca582ac9fdd3::t_11fb213fa225c8 22-24
+  s_4dca582ac9fdd3::t_a2768ca99ca3b1 200
+  s_09bb5a04cd1dda::t_4ffe6a21c536f5 279-280
+src/dashboard/apigateway/apigateway/biz/skill/archive.py
+  s_09bb5a04cd1dda::t_a1844ae4214f58 33
+  s_09bb5a04cd1dda::t_3499277a000300 120,126-131
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_package.py
+  s_09bb5a04cd1dda::t_298e3dac105cbb 111
+  s_09bb5a04cd1dda::t_bd64b38c9d2fcc 27
+  s_09bb5a04cd1dda::t_7ce409a2d2ecc5 149-156,160-164
+  s_09bb5a04cd1dda::t_c3721065ce05f5 98
+  s_09bb5a04cd1dda::t_acdf02843bdcd6 157-159
+src/dashboard/apigateway/apigateway/biz/skill/skill.py
+  s_09bb5a04cd1dda::t_627b89f0cf313a 332,337
+  s_09bb5a04cd1dda::t_abea385238d041 339-340
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_archive.py
+  s_09bb5a04cd1dda::t_de860e1e324acb 70-73
+src/dashboard/apigateway/apigateway/tests/apis/web/skill/test_views.py
+  s_4dca582ac9fdd3::t_5e5ca27552e5da 131,138-139
+  s_4dca582ac9fdd3::t_a39d71b2437475 135-137
+src/dashboard/apigateway/apigateway/biz/skill/AGENTS.md
+  s_09bb5a04cd1dda::t_01e59ae4253b00 153-154
+  s_09bb5a04cd1dda::t_61fa8cdd8ed564 157-158
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_uploader.py
+  s_09bb5a04cd1dda::t_c54e822dabee9e 187-194
+src/dashboard/apigateway/apigateway/biz/skill/manager.py
+  s_4dca582ac9fdd3::t_fb62ab352337ba 94,98,101-103
+  s_4dca582ac9fdd3::t_7d02bb8d4bc28d 31,34,37-38,40,43-45
+  s_4dca582ac9fdd3::t_5508e2682a86c4 62,76
+src/dashboard/apigateway/apigateway/apis/web/skill/views.py
+  s_4dca582ac9fdd3::t_cccf526f274955 128
+  s_4dca582ac9fdd3::t_b7026aef73236a 83
+  s_4dca582ac9fdd3::t_0e17444de4c7b3 297
+  s_4dca582ac9fdd3::t_2f21aae9567ae2 343
+  s_4dca582ac9fdd3::t_71f32d0fe007a2 365
+  s_4dca582ac9fdd3::t_e3b161fa976730 279
+  s_4dca582ac9fdd3::t_f0bd4d719768a6 116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b4dd67f53fdf34c36664700f13649af09ee9054e",
+  "prompts": {},
+  "sessions": {
+    "s_09bb5a04cd1dda": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7f99d6cc-1512-42db-a757-e16e1fc299ad",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    },
+    "s_4dca582ac9fdd3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "175dd448-ff56-403b-880a-5f2d453076b1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
