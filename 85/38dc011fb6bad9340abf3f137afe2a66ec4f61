@@ -1,0 +1,75 @@
+src/dashboard/apigateway/apigateway/biz/skill/package.py
+  s_0312d582cf9b45::t_7fc2e94aca9ac6 208
+  s_0e085d39638a14::t_7d471caa8951b8 28
+  s_0e085d39638a14::t_bb71270d537cfe 87,89-91,93-94
+src/dashboard/apigateway/apigateway/biz/skill/uploader.py
+  s_517bb0451c2870::t_aabfc342eb4984 292
+  s_517bb0451c2870::t_dd2822811f395d 39-46
+  s_517bb0451c2870::t_e6dde7e392c6b7 261-262
+  s_517bb0451c2870::t_19d7f23ebc959e 220
+  s_0312d582cf9b45::t_63f28064e576a3 141
+  s_517bb0451c2870::t_d44bf095fb9976 324-325,327-330,332-333
+  s_517bb0451c2870::t_10628be3ea9468 209
+src/dashboard/apigateway/apigateway/biz/skill/writer.py
+  s_0312d582cf9b45::t_845fa6f74765e0 69-75
+  s_0312d582cf9b45::t_d190feb825f65d 40
+src/dashboard/apigateway/apigateway/biz/skill/manager.py
+  s_0312d582cf9b45::t_8826aead236e2c 64
+src/dashboard/apigateway/apigateway/apis/web/skill/serializers.py
+  s_0312d582cf9b45::t_86296016d003c0 189
+  s_0e085d39638a14::t_c7c12ebd67f2ad 244,257,263-270
+src/dashboard/apigateway/apigateway/biz/skill/frontmatter.py
+  s_0312d582cf9b45::t_b944ab80b32276 55
+  s_517bb0451c2870::t_8f30385c77a585 80-91,93-95
+  s_517bb0451c2870::t_5493bbe0c72bed 33-39,41-42
+  s_517bb0451c2870::t_0762c6f3af51d0 40,43-51
+src/dashboard/apigateway/apigateway/apis/web/skill/views.py
+  s_0312d582cf9b45::t_086a353482bca4 108-111
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_declaration.py
+  s_517bb0451c2870::t_4eb492be54198b 63-90
+  s_517bb0451c2870::t_581ee35b73f28b 25-30
+src/dashboard/apigateway/apigateway/biz/skill/declaration.py
+  s_517bb0451c2870::t_1afb9cdc13a49a 75-96,98-116,118-119
+  s_517bb0451c2870::t_9532e5e04e3caa 28
+  s_517bb0451c2870::t_797aec0a54796c 578-592,594,601,606,609-610,613-615,621
+  s_0312d582cf9b45::t_a26a44d1d8c540 117
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_package.py
+  s_0e085d39638a14::t_44a0a54f24529c 75,79-82,85-86
+  s_517bb0451c2870::t_c0b61078a79559 205
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_uploader.py
+  s_517bb0451c2870::t_6acb831ef48bcf 151
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_manager.py
+  s_0312d582cf9b45::t_58084116a35d32 59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8538dc011fb6bad9340abf3f137afe2a66ec4f61",
+  "prompts": {},
+  "sessions": {
+    "s_0312d582cf9b45": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ccbbc114-832a-4cc1-b54b-7f37918459b4",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    },
+    "s_0e085d39638a14": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4cb360d8-8080-4086-a7b2-73b82868bc9d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    },
+    "s_517bb0451c2870": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0f4d5a38-ff68-49ac-acbb-dd493194a615",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
