@@ -23,9 +23,7 @@ from apigateway.biz.skill.uploader import (
     SkillPackageInvalidError,
     SkillUploadForm,
     check_skill_package,
-    load_declaration_yaml,
     publish_gateway_skill,
-    split_field_message,
 )
 from apigateway.biz.skill.writer import SkillArchivedError, SkillVersionExistsError, SkillVersionNotNewerError
 from apigateway.core.models import Gateway
@@ -79,27 +77,6 @@ def _publish_errors(gateway, fileobj, form, **kwargs):
     with pytest.raises(SkillPackageInvalidError) as err:
         publish_gateway_skill(gateway, fileobj, form, operator="admin", **kwargs)
     return [(item.file, item.field, item.message) for item in err.value.errors]
-
-
-class TestHelpers:
-    @pytest.mark.parametrize(
-        "text, expected",
-        [
-            ("version: 版本号不合规", ("version", "版本号不合规")),
-            ("run-plan：参数 foo 不在资源定义中", ("run-plan", "参数 foo 不在资源定义中")),
-            ("orchestration.steps[0].with.id: 未知字段", ("orchestration.steps[0].with.id", "未知字段")),
-            ("资源不可编排", (None, "资源不可编排")),
-        ],
-    )
-    def test_split_field_message(self, text, expected):
-        assert split_field_message(text) == expected
-
-    def test_load_declaration_yaml_rejects_alias(self):
-        with pytest.raises(ValueError, match="锚点和别名"):
-            load_declaration_yaml("a: &x [1, 2]\nb: *x\n")
-        with pytest.raises(ValueError, match="键值对"):
-            load_declaration_yaml("- 1\n")
-        assert load_declaration_yaml("name: demo\n") == {"name": "demo"}
 
 
 class TestCheckSkillPackage:
@@ -171,7 +148,7 @@ class TestCheckSkillPackage:
     def test_validation_error(self, gateway, data):
         data["orchestration"]["steps"][0]["with"]["foo"] = 1
         result = _check(gateway, build_skill_zip(data))
-        assert _errors(result) == [(DECLARATION_FILE, "run-plan", "参数 foo 不在资源定义中")]
+        assert _errors(result) == [(DECLARATION_FILE, None, "run-plan：参数 foo 不在资源定义中")]
 
     def test_ignored_files_warning(self, gateway, data):
         """包里的 SKILL.md、references 不读取：过期的 SKILL.md 不报错，给一条 warning 列出不导入的文件"""

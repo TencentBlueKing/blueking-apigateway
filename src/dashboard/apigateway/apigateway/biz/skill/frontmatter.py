@@ -23,8 +23,6 @@ display_name_en 为空时写 ""；metadata 依次只有 type、version、author�
 """
 
 import datetime
-import json
-import re
 from typing import Optional
 
 import yaml
@@ -32,18 +30,33 @@ import yaml
 from .constants import SKILL_DATETIME_FORMAT
 
 FRONTMATTER_DELIMITER = "---"
-_YAML_PLAIN_UNSAFE_PATTERN = re.compile(r":\s|^[\s\-?:,\[\]{}#&*!|>'\"%@`]|\s#")
+
+
+class _QuotedStr(str):
+    """输出成双引号字符串的值"""
+
+
+class _FrontmatterDumper(yaml.SafeDumper):
+    """frontmatter 的输出格式：_QuotedStr 带双引号，其他字符串同 SafeDumper，必要时才加引号"""
+
+
+def _represent_quoted(dumper: yaml.SafeDumper, data: _QuotedStr) -> yaml.ScalarNode:
+    """_QuotedStr 输出成双引号字符串
+
+    例如：_QuotedStr("1.0") -> "\\"1.0\\""；_QuotedStr("") -> "\\"\\""
+    """
+    return dumper.represent_scalar("tag:yaml.org,2002:str", data, style='"')
+
+
+_FrontmatterDumper.add_representer(_QuotedStr, _represent_quoted)
 
 
 def format_skill_datetime(value: datetime.datetime) -> str:
-    """带时区的时间 -> RFC 3339 UTC 秒精度字符串；不带时区时抛 ValueError
+    """带时区的时间 -> RFC 3339 UTC 秒精度字符串
 
     例如：
         2026-10-29 18:00:00.123+08:00 -> "2026-10-29T10:00:00Z"
-        datetime(2026, 10, 29)（无时区）-> ValueError
     """
-    if value.tzinfo is None or value.utcoffset() is None:
-        raise ValueError("published_at must be timezone-aware")
     return value.astimezone(datetime.timezone.utc).replace(microsecond=0).strftime(SKILL_DATETIME_FORMAT)
 
 
@@ -64,36 +77,19 @@ def render_frontmatter(
         "---\\nname: demo\\n...\\ndisplay_name_en: \\"\\"\\nmetadata:\\n  type: \\"gateway\\"\\n...
         \\n  datetime: \\"2026-10-29T10:00:00Z\\"\\n...\\n---\\n"
     """
-    metadata = {
-        "type": type,
-        "version": version,
-        "author": author,
-        "datetime": format_skill_datetime(published_at),
-        "source": source,
+    data = {
+        "name": name,
+        "description": description,
+        "display_name": display_name,
+        "display_name_en": display_name_en or _QuotedStr(),
+        "metadata": {
+            "type": _QuotedStr(type),
+            "version": _QuotedStr(version),
+            "author": _QuotedStr(author),
+            "datetime": _QuotedStr(format_skill_datetime(published_at)),
+            "source": _QuotedStr(source),
+        },
     }
-    lines = [
-        FRONTMATTER_DELIMITER,
-        f"name: {name}",
-        f"description: {_yaml_scalar(description)}",
-        f"display_name: {_yaml_scalar(display_name)}",
-        f"display_name_en: {_yaml_scalar(display_name_en or '')}",
-        "metadata:",
-        *(f"  {key}: {json.dumps(value, ensure_ascii=False)}" for key, value in metadata.items()),
-        FRONTMATTER_DELIMITER,
-    ]
-    return "\n".join(lines) + "\n"
-
-
-def _yaml_scalar(value: str) -> str:
-    """能作为 YAML 普通标量原样读回时不加引号，否则输出 JSON 字符串（也是合法的 YAML 双引号字符串）
-
-    例如："执行作业方案" -> 执行作业方案；"a: b" -> "\\"a: b\\""；"" -> "\\"\\""；"123" -> "\\"123\\""
-    """
-    if _YAML_PLAIN_UNSAFE_PATTERN.search(value):
-        return json.dumps(value, ensure_ascii=False)
-    try:
-        if value and yaml.safe_load(f"k: {value}") == {"k": value}:
-            return value
-    except yaml.YAMLError:
-        pass
-    return json.dumps(value, ensure_ascii=False)
+    # 不按宽度折行，长描述保持在一行
+    text = yaml.dump(data, Dumper=_FrontmatterDumper, allow_unicode=True, sort_keys=False, width=float("inf"))
+    return f"{FRONTMATTER_DELIMITER}\n{text}{FRONTMATTER_DELIMITER}\n"

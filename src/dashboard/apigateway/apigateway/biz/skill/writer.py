@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 
 class SkillVersionExistsError(Exception):
-    def __init__(self, message: str, version: Optional[SkillVersion] = None):
+    def __init__(self, message: str, version: SkillVersion):
         super().__init__(message)
         self.version = version
 
@@ -66,8 +66,13 @@ def check_version(metadata: SkillMetadata, version: str, overwrite_existing: boo
     current = metadata.current_version
     if overwrite_existing and current is not None and current.version == version:
         return current
-    if SkillVersion.objects.filter(metadata=metadata, version=version).exists():
-        raise SkillVersionExistsError(_("{name} 已有版本 {version}").format(name=metadata.name, version=version))
+    existing = (
+        SkillVersion.objects.filter(metadata=metadata, version=version).defer("artifact", "orchestration").first()
+    )
+    if existing is not None:
+        raise SkillVersionExistsError(
+            _("{name} 已有版本 {version}").format(name=metadata.name, version=version), version=existing
+        )
     if current and parse_version(version) <= parse_version(current.version):
         raise SkillVersionNotNewerError(
             _("{name} 的版本 {version} 不高于当前版本 {current}").format(

@@ -26,11 +26,9 @@ name、changelog、orchestration 始终取包里的声明。
 包里的 SKILL.md、references/ 等其他文件不读取，给一条 warning 列出。
 """
 
-import re
 from dataclasses import dataclass, field
 from typing import IO, TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-import yaml
 from django.utils.translation import gettext as _
 
 from apigateway.apps.skill.constants import SkillTypeEnum
@@ -38,7 +36,14 @@ from apigateway.apps.skill.models import SkillMetadata
 
 from .archive import SkillArchiveError, SkillPackage, ValidationMessage, read_skill_package
 from .constants import SKILL_DECLARATION_FILE_NAME, SKILL_FILE_NAME
-from .declaration import SkillDeclaration, SkillDeclarationError, normalize_tag_name, parse_declaration
+from .declaration import (
+    DeclarationFieldError,
+    SkillDeclaration,
+    SkillDeclarationError,
+    load_declaration_yaml,
+    normalize_tag_name,
+    parse_declaration,
+)
 from .renderer import render_skill_body
 from .resource_loader import ReleasedResourceProvider, ResourceProvider
 from .skill import SkillHandler
@@ -48,8 +53,6 @@ from .writer import SavedSkillVersion, save_skill_version
 if TYPE_CHECKING:
     from apigateway.core.models import Gateway
 
-# 「字段路径: 说明」或「字段路径：说明」，字段路径不含空白
-_FIELD_MESSAGE_PATTERN = re.compile(r"^([^\s:：]+)(?:: |：)(.+)$", re.S)
 # 不导入的文件在 warning 里最多列出的个数，其余只给总数
 _IGNORED_FILES_DISPLAY_LIMIT = 10
 
@@ -100,53 +103,10 @@ class SkillPackageCheckResult:
 class _Validation:
     errors: List[ValidationMessage] = field(default_factory=list)
     warnings: List[ValidationMessage] = field(default_factory=list)
-    package: Optional[SkillPackage] = None
     # 包里原样的声明（未叠加表单值），用于预检预填
     package_declaration: Optional[SkillDeclaration] = None
     declaration: Optional[SkillDeclaration] = None
     body: str = ""
-
-
-class _NoAliasSafeLoader(yaml.SafeLoader):
-    """不允许锚点和别名的 SafeLoader：别名转成 JSON 入库时会展开成多份，几 KB 的声明可以展开成很大的 JSON"""
-
-    def compose_node(self, parent, index):
-        """遇到锚点或别名时报错，其他同 SafeLoader
-
-        例如：合规 "a: 1"；不合规 "a: &x 1\\nb: *x"
-        """
-        event = self.peek_event()
-        if isinstance(event, yaml.AliasEvent) or getattr(event, "anchor", None):
-            raise yaml.YAMLError(_("声明不允许使用 YAML 锚点和别名"))
-        return super().compose_node(parent, index)
-
-
-def load_declaration_yaml(text: str) -> Dict[str, Any]:
-    """声明 YAML 文本 -> dict；不是合法 YAML、用了锚点或别名、顶层不是对象时抛 ValueError
-
-    例如："name: demo" -> {"name": "demo"}；"a: &x 1\\nb: *x" -> ValueError
-    """
-    try:
-        data = yaml.load(text, Loader=_NoAliasSafeLoader)  # noqa: S506
-    except yaml.YAMLError as err:
-        raise ValueError(_("YAML 解析失败：{error}").format(error=" ".join(str(err).split()))) from None
-    if not isinstance(data, dict):
-        raise ValueError(_("声明应为键值对"))  # noqa: TRY004
-    return data
-
-
-def split_field_message(text: str) -> Tuple[Optional[str], str]:
-    """把「字段路径: 说明」拆成 (field, message)；说明前是英文冒号加空格或中文冒号，没有这种前缀时 field 为 None
-
-    例如：
-        "version: 版本号应为 major.minor.patch" -> ("version", "版本号应为 major.minor.patch")
-        "run：参数 foo 不在资源定义中" -> ("run", "参数 foo 不在资源定义中")
-        "资源不可编排" -> (None, "资源不可编排")
-    """
-    matched = _FIELD_MESSAGE_PATTERN.match(text)
-    if matched:
-        return matched.group(1), matched.group(2)
-    return None, text
 
 
 def check_skill_package(
@@ -178,7 +138,7 @@ def check_skill_package(
     if metadata is not None:
         result.existing_skill = {
             "skill_id": metadata.code,
-            "current_version": metadata.current_version.version if metadata.current_version else None,
+            "current_version": metadata.current_version.version,
             "latest_version": SkillHandler.get_latest_version(metadata),
             "status": metadata.status,
         }
@@ -246,7 +206,7 @@ def _validate(
     try:
         declaration = parse_declaration(data)
     except SkillDeclarationError as err:
-        result.errors += [_to_message(text, declaration_file, overridden) for text in err.errors]
+        result.errors += [_to_message(item, declaration_file, overridden) for item in err.items]
         return result
 
     # 只能调用当前网关，且所有步骤用同一个环境
@@ -257,7 +217,7 @@ def _validate(
     # 按当前发布的资源定义校验编排
     provider = provider or ReleasedResourceProvider()
     validation = validate_declaration(declaration, provider)
-    result.warnings += [_to_message(text, declaration_file) for text in validation.warnings]
+    result.warnings += [ValidationMessage(declaration_file, None, text) for text in validation.warnings]
     result.errors += _validation_errors(validation, declaration_file)
     if result.errors:
         return result
@@ -287,7 +247,6 @@ def _load_package(
     except SkillArchiveError as err:
         result.errors = err.errors
         return None
-    result.package = package
     declaration_file = package.path_of(SKILL_DECLARATION_FILE_NAME)
     if package.ignored:
         files = "、".join(package.path_of(path) for path in package.ignored[:_IGNORED_FILES_DISPLAY_LIMIT])
@@ -299,8 +258,8 @@ def _load_package(
 
     try:
         data = load_declaration_yaml(package.declaration)
-    except ValueError as err:
-        result.errors.append(ValidationMessage(declaration_file, None, str(err)))
+    except SkillDeclarationError as err:
+        result.errors += [_to_message(item, declaration_file) for item in err.items]
         return None
     try:
         result.package_declaration = parse_declaration(data)
@@ -330,7 +289,7 @@ def _validation_errors(validation: ValidationResult, declaration_file: str) -> L
             )
             for item in validation.missing_resources
         ]
-    return [_to_message(text, declaration_file) for text in validation.errors]
+    return [ValidationMessage(declaration_file, None, text) for text in validation.errors]
 
 
 def _check_names(
@@ -362,14 +321,16 @@ def _check_names(
     return errors
 
 
-def _to_message(text: str, file: str, overridden: Tuple[str, ...] = ()) -> ValidationMessage:
-    """把一条「字段路径: 说明」转成 ValidationMessage；这个字段被表单覆盖时 file 为空，错误归到表单字段
+def _to_message(error: DeclarationFieldError, file: str, overridden: Tuple[str, ...] = ()) -> ValidationMessage:
+    """声明的一条错误 -> ValidationMessage；顶层字段被表单覆盖时 file 为空，错误归到表单字段
 
-    例如：("version: 不合规", "demo/declaration.yaml", ("version",)) -> ValidationMessage(None, "version", "不合规")
+    例如：
+        loc ("version",)，overridden 含 version -> ValidationMessage(None, "version", ...)
+        loc ("orchestration", "steps", 0, "id") -> ValidationMessage("demo/declaration.yaml", "orchestration.steps[0].id", ...)
+        YAML 解析失败，loc 为空 -> ValidationMessage("demo/declaration.yaml", None, "YAML 解析失败：...")
     """
-    field_path, message = split_field_message(text)
-    top_level = re.split(r"[.\[]", field_path, maxsplit=1)[0] if field_path else None
-    return ValidationMessage(None if top_level in overridden else file, field_path, message)
+    top_level = error.loc[0] if error.loc else None
+    return ValidationMessage(None if top_level in overridden else file, error.field, error.message)
 
 
 def _check_gateway_rules(declaration: SkillDeclaration, gateway: Gateway, file: str) -> List[ValidationMessage]:

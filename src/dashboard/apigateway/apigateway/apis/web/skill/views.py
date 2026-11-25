@@ -105,11 +105,10 @@ def _publish(request, data: Dict[str, Any], skill_name: Optional[str] = None):
             }
         )
     except SkillVersionExistsError as err:
-        api_error = error_codes.CONFLICT.format(str(err), replace=True)
-        if err.version is not None:
-            context = {"current_version_id": err.version.metadata.current_version_id}
-            api_error.set_data(SkillVersionOutputSLZ(err.version, context=context).data)
-        raise api_error
+        context = {"current_version_id": err.version.metadata.current_version_id}
+        raise error_codes.CONFLICT.format(str(err), replace=True).set_data(
+            SkillVersionOutputSLZ(err.version, context=context).data
+        )
     except SkillVersionNotNewerError as err:
         raise error_codes.INVALID_ARGUMENT.format(str(err), replace=True)
     except SkillArchivedError as err:

@@ -36,9 +36,7 @@ from apigateway.biz.skill.package import (
     load_references,
     render_declaration_yaml,
     replace_title,
-    split_title,
 )
-from apigateway.biz.skill.uploader import load_declaration_yaml
 from apigateway.biz.skill.writer import save_skill_version
 from apigateway.core.models import Gateway
 from apigateway.tests.biz.skill.conftest import set_version
@@ -74,21 +72,18 @@ def gateway_metadata(job_plan_data):
     ).metadata
 
 
-class TestTitle:
+class TestReplaceTitle:
     @pytest.mark.parametrize(
         "body, expected",
         [
-            ("# 名称\n\n正文\n", ("名称", "\n正文\n")),
-            ("## 输入\n", (None, "## 输入\n")),
-            ("# 名称", ("名称", "")),
+            ("# 旧名\n\n正文\n", "# 新名\n\n正文\n"),
+            ("# 旧名", "# 新名\n"),
+            ("## 输入\n", "## 输入\n"),
+            ("正文\n", "正文\n"),
         ],
     )
-    def test_split_title(self, body, expected):
-        assert split_title(body) == expected
-
-    def test_replace_title(self):
-        assert replace_title("# 旧名\n\n正文\n", "新名") == "# 新名\n\n正文\n"
-        assert replace_title("正文\n", "新名") == "正文\n"
+    def test_replace_title(self, body, expected):
+        assert replace_title(body, "新名") == expected
 
 
 class TestLoadReferences:
@@ -207,7 +202,7 @@ class TestRenderDeclarationYaml:
         version = gateway_metadata.current_version
         text = render_declaration_yaml(gateway_metadata, version)
 
-        declaration = parse_declaration(load_declaration_yaml(text))
+        declaration = parse_declaration(text)
         expected = parse_declaration(job_plan_data)
         assert declaration.name == gateway_metadata.name
         assert declaration.display_name == expected.display_name

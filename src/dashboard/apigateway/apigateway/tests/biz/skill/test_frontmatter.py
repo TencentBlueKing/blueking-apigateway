@@ -48,10 +48,6 @@ class TestSkillDatetime:
     def test_format(self):
         assert format_skill_datetime(PUBLISHED_AT) == "2026-10-29T10:00:00Z"
 
-    def test_format_requires_timezone(self):
-        with pytest.raises(ValueError):
-            format_skill_datetime(datetime.datetime(2026, 10, 29))
-
 
 class TestRenderFrontmatter:
     def test_keys_in_order(self):

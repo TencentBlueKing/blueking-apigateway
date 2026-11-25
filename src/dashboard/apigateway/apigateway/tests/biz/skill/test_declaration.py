@@ -22,7 +22,12 @@ import pytest
 import yaml
 from django.utils.translation import override
 
-from apigateway.biz.skill.declaration import SkillDeclarationError, normalize_tag_name, parse_declaration
+from apigateway.biz.skill.declaration import (
+    SkillDeclarationError,
+    load_declaration_yaml,
+    normalize_tag_name,
+    parse_declaration,
+)
 from apigateway.tests.biz.skill.conftest import DECLARATIONS_DIR, GOLDEN_NAMES
 
 pytestmark = pytest.mark.no_meta_schema
@@ -54,6 +59,34 @@ class TestParseDeclaration:
 
         assert errors
         assert all("\n" not in error for error in errors)
+
+    @pytest.mark.parametrize(
+        "text, message",
+        [("a: &x [1, 2]\nb: *x\n", "锚点和别名"), ("- 1\n", "声明应为键值对"), ("name: [\n", "YAML 解析失败")],
+    )
+    def test_load_yaml_errors_have_no_field(self, text, message):
+        with pytest.raises(SkillDeclarationError) as exc_info:
+            load_declaration_yaml(text)
+
+        [item] = exc_info.value.items
+        assert item.loc == ()
+        assert item.field is None
+        assert message in item.message
+        assert str(item) == item.message
+
+    def test_load_yaml(self):
+        assert load_declaration_yaml("name: demo\n") == {"name": "demo"}
+
+    def test_field_error_keeps_loc(self, job_plan_data):
+        job_plan_data["orchestration"]["steps"][0]["if"] = "x"
+
+        with pytest.raises(SkillDeclarationError) as exc_info:
+            parse_declaration(job_plan_data)
+
+        [item] = exc_info.value.items
+        assert item.loc == ("orchestration", "steps", 0, "if")
+        assert item.field == "orchestration.steps[0].if"
+        assert exc_info.value.errors == ["orchestration.steps[0].if: 未知字段"]
 
     def test_orchestration_data_keeps_unset_fields_out(self, job_plan_data):
         data = parse_declaration(job_plan_data).orchestration_data()

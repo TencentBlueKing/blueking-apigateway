@@ -61,7 +61,7 @@ def update_skill_basic_info(
     """
     _ensure_not_archived(metadata)
     metadata.display_name = display_name
-    metadata.display_name_en = display_name_en or None
+    metadata.display_name_en = display_name_en
     metadata.description = description
     metadata.updated_by = operator
     metadata.save(update_fields=["display_name", "display_name_en", "description", "updated_by", "updated_time"])

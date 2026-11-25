@@ -56,7 +56,7 @@ class TestUpdateSkillBasicInfo:
     def test_update(self, metadata):
         version_count = SkillVersion.objects.count()
 
-        update_skill_basic_info(metadata, "发布核对", "", "新的描述", ["只读", " JOB "], operator="bob")
+        update_skill_basic_info(metadata, "发布核对", None, "新的描述", ["只读", " JOB "], operator="bob")
 
         metadata = _reload(metadata)
         assert metadata.display_name == "发布核对"

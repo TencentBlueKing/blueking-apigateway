@@ -116,7 +116,6 @@ def validate_skill_package_file(value):
         raise serializers.ValidationError(
             _("文件不能超过 {size} MB").format(size=SKILL_PACKAGE_MAX_SIZE // (1024 * 1024))
         )
-    return value
 
 
 def _check_basic_info(check: Callable[[Any], Any], value: Any) -> Any:
@@ -187,7 +186,7 @@ class SkillPackageOutputSLZ(serializers.Serializer):
 
 class SkillExistingOutputSLZ(serializers.Serializer):
     skill_id = serializers.CharField(read_only=True, help_text="对外 ID")
-    current_version = serializers.CharField(read_only=True, allow_null=True, help_text="线上版本号")
+    current_version = serializers.CharField(read_only=True, help_text="线上版本号")
     latest_version = serializers.CharField(read_only=True, allow_null=True, help_text="已有的最高版本号")
     status = serializers.CharField(read_only=True, help_text="状态")
 
@@ -242,50 +241,43 @@ class SkillListInputSLZ(serializers.Serializer):
         ref_name = "apigateway.apis.web.skill.serializers.SkillListInputSLZ"
 
 
-class SkillListOutputSLZ(serializers.Serializer):
+class SkillBaseOutputSLZ(serializers.Serializer):
     skill_id = serializers.CharField(source="code", read_only=True, help_text="对外 ID")
     name = serializers.CharField(read_only=True, help_text="规范名")
     display_name = serializers.CharField(read_only=True, help_text="中文名原值")
     display_name_en = serializers.CharField(read_only=True, allow_null=True, help_text="英文名原值")
     description = serializers.CharField(read_only=True, help_text="描述")
     tags = serializers.SerializerMethodField(help_text="标签")
-    version = serializers.CharField(source="current_version.version", read_only=True, help_text="线上版本号")
     status = serializers.CharField(read_only=True, help_text="状态")
     download_count = serializers.IntegerField(read_only=True, help_text="下载数")
     updated_by = serializers.CharField(read_only=True, help_text="最后修改人")
     updated_time = serializers.DateTimeField(read_only=True, help_text="最后修改时间")
 
     class Meta:
-        ref_name = "apigateway.apis.web.skill.serializers.SkillListOutputSLZ"
+        ref_name = "apigateway.apis.web.skill.serializers.SkillBaseOutputSLZ"
 
     def get_tags(self, obj) -> List[str]:
         return [tag.name for tag in obj.tags.all()]
 
 
-class SkillRetrieveOutputSLZ(serializers.Serializer):
-    skill_id = serializers.CharField(source="code", read_only=True, help_text="对外 ID")
-    name = serializers.CharField(read_only=True, help_text="规范名")
-    display_name = serializers.CharField(read_only=True, help_text="中文名原值")
-    display_name_en = serializers.CharField(read_only=True, allow_null=True, help_text="英文名原值")
-    description = serializers.CharField(read_only=True, help_text="描述")
-    tags = serializers.SerializerMethodField(help_text="标签")
-    status = serializers.CharField(read_only=True, help_text="状态")
+class SkillListOutputSLZ(SkillBaseOutputSLZ):
+    version = serializers.CharField(source="current_version.version", read_only=True, help_text="线上版本号")
+
+    class Meta:
+        ref_name = "apigateway.apis.web.skill.serializers.SkillListOutputSLZ"
+
+
+class SkillRetrieveOutputSLZ(SkillBaseOutputSLZ):
     current_version = SkillVersionOutputSLZ(read_only=True, help_text="线上版本")
     stage = serializers.SerializerMethodField(help_text="调用的环境")
     apis = serializers.SerializerMethodField(help_text="线上版本调用的接口")
     version_count = serializers.SerializerMethodField(help_text="版本数")
     download_url = serializers.SerializerMethodField(help_text="免登录下载地址；已归档时为 null")
-    download_count = serializers.IntegerField(read_only=True, help_text="下载数")
     created_by = serializers.CharField(read_only=True, help_text="第一次上传的人")
     created_time = serializers.DateTimeField(read_only=True, help_text="第一次上传的时间")
-    updated_by = serializers.CharField(read_only=True, help_text="最后修改人")
-    updated_time = serializers.DateTimeField(read_only=True, help_text="最后修改时间")
 
     class Meta:
         ref_name = "apigateway.apis.web.skill.serializers.SkillRetrieveOutputSLZ"
-
-    def get_tags(self, obj) -> List[str]:
-        return [tag.name for tag in obj.tags.all()]
 
     def get_stage(self, obj) -> Optional[str]:
         return self.context["stage"]

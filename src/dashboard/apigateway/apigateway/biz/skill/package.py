@@ -25,7 +25,7 @@ ZIP 条目顺序、时间和权限位固定。
 import io
 import zipfile
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 import yaml
 from django.conf import settings
@@ -83,26 +83,15 @@ def _represent_str(dumper: yaml.SafeDumper, data: str) -> yaml.ScalarNode:
 _DeclarationDumper.add_representer(str, _represent_str)
 
 
-def split_title(body: str) -> Tuple[Optional[str], str]:
-    """正文 -> (一级标题文字, 标题之后的内容)；第一行不是一级标题时标题为 None、内容原样返回
+def replace_title(body: str, title: str) -> str:
+    """把正文第一行的一级标题换成 title；第一行不是一级标题时原样返回
 
     例如：
-        "# 执行作业方案\\n\\n## 输入\\n" -> ("执行作业方案", "\\n## 输入\\n")
-        "## 输入\\n" -> (None, "## 输入\\n")
+        ("# 旧名\\n\\n正文", "新名") -> "# 新名\\n\\n正文"
+        ("## 输入\\n", "新名") -> "## 输入\\n"
     """
-    first, sep, rest = body.partition("\n")
-    if first.startswith(TITLE_PREFIX):
-        return first[len(TITLE_PREFIX) :].strip(), rest
-    return None, body
-
-
-def replace_title(body: str, title: str) -> str:
-    """把正文第一行的一级标题换成 title；没有一级标题时原样返回
-
-    例如：("# 旧名\\n\\n正文", "新名") -> "# 新名\\n\\n正文"
-    """
-    old_title, rest = split_title(body)
-    if old_title is None:
+    first, _sep, rest = body.partition("\n")
+    if not first.startswith(TITLE_PREFIX):
         return body
     return f"{TITLE_PREFIX}{title}\n{rest}"
 
@@ -216,7 +205,7 @@ def build_skill_package_files(
         source=SKILL_SOURCE,
         published_at=version.created_time,
     )
-    body = replace_title(version.artifact.get(SKILL_FILE_NAME, ""), metadata.display_name)
+    body = replace_title(version.artifact[SKILL_FILE_NAME], metadata.display_name)
     url_tmpl = (
         GatewayHandler.get_bk_api_url_tmpl(metadata.gateway_id)
         if metadata.type == SkillTypeEnum.GATEWAY.value

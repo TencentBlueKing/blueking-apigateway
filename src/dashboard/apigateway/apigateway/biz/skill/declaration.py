@@ -25,6 +25,7 @@
 
 import datetime
 import re
+from dataclasses import dataclass
 from typing import Annotated, Any, Dict, List, Optional, Tuple, Union
 
 import yaml
@@ -71,10 +72,51 @@ _ERROR_MESSAGES = {
 }
 
 
+@dataclass(frozen=True)
+class DeclarationFieldError:
+    """声明的一条错误；loc 为 pydantic 的错误位置，YAML 解析失败等不对应字段的错误为空"""
+
+    loc: Tuple[Union[str, int], ...]
+    message: str
+
+    @property
+    def field(self) -> Optional[str]:
+        """字段路径，数组下标写成 [n]；不对应字段时为 None"""
+        return _format_loc(self.loc) or None
+
+    def __str__(self) -> str:
+        """「字段路径: 说明」，不对应字段时只有说明；用于日志和内置注入的结果
+
+        例如：
+            loc ("orchestration", "steps", 0, "if")、说明「未知字段」 -> "orchestration.steps[0].if: 未知字段"
+            loc ()、说明「声明应为键值对」 -> "声明应为键值对"
+        """
+        return f"{self.field}: {self.message}" if self.field else self.message
+
+
 class SkillDeclarationError(Exception):
-    def __init__(self, errors: List[str]):
-        super().__init__("\n".join(errors))
-        self.errors = errors
+    def __init__(self, items: List[DeclarationFieldError]):
+        self.items = items
+        super().__init__("\n".join(self.errors))
+
+    @property
+    def errors(self) -> List[str]:
+        """每条错误的文本，见 DeclarationFieldError.__str__"""
+        return [str(item) for item in self.items]
+
+
+class _NoAliasSafeLoader(yaml.SafeLoader):
+    """不允许锚点和别名的 SafeLoader：别名转成 JSON 入库时会展开成多份，几 KB 的声明可以展开成很大的 JSON"""
+
+    def compose_node(self, parent, index):
+        """遇到锚点或别名时报错，其他同 SafeLoader
+
+        例如：合规 "a: 1"；不合规 "a: &x 1\\nb: *x"
+        """
+        event = self.peek_event()
+        if event.anchor:
+            raise yaml.YAMLError(_("声明不允许使用 YAML 锚点和别名"))
+        return super().compose_node(parent, index)
 
 
 _USES_PATTERN = re.compile(r"^([^/@]+)/([^/@]+)@([^/@]+)$")
@@ -533,40 +575,50 @@ def normalize_tag_name(name: str) -> str:
     return name.strip().lower()
 
 
+def load_declaration_yaml(text: str) -> Dict[str, Any]:
+    """声明 YAML 文本 -> dict；不是合法 YAML、用了锚点或别名、顶层不是对象时抛 SkillDeclarationError，错误不对应字段
+
+    例如："name: demo" -> {"name": "demo"}；"a: &x 1\\nb: *x"、"- 1" -> SkillDeclarationError
+    """
+    try:
+        data = yaml.load(text, Loader=_NoAliasSafeLoader)  # noqa: S506
+    except yaml.YAMLError as err:
+        message = _("YAML 解析失败：{error}").format(error=" ".join(str(err).split()))
+        raise SkillDeclarationError([DeclarationFieldError((), message)]) from None
+    if not isinstance(data, dict):
+        raise SkillDeclarationError([DeclarationFieldError((), _("声明应为键值对"))])
+    return data
+
+
 def parse_declaration(data: Union[str, Dict[str, Any]]) -> SkillDeclaration:
-    """YAML 文本或 dict -> 声明；不合规时抛 SkillDeclarationError，errors 里每条带字段路径
+    """YAML 文本或 dict -> 声明；不合规时抛 SkillDeclarationError，items 里每条带 pydantic 的错误位置
 
     例如：
         data/skill/declarations/ 下的声明文本 -> SkillDeclaration
         version 写成 "1.0" -> errors 为 ["version: 版本号应为 major.minor.patch，如 1.0.0：1.0"]
     """
     if isinstance(data, str):
-        try:
-            data = yaml.safe_load(data)
-        except yaml.YAMLError as err:
-            raise SkillDeclarationError(
-                [_("YAML 解析失败：{error}").format(error=" ".join(str(err).split()))]
-            ) from None
+        data = load_declaration_yaml(data)
 
     try:
         return SkillDeclaration.model_validate(data)
     except ValidationError as err:
-        raise SkillDeclarationError([_format_error(item) for item in err.errors()]) from None
+        raise SkillDeclarationError([_to_field_error(item) for item in err.errors()]) from None
 
 
-def _format_error(error: Dict[str, Any]) -> str:
-    """pydantic 的一条错误 -> 「字段路径: 说明」；自定义校验取 ValueError 原文，内置错误按 _ERROR_MESSAGES 翻译
+def _to_field_error(error: Dict[str, Any]) -> DeclarationFieldError:
+    """pydantic 的一条错误 -> DeclarationFieldError；自定义校验取 ValueError 原文，内置错误按 _ERROR_MESSAGES 翻译
 
     例如：
-        loc 为 ("orchestration", "steps", 0, "if")、type 为 extra_forbidden -> "orchestration.steps[0].if: 未知字段"
-        模型级校验 loc 为空 -> "声明: <说明>"
+        loc 为 ("orchestration", "steps", 0, "if")、type 为 extra_forbidden
+            -> DeclarationFieldError(("orchestration", "steps", 0, "if"), "未知字段")
+        version 的 ValueError -> DeclarationFieldError(("version",), "版本号应为 major.minor.patch，如 1.0.0：1.0")
     """
-    path = _format_loc(error["loc"]) or _("声明")
     if error["type"] == "value_error":
         message = str(error["ctx"]["error"])
     else:
         message = str(_ERROR_MESSAGES.get(error["type"], error["msg"]))
-    return f"{path}: {message}"
+    return DeclarationFieldError(tuple(error["loc"]), message)
 
 
 def _format_loc(loc: Tuple[Union[str, int], ...]) -> str:
