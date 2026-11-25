@@ -1255,6 +1255,6 @@ class SkillDownloadApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         metadata = SkillHandler.get_open_skill(kwargs["skill_id"])
         version = SkillHandler.get_version(metadata, kwargs.get("version"))
-        version, content = build_skill_package_zip(metadata, version)
+        content = build_skill_package_zip(metadata, version)
         SkillHandler.increase_download_count(metadata.id)
         return DownloadableResponse(io.BytesIO(content), filename=get_skill_package_filename(metadata, version))

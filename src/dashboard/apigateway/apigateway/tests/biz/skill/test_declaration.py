@@ -97,6 +97,7 @@ class TestTopLevelRules:
             ("display_name", "执行\r作业方案"),
             ("display_name_en", "   "),
             ("display_name_en", "x" * 65),
+            ("display_name_en", "Run\nJob"),
             ("description", ""),
             ("version", "1.0"),
             ("version", 1.0),

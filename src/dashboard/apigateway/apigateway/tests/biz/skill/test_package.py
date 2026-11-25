@@ -29,7 +29,6 @@ from apigateway.apps.skill.models import SkillMetadata, SkillVersion
 from apigateway.biz.skill.constants import SkillReferencePlaceholderEnum
 from apigateway.biz.skill.declaration import parse_declaration
 from apigateway.biz.skill.package import (
-    SkillNotPublishedError,
     build_skill_package_files,
     build_skill_package_zip,
     get_skill_package_filename,
@@ -120,9 +119,9 @@ class TestLoadReferences:
 @pytest.mark.django_db
 class TestBuildSkillPackageFiles:
     def test_platform(self, platform_metadata):
-        version, files = build_skill_package_files(platform_metadata)
+        version = platform_metadata.current_version
+        files = build_skill_package_files(platform_metadata, version)
 
-        assert version == platform_metadata.current_version
         assert [path for path, _ in files] == [
             "SKILL.md",
             "references/how-to-call-apis.md",
@@ -142,7 +141,7 @@ class TestBuildSkillPackageFiles:
         assert "bk-apigw-skill-id" not in dict(files)["SKILL.md"]
 
     def test_gateway_author_is_version_creator(self, gateway_metadata):
-        _, files = build_skill_package_files(gateway_metadata)
+        files = build_skill_package_files(gateway_metadata, gateway_metadata.current_version)
 
         data = _frontmatter(files)
         assert data["metadata"]["type"] == "gateway"
@@ -154,7 +153,7 @@ class TestBuildSkillPackageFiles:
         platform_metadata.description = "新的描述"
         platform_metadata.save()
 
-        _, files = build_skill_package_files(platform_metadata)
+        files = build_skill_package_files(platform_metadata, platform_metadata.current_version)
 
         data = _frontmatter(files)
         assert (data["display_name"], data["display_name_en"], data["description"]) == ("新名称", "", "新的描述")
@@ -172,23 +171,17 @@ class TestBuildSkillPackageFiles:
         )
         platform_metadata.refresh_from_db()
 
-        version, files = build_skill_package_files(platform_metadata, old_version)
+        files = build_skill_package_files(platform_metadata, old_version)
 
-        assert version == old_version
         assert _frontmatter(files)["metadata"]["version"] == old_version.version
 
-    def test_not_published(self):
-        metadata = G(SkillMetadata, type=SkillTypeEnum.PLATFORM.value, gateway=None, current_version=None)
-
-        with pytest.raises(SkillNotPublishedError):
-            build_skill_package_files(metadata)
-
     def test_with_declaration(self, gateway_metadata):
-        version, files = build_skill_package_files(gateway_metadata, with_declaration=True)
+        version = gateway_metadata.current_version
+        files = build_skill_package_files(gateway_metadata, version, with_declaration=True)
 
         assert [path for path, _ in files][-1] == "declaration.yaml"
         assert dict(files)["declaration.yaml"] == render_declaration_yaml(gateway_metadata, version)
-        _, plain = build_skill_package_files(gateway_metadata)
+        plain = build_skill_package_files(gateway_metadata, version)
         assert "declaration.yaml" not in dict(plain)
 
 
@@ -251,7 +244,8 @@ class TestRenderDeclarationYaml:
 @pytest.mark.django_db
 class TestBuildSkillPackageZip:
     def test_structure(self, platform_metadata):
-        version, content = build_skill_package_zip(platform_metadata)
+        version = platform_metadata.current_version
+        content = build_skill_package_zip(platform_metadata, version)
 
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             names = archive.namelist()
@@ -260,21 +254,23 @@ class TestBuildSkillPackageZip:
                 f"{platform_metadata.name}/references/how-to-call-apis.md",
                 f"{platform_metadata.name}/references/permissions.md",
             ]
-            _, files = build_skill_package_files(platform_metadata, version)
+            files = build_skill_package_files(platform_metadata, version)
             for path, text in files:
                 assert archive.read(f"{platform_metadata.name}/{path}").decode("utf-8") == text
 
     def test_with_declaration(self, gateway_metadata):
-        _, content = build_skill_package_zip(gateway_metadata, with_declaration=True)
+        content = build_skill_package_zip(gateway_metadata, gateway_metadata.current_version, with_declaration=True)
 
         with zipfile.ZipFile(io.BytesIO(content)) as archive:
             assert f"{gateway_metadata.name}/declaration.yaml" in archive.namelist()
 
     @pytest.mark.parametrize("with_declaration", [False, True])
     def test_deterministic(self, gateway_metadata, with_declaration):
-        _, first = build_skill_package_zip(gateway_metadata, with_declaration=with_declaration)
+        first = build_skill_package_zip(
+            gateway_metadata, gateway_metadata.current_version, with_declaration=with_declaration
+        )
         metadata = SkillMetadata.objects.get(id=gateway_metadata.id)
-        _, second = build_skill_package_zip(metadata, with_declaration=with_declaration)
+        second = build_skill_package_zip(metadata, metadata.current_version, with_declaration=with_declaration)
 
         assert hashlib.sha256(first).hexdigest() == hashlib.sha256(second).hexdigest()
 

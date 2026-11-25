@@ -73,7 +73,7 @@ class TestUpdateSkillBasicInfo:
         assert metadata.updated_time > OLD_TIME
         assert metadata.download_count == 5
         assert SkillVersion.objects.count() == version_count
-        _, files = build_skill_package_files(metadata)
+        files = build_skill_package_files(metadata, metadata.current_version)
         assert "display_name: 发布核对" in files[0][1]
         assert "\n# 发布核对\n" in files[0][1]
 

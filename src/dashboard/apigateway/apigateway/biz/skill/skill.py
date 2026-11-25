@@ -187,24 +187,24 @@ class SkillHandler:
         return [{"name": row["skilltag__name"], "skill_count": row["skill_count"]} for row in rows]
 
     @staticmethod
-    def _get_skill(queryset: QuerySet, skill_id: str, gateway: Optional[Gateway] = None) -> SkillMetadata:
-        """按对外 ID 在 queryset 里找 Skill；传了 gateway 时只认这个网关的 g_ ID；找不到抛 NOT_FOUND
+    def _get_skill(queryset: QuerySet, skill_id: str) -> SkillMetadata:
+        """按对外 ID 在 queryset 里找 Skill；ID 解析失败或不在 queryset 里抛 NOT_FOUND
 
-        例如：gateway 为 demo 时，"g_demo_release-check" 能找到；"g_other_release-check"、"p_release-check" -> 404
+        例如：queryset 只有网关 demo 的 Skill 时，"g_demo_release-check" 能找到；"g_other_release-check"、"p_release-check" -> 404
         """
         parsed = SkillHandler.parse_skill_id(skill_id)
-        if parsed is not None:
-            skill_type, gateway_name, name = parsed
-            if gateway is None or (skill_type == SkillTypeEnum.GATEWAY.value and gateway_name == gateway.name):
-                lookup: Dict[str, Any] = {"type": skill_type, "name": name}
-                if skill_type == SkillTypeEnum.GATEWAY.value:
-                    lookup["gateway__name"] = gateway_name
-                else:
-                    lookup["gateway__isnull"] = True
-                metadata = queryset.select_related("gateway", "current_version").filter(**lookup).first()
-                if metadata is not None:
-                    return metadata
-        raise error_codes.NOT_FOUND.format(_("Skill {skill_id} 不存在").format(skill_id=skill_id), replace=True)
+        if parsed is None:
+            raise error_codes.NOT_FOUND.format(_("Skill {skill_id} 不存在").format(skill_id=skill_id), replace=True)
+        skill_type, gateway_name, name = parsed
+        lookup: Dict[str, Any] = {"type": skill_type, "name": name}
+        if skill_type == SkillTypeEnum.GATEWAY.value:
+            lookup["gateway__name"] = gateway_name
+        else:
+            lookup["gateway__isnull"] = True
+        metadata = queryset.select_related("gateway", "current_version").filter(**lookup).first()
+        if metadata is None:
+            raise error_codes.NOT_FOUND.format(_("Skill {skill_id} 不存在").format(skill_id=skill_id), replace=True)
+        return metadata
 
     @staticmethod
     def get_market_skill(skill_id: str, user_tenant_id: Optional[str]) -> SkillMetadata:
@@ -227,13 +227,11 @@ class SkillHandler:
 
     @staticmethod
     def get_gateway_skill(gateway: Gateway, skill_id: str) -> SkillMetadata:
-        """网关 Skill 接口按对外 ID 取 Skill，不限状态；ID 必须属于这个网关，否则抛 NOT_FOUND
-
-        网关接口的权限只按 gateway_id 判断，不校验网关名时网关 A 的管理员能经 A 的路径操作 B 的 Skill。
+        """网关 Skill 接口按对外 ID 取 Skill，不限状态；ID 不属于这个网关时抛 NOT_FOUND
 
         例如：路径是网关 demo，ID 为 "g_other_release-check" -> 404，即使 other 下有这条 Skill
         """
-        return SkillHandler._get_skill(SkillHandler.get_gateway_queryset(gateway), skill_id, gateway)
+        return SkillHandler._get_skill(SkillHandler.get_gateway_queryset(gateway), skill_id)
 
     @staticmethod
     def get_version(metadata: SkillMetadata, version: Optional[str] = None) -> SkillVersion:

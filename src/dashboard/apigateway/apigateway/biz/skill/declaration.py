@@ -171,10 +171,58 @@ def _check_text_not_empty(value: str) -> str:
     return value
 
 
+def check_skill_display_name(value: str) -> str:
+    """展示名、英文名去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH，不能含换行；返回去掉空白后的值
+
+    声明和网关 Skill 页面的基本信息表单共用，页面上能保存的值导出到 declaration.yaml 后能原样上传。
+
+    例如：" 执行作业方案 " -> "执行作业方案"；不合规 "   "、中间有换行的文本
+    """
+    value = value.strip()
+    if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
+        raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
+    # 展示名会写成 SKILL.md 的一级标题，中间换行会拆开这一行
+    if "\n" in value or "\r" in value:
+        raise ValueError(_("不能包含换行"))
+    return value
+
+
+def check_skill_description(value: str) -> str:
+    """描述长度为 1 到 SKILL_DESCRIPTION_MAX_LENGTH；声明和基本信息表单共用
+
+    例如：不合规 ""、超过 1024 个字符的文本
+    """
+    if not 1 <= len(value) <= SKILL_DESCRIPTION_MAX_LENGTH:
+        raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DESCRIPTION_MAX_LENGTH))
+    return value
+
+
+def check_skill_tags(value: List[str]) -> List[str]:
+    """至少一个标签；规范化（去首尾空白、转小写）后长度不超限、不重复；声明和基本信息表单共用
+
+    例如：合规 ["job", "写操作"]；不合规 []、["JOB", " job "]（规范化后重复）
+    """
+    if not value:
+        raise ValueError(_("至少需要一个标签"))
+    normalized = [normalize_tag_name(tag) for tag in value]
+    for tag, name in zip(value, normalized):
+        if not 1 <= len(name) <= SKILL_TAG_NAME_MAX_LENGTH:
+            raise ValueError(
+                _("标签名长度应为 1–{max_length}：{tag}").format(max_length=SKILL_TAG_NAME_MAX_LENGTH, tag=repr(tag))
+            )
+    for index, name in enumerate(normalized):
+        if name in normalized[:index]:
+            raise ValueError(_("标签规范化后重复：{name}").format(name=name))
+    return value
+
+
 ParamValue = Annotated[Any, AfterValidator(_check_ref)]
 TypeText = Annotated[StrictStr, AfterValidator(_check_type)]
 VersionText = Annotated[StrictStr, AfterValidator(_check_version)]
 DateText = Annotated[StrictStr, BeforeValidator(_date_to_text), AfterValidator(_check_date)]
+DisplayNameText = Annotated[StrictStr, AfterValidator(check_skill_display_name)]
+DescriptionText = Annotated[StrictStr, AfterValidator(check_skill_description)]
+TagList = Annotated[List[StrictStr], AfterValidator(check_skill_tags)]
 
 
 class _DeclarationModel(BaseModel):
@@ -437,10 +485,10 @@ class SkillChangelog(_DeclarationModel):
 
 class SkillDeclaration(_DeclarationModel):
     name: StrictStr
-    display_name: StrictStr
-    display_name_en: Optional[StrictStr] = None
-    description: StrictStr
-    tags: List[StrictStr]
+    display_name: DisplayNameText
+    display_name_en: Optional[DisplayNameText] = None
+    description: DescriptionText
+    tags: TagList
     version: VersionText
     changelog: SkillChangelog
     orchestration: SkillOrchestration
@@ -454,68 +502,6 @@ class SkillDeclaration(_DeclarationModel):
         """
         if len(value) > SKILL_NAME_MAX_LENGTH or not SKILL_NAME_PATTERN.fullmatch(value):
             raise ValueError(_("不合规：{value}").format(value=value))
-        return value
-
-    @field_validator("display_name")
-    @classmethod
-    def _check_display_name(cls, value: str) -> str:
-        """去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH，不能含换行；返回去掉空白后的值
-
-        例如：" 执行作业方案 " -> "执行作业方案"；不合规 "   "、中间有换行的文本
-        """
-        value = value.strip()
-        if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
-            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
-        # 展示名会写成 SKILL.md 的一级标题，中间换行会拆开这一行
-        if "\n" in value or "\r" in value:
-            raise ValueError(_("不能包含换行"))
-        return value
-
-    @field_validator("display_name_en")
-    @classmethod
-    def _check_display_name_en(cls, value: Optional[str]) -> Optional[str]:
-        """可以不写；写了时去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH
-
-        例如：" Run job plan " -> "Run job plan"；不合规 "   "
-        """
-        if value is None:
-            return None
-        value = value.strip()
-        if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
-            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
-        return value
-
-    @field_validator("description")
-    @classmethod
-    def _check_description(cls, value: str) -> str:
-        """长度为 1 到 SKILL_DESCRIPTION_MAX_LENGTH
-
-        例如：不合规 ""、超过 1024 个字符的文本
-        """
-        if not 1 <= len(value) <= SKILL_DESCRIPTION_MAX_LENGTH:
-            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DESCRIPTION_MAX_LENGTH))
-        return value
-
-    @field_validator("tags")
-    @classmethod
-    def _check_tags(cls, value: List[str]) -> List[str]:
-        """至少一个标签；规范化（去首尾空白、转小写）后长度不超限、不重复
-
-        例如：合规 ["job", "写操作"]；不合规 []、["JOB", " job "]（规范化后重复）
-        """
-        if not value:
-            raise ValueError(_("至少需要一个标签"))
-        normalized = [normalize_tag_name(tag) for tag in value]
-        for tag, name in zip(value, normalized):
-            if not 1 <= len(name) <= SKILL_TAG_NAME_MAX_LENGTH:
-                raise ValueError(
-                    _("标签名长度应为 1–{max_length}：{tag}").format(
-                        max_length=SKILL_TAG_NAME_MAX_LENGTH, tag=repr(tag)
-                    )
-                )
-        for index, name in enumerate(normalized):
-            if name in normalized[:index]:
-                raise ValueError(_("标签规范化后重复：{name}").format(name=name))
         return value
 
     def changelog_data(self) -> Dict[str, Any]:

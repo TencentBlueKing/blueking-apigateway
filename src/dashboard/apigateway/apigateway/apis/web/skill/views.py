@@ -142,7 +142,7 @@ def _publish(request, data: Dict[str, Any], skill_name: Optional[str] = None, da
 
 def _file_list_response(metadata: SkillMetadata, version_str: Optional[str]):
     version = SkillHandler.get_version(metadata, version_str)
-    version, files = build_skill_package_files(metadata, version, with_declaration=True)
+    files = build_skill_package_files(metadata, version, with_declaration=True)
     data = {
         "name": metadata.name,
         "version": version.version,
@@ -455,7 +455,7 @@ class SkillDownloadApi(SkillQuerySetMixin, generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         metadata = self.get_skill()
         version = SkillHandler.get_version(metadata, kwargs.get("version"))
-        version, content = build_skill_package_zip(metadata, version, with_declaration=True)
+        content = build_skill_package_zip(metadata, version, with_declaration=True)
         SkillHandler.increase_download_count(metadata.id)
         return DownloadableResponse(
             io.BytesIO(content), filename=get_skill_package_filename(metadata, version, with_declaration=True)

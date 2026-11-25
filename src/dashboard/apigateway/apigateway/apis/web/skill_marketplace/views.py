@@ -158,7 +158,7 @@ class SkillMarketplaceSkillFileListApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         metadata = SkillHandler.get_market_skill(kwargs["skill_id"], get_user_tenant_id(request))
         version = SkillHandler.get_version(metadata, kwargs.get("version"))
-        version, files = build_skill_package_files(metadata, version)
+        files = build_skill_package_files(metadata, version)
         data = {
             "name": metadata.name,
             "version": version.version,
@@ -179,6 +179,6 @@ class SkillMarketplaceSkillDownloadApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         metadata = SkillHandler.get_market_skill(kwargs["skill_id"], get_user_tenant_id(request))
         version = SkillHandler.get_version(metadata, kwargs.get("version"))
-        version, content = build_skill_package_zip(metadata, version)
+        content = build_skill_package_zip(metadata, version)
         SkillHandler.increase_download_count(metadata.id)
         return DownloadableResponse(io.BytesIO(content), filename=get_skill_package_filename(metadata, version))

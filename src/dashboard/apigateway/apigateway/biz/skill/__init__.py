@@ -17,6 +17,7 @@
 #
 
 from .constants import SKILL_DECLARATIONS_DIR, SKILL_PACKAGE_MAX_SIZE, SkillSyncStatusEnum
+from .declaration import check_skill_description, check_skill_display_name, check_skill_tags
 from .manager import (
     SkillNotArchivedError,
     delete_skill,
@@ -25,12 +26,7 @@ from .manager import (
     set_skill_status,
     update_skill_basic_info,
 )
-from .package import (
-    SkillNotPublishedError,
-    build_skill_package_files,
-    build_skill_package_zip,
-    get_skill_package_filename,
-)
+from .package import build_skill_package_files, build_skill_package_zip, get_skill_package_filename
 from .skill import SkillHandler
 from .syncer import DECLARATION_FILE_PATTERN, sync_platform_skills
 from .uploader import SkillPackageInvalidError, SkillUploadForm, check_skill_package, publish_gateway_skill
@@ -47,7 +43,6 @@ __all__ = [
     "SkillArchivedError",
     "SkillHandler",
     "SkillNotArchivedError",
-    "SkillNotPublishedError",
     "SkillPackageInvalidError",
     "SkillUploadForm",
     "SkillVersionExistsError",
@@ -55,7 +50,10 @@ __all__ = [
     # functions
     "build_skill_package_files",
     "build_skill_package_zip",
+    "check_skill_description",
+    "check_skill_display_name",
     "check_skill_package",
+    "check_skill_tags",
     "delete_skill",
     "ensure_not_archived",
     "get_skill_package_filename",

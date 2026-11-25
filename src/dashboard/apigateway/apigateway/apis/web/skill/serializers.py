@@ -15,13 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from typing import List, Optional
+from typing import Any, Callable, List, Optional
 
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.apps.skill.constants import SkillStatusEnum
-from apigateway.biz.skill import SKILL_PACKAGE_MAX_SIZE
+from apigateway.apps.skill.constants import (
+    SKILL_DESCRIPTION_MAX_LENGTH,
+    SKILL_DISPLAY_NAME_MAX_LENGTH,
+    SkillStatusEnum,
+)
+from apigateway.biz.skill import (
+    SKILL_PACKAGE_MAX_SIZE,
+    check_skill_description,
+    check_skill_display_name,
+    check_skill_tags,
+)
 
 
 class SkillChangelogOutputSLZ(serializers.Serializer):
@@ -110,53 +119,45 @@ def validate_skill_package_file(value):
     return value
 
 
-def validate_skill_tags(tags: List[str]) -> List[str]:
-    """标签至少一个；去首尾空白后不能为空、不超过 64 个字符，不区分大小写不能重复"""
-    names = [tag.strip() for tag in tags]
-    if not names:
-        raise serializers.ValidationError(_("至少填写一个标签"))
-    for name in names:
-        if not name or len(name) > 64:
-            raise serializers.ValidationError(_("标签长度应为 1-64 个字符"))
-    lowered = [name.lower() for name in names]
-    if len(set(lowered)) != len(lowered):
-        raise serializers.ValidationError(_("标签不能重复（不区分大小写）"))
-    return names
-
-
-def validate_single_line(value: Optional[str]) -> Optional[str]:
-    """名称不能换行"""
-    if value and ("\n" in value or "\r" in value):
-        raise serializers.ValidationError(_("不能包含换行"))
-    return value
+def _check_basic_info(check: Callable[[Any], Any], value: Any) -> Any:
+    """按声明的字段规则校验，ValueError 转成字段的 ValidationError"""
+    try:
+        return check(value)
+    except ValueError as err:
+        raise serializers.ValidationError(str(err))
 
 
 class SkillBasicInfoInputSLZ(serializers.Serializer):
-    """表单里的基本信息；上传时覆盖包里的同名字段，只改基本信息时直接写入"""
+    """表单里的基本信息；上传时覆盖包里的同名字段，只改基本信息时直接写入；字段规则同声明"""
 
-    display_name = serializers.CharField(max_length=64, validators=[validate_single_line], help_text="名称")
+    display_name = serializers.CharField(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH, help_text="名称")
     display_name_en = serializers.CharField(
-        max_length=64,
+        max_length=SKILL_DISPLAY_NAME_MAX_LENGTH,
         required=False,
         allow_blank=True,
         allow_null=True,
         default=None,
-        validators=[validate_single_line],
         help_text="英文名，空字符串或 null 表示没有",
     )
-    description = serializers.CharField(max_length=1024, help_text="描述")
-    tags = serializers.ListField(
-        child=serializers.CharField(allow_blank=True), validators=[validate_skill_tags], help_text="标签"
-    )
+    description = serializers.CharField(max_length=SKILL_DESCRIPTION_MAX_LENGTH, help_text="描述")
+    tags = serializers.ListField(child=serializers.CharField(allow_blank=True), help_text="标签")
 
     class Meta:
         ref_name = "apigateway.apis.web.skill.serializers.SkillBasicInfoInputSLZ"
 
+    def validate_display_name(self, value: str) -> str:
+        return _check_basic_info(check_skill_display_name, value)
+
     def validate_display_name_en(self, value: Optional[str]) -> Optional[str]:
-        return value or None
+        if not value:
+            return None
+        return _check_basic_info(check_skill_display_name, value)
+
+    def validate_description(self, value: str) -> str:
+        return _check_basic_info(check_skill_description, value)
 
     def validate_tags(self, value: List[str]) -> List[str]:
-        return [tag.strip() for tag in value]
+        return _check_basic_info(check_skill_tags, value)
 
 
 class SkillPackageCheckInputSLZ(serializers.Serializer):

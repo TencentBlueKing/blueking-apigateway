@@ -59,10 +59,6 @@ _ZIP_CREATE_SYSTEM_UNIX = 3
 _EXAMPLE_GATEWAY, _EXAMPLE_STAGE, _EXAMPLE_PATH = "bk-sops", "prod", "/get_task_list/2/?limit=5"
 
 
-class SkillNotPublishedError(Exception):
-    pass
-
-
 class _DeclarationDumper(yaml.SafeDumper):
     """声明 YAML 的输出格式：不输出锚点和别名（上传时会拒绝），多行字符串用 | 块"""
 
@@ -161,18 +157,6 @@ def load_references() -> List[Tuple[str, str]]:
     return references
 
 
-def _get_version(metadata: SkillMetadata, version: Optional[SkillVersion]) -> SkillVersion:
-    """要打包的版本：传了就用它，否则用当前版本；没有当前版本时抛 SkillNotPublishedError
-
-    例如：version=None、当前版本 1.2.0 -> 1.2.0；新建后还没写版本的 metadata -> SkillNotPublishedError
-    """
-    if version is not None:
-        return version
-    if metadata.current_version is None:
-        raise SkillNotPublishedError(_("Skill {name} 没有已发布的版本").format(name=metadata.name))
-    return metadata.current_version
-
-
 def render_declaration_yaml(metadata: SkillMetadata, version: SkillVersion) -> str:
     """按库里的数据生成声明 YAML：基本信息取 metadata 当前值，version、changelog、orchestration 取该版本
 
@@ -207,19 +191,18 @@ def render_declaration_yaml(metadata: SkillMetadata, version: SkillVersion) -> s
 
 
 def build_skill_package_files(
-    metadata: SkillMetadata, version: Optional[SkillVersion] = None, with_declaration: bool = False
-) -> Tuple[SkillVersion, List[Tuple[str, str]]]:
-    """生成下载包的文件：(实际打包的版本, [(包内相对路径, 内容)])，路径相对 {name}/
+    metadata: SkillMetadata, version: SkillVersion, with_declaration: bool = False
+) -> List[Tuple[str, str]]:
+    """生成下载包的文件：[(包内相对路径, 内容)]，路径相对 {name}/
 
     frontmatter 的名称、描述、展示名取 metadata 当前值，版本号、author、datetime 取打包的版本；
     正文取版本冻结的正文，一级标题换成 metadata 当前的 display_name。
     with_declaration 为 True 时（网关 Skill 管理页）另带 declaration.yaml，见 render_declaration_yaml。
 
-    例如：网关 Skill 当前版本 1.2.0、由 admin 发布 ->
+    例如：网关 Skill 版本 1.2.0、由 admin 发布 ->
         [("SKILL.md", "---\\nname: ...\\n  author: \\"admin\\"..."), ("references/how-to-call-apis.md", ...),
          ("references/permissions.md", ...)]；with_declaration 时末尾多一项 ("declaration.yaml", ...)
     """
-    version = _get_version(metadata, version)
     author = PLATFORM_SKILL_AUTHOR if metadata.type == SkillTypeEnum.PLATFORM.value else version.created_by
     frontmatter = render_frontmatter(
         name=metadata.name,
@@ -236,18 +219,16 @@ def build_skill_package_files(
     files = [(SKILL_FILE_NAME, f"{frontmatter}\n{body}"), *load_references()]
     if with_declaration:
         files.append((SKILL_DECLARATION_FILE_NAME, render_declaration_yaml(metadata, version)))
-    return version, files
+    return files
 
 
-def build_skill_package_zip(
-    metadata: SkillMetadata, version: Optional[SkillVersion] = None, with_declaration: bool = False
-) -> Tuple[SkillVersion, bytes]:
-    """生成下载包 ZIP：(实际打包的版本, ZIP 字节)，解压为 {name}/SKILL.md、{name}/references/*.md，
+def build_skill_package_zip(metadata: SkillMetadata, version: SkillVersion, with_declaration: bool = False) -> bytes:
+    """生成下载包 ZIP 字节，解压为 {name}/SKILL.md、{name}/references/*.md，
     with_declaration 时另有 {name}/declaration.yaml
 
     例如：同一版本、基本信息没改时打两次 -> 字节相同；只改了 display_name -> SKILL.md 变了，字节不同
     """
-    version, files = build_skill_package_files(metadata, version, with_declaration=with_declaration)
+    files = build_skill_package_files(metadata, version, with_declaration=with_declaration)
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
         for path, content in sorted(files):
@@ -256,7 +237,7 @@ def build_skill_package_zip(
             info.create_system = _ZIP_CREATE_SYSTEM_UNIX
             info.external_attr = _ZIP_ENTRY_MODE << 16
             archive.writestr(info, content.encode("utf-8"))
-    return version, buffer.getvalue()
+    return buffer.getvalue()
 
 
 def get_skill_package_filename(metadata: SkillMetadata, version: SkillVersion, with_declaration: bool = False) -> str:
