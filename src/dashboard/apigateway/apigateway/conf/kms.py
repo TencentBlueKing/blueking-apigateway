@@ -106,22 +106,6 @@ def _credential_bindings(env: Env) -> dict[str, tuple[str, ...]]:
     return bindings
 
 
-def _optional_credential_bindings(env: Env) -> dict[str, tuple[str, ...]]:
-    """KMS 中可以不配置的凭据，未配置时与 KMS 未开启时一样从环境变量读取"""
-    bindings = {}
-    # sentinel 节点通常不设密码
-    if env.str("BK_APIGW_REDIS_MODE", "single") == "sentinel":
-        bindings["BK_APIGW_REDIS_SENTINEL_PASSWORD"] = ("redis", "sentinel", "password")
-    return bindings
-
-
-def _get_credential(credentials: object, path: tuple[str, ...]) -> str | None:
-    value = credentials
-    for part in path:
-        value = value.get(part) if isinstance(value, dict) else None
-    return value if isinstance(value, str) and value.strip() else None
-
-
 def is_kms_enabled() -> bool:
     return os.environ.get("ENABLE_KMS") in ("true", "True")
 
@@ -195,12 +179,10 @@ def get_env() -> Env:
 
     values = {}
     for name, path in _credential_bindings(env).items():
-        value = _get_credential(credentials, path)
-        if value is None:
+        value = credentials
+        for part in path:
+            value = value.get(part) if isinstance(value, dict) else None
+        if not isinstance(value, str) or not value.strip():
             raise ImproperlyConfigured(f"KMS requires a non-empty string at {'.'.join(path)}")
         values[name] = value
-    for name, path in _optional_credential_bindings(env).items():
-        value = _get_credential(credentials, path)
-        if value is not None:
-            values[name] = value
     return _KMSEnv(values)
