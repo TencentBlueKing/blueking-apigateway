@@ -14,7 +14,7 @@ export default {
     ],
     'selector-pseudo-class-no-unknown': [
       true,
-      { ignorePseudoClasses: ['/deep/', '/global/'] },
+      { ignorePseudoClasses: ['/deep/', '/global/', '/slotted/'] },
     ],
     'import-notation': 'string',
     'selector-class-pattern': '^[a-z][a-z0-9_-]+$',
@@ -23,7 +23,7 @@ export default {
     'selector-id-pattern': null,
     'rule-empty-line-before': 'always',
     'order/properties-order': [
-      // 指定声明块内属性的字母顺序
+      // 指定声明块内属性的逻辑顺序（定位 → 盒模型 → 排版 → 视觉 → 动画）
       'position',
       'top',
       'right',

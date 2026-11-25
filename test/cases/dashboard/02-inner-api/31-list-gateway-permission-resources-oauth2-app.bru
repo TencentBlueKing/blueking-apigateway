@@ -1,0 +1,40 @@
+meta {
+  name: v2-inner-list-gateway-permission-resources-oauth2-app
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/oauth2-app/permissions/resources/?target_app_code={{test_bk_app_code}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  function permissionLevel(name) {
+    var item = res.getBody().data.find(function(r) { return r.name === name; });
+    expect(item, "resource " + name + " is listed").to.exist;
+    return item.permission_level;
+  }
+
+  test("resources requiring app permission are listed as normal", function() {
+    expect(permissionLevel("ua_p1")).to.eql("normal");
+    expect(permissionLevel("app_p1")).to.eql("normal");
+    expect(permissionLevel("ua_personal")).to.eql("normal");
+  });
+
+  test("resources without app permission are listed as unlimited, even if applying is not allowed", function() {
+    ["u_personal", "ats_apikey", "ats_bearer", "none"].forEach(function(name) {
+      expect(permissionLevel(name), name).to.eql("unlimited");
+    });
+  });
+}

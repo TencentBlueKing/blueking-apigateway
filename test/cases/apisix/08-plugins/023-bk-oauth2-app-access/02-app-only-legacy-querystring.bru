@@ -1,0 +1,15 @@
+meta {
+  name: app-only-legacy-querystring
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/app_p1?bk_app_code={{bk_app_code}}&bk_app_secret={{bk_app_secret}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

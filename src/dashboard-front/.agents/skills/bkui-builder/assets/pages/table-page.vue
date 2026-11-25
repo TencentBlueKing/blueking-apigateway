@@ -1,293 +1,342 @@
 <template>
   <div class="table-page">
-    <!-- 提示信息 -->
-    <bk-alert theme="info" class="mb16">
-      <template #title>平台按优先级从大到小匹配，可直接编辑优先级数值。</template>
-    </bk-alert>
+    <BkAlert
+      class="mb-16px"
+      theme="info"
+      :title="t('支持按名称、描述快速检索，点击列设置可自定义展示字段。')"
+    />
 
     <!-- 工具栏 -->
-    <div class="toolbar mb16">
-      <!-- 左侧：新建按钮 -->
-      <bk-button theme="primary" @click="handleCreate">新建</bk-button>
+    <div class="flex items-center justify-between mb-16px">
+      <BkButton
+        theme="primary"
+        @click="handleCreate"
+      >
+        {{ t('新建') }}
+      </BkButton>
 
-      <!-- 右侧：Tab 筛选 + 搜索框 -->
-      <div class="toolbar-right">
-        <!-- Tab 筛选 -->
-        <bk-tab v-model:active="activeTab" type="card" class="filter-tab" @change="handleTabChange">
-          <bk-tab-panel name="all" :label="`全部 (${totalCount})`" />
-          <bk-tab-panel name="enabled" :label="`启用 (${enabledCount})`" />
-          <bk-tab-panel name="disabled" :label="`停用 (${disabledCount})`" />
-        </bk-tab>
+      <div class="flex items-center gap-12px">
+        <BkRadioGroup
+          v-model="activeStatus"
+          type="capsule"
+          @change="handleSearch"
+        >
+          <BkRadioButton label="all">
+            {{ t('全部') }}
+          </BkRadioButton>
+          <BkRadioButton label="enabled">
+            {{ t('启用') }}
+          </BkRadioButton>
+          <BkRadioButton label="disabled">
+            {{ t('停用') }}
+          </BkRadioButton>
+        </BkRadioGroup>
 
-        <!-- 搜索框 -->
-        <bk-input
-          v-model="searchKey"
-          placeholder="搜索 名称、描述、更新人、定义"
-          :clearable="true"
-          style="width: 280px"
+        <BkInput
+          v-model="keyword"
+          class="w-280px"
+          :placeholder="t('搜索名称、描述')"
+          clearable
           @enter="handleSearch"
+          @clear="handleSearch"
         >
           <template #suffix>
-            <Search class="search-icon" @click="handleSearch" />
+            <span
+              class="flex items-center pr-8px cursor-pointer color-#979ba5"
+              @click="handleSearch"
+            >
+              <Search />
+            </span>
           </template>
-        </bk-input>
+        </BkInput>
       </div>
     </div>
 
-    <!-- 表格 -->
-    <bk-table
-      :data="tableData"
+    <!-- 泛型业务表格 -->
+    <AgTable
+      ref="tableRef"
+      v-model:table-data="tableData"
+      cache-identifier="ExampleListPage"
+      show-settings
+      resizable
+      :filter-value="filterData"
+      :api-method="getTableData"
       :columns="columns"
-      :pagination="pagination"
-      :remote-pagination="true"
-      :settings="true"
-      @page-value-change="handlePageChange"
-      @page-limit-change="handleLimitChange"
       @filter-change="handleFilterChange"
-      @sort-change="handleSortChange"
-    >
-      <!-- 来源列：Tag -->
-      <template #source="{ row }">
-        <bk-tag :theme="row.source === 'builtin' ? 'info' : 'success'">
-          {{ row.source === 'builtin' ? '内置' : '自定义' }}
-        </bk-tag>
-      </template>
-
-      <!-- 启停列：Switcher -->
-      <template #enabled="{ row }">
-        <bk-switcher
-          v-model="row.enabled"
-          theme="primary"
-          size="small"
-          @change="(val) => handleToggle(row, val)"
-        />
-      </template>
-
-      <!-- 操作列 -->
-      <template #operation="{ row }">
-        <bk-button text theme="primary" @click="handleEdit(row)">编辑</bk-button>
-        <bk-button text theme="danger" @click="handleDelete(row)">删除</bk-button>
-      </template>
-    </bk-table>
+      @clear-filter="handleClearFilter"
+    />
 
     <!-- 新建/编辑弹窗 -->
-    <!-- ⚠️ 注意: 使用 v-model:isShow，不是 v-model -->
-    <bk-dialog
-      v-model:isShow="dialogVisible"
-      :title="dialogTitle"
-      width="600"
+    <BkDialog
+      v-model:is-show="dialogVisible"
+      :title="isEdit ? t('编辑') : t('新建')"
+      :width="600"
+      :is-loading="submitting"
       @confirm="handleConfirm"
+      @closed="handleDialogClosed"
     >
-      <bk-form ref="formRef" :model="formData" :rules="formRules" label-width="100">
-        <bk-form-item label="名称" property="name" required>
-          <bk-input v-model="formData.name" placeholder="请输入名称" />
-        </bk-form-item>
-        <bk-form-item label="定义" property="definition" required>
-          <bk-input v-model="formData.definition" placeholder="请输入定义" />
-        </bk-form-item>
-        <bk-form-item label="描述" property="description">
-          <bk-input v-model="formData.description" type="textarea" placeholder="请输入描述" />
-        </bk-form-item>
-      </bk-form>
-    </bk-dialog>
+      <BkForm
+        ref="formRef"
+        :model="formData"
+        :rules="formRules"
+        form-type="vertical"
+      >
+        <BkFormItem
+          :label="t('名称')"
+          property="name"
+          required
+        >
+          <BkInput
+            v-model="formData.name"
+            :placeholder="t('请输入名称')"
+          />
+        </BkFormItem>
+        <BkFormItem
+          :label="t('描述')"
+          property="description"
+        >
+          <BkInput
+            v-model="formData.description"
+            type="textarea"
+            :placeholder="t('请输入描述')"
+          />
+        </BkFormItem>
+      </BkForm>
+    </BkDialog>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
-// ⚠️ 正确导入方式：从 bkui-vue/lib/icon 导入
+<script setup lang="tsx">
+import { Button, type Form, Switcher, Tag } from 'bkui-vue';
 import { Search } from 'bkui-vue/lib/icon';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableQuery,
+} from '@/components/base/ag-table';
+import type { ICountAndResults } from '@/services/types/utils';
 
-interface RowData {
-  id: number;
-  name: string;
-  source: 'builtin' | 'custom';
-  definition: string;
-  description: string;
-  updatedBy: string;
-  updatedAt: string;
-  enabled: boolean;
+interface IExampleRow {
+  id: number
+  name: string
+  source: 'builtin' | 'custom'
+  description: string
+  updated_by: string
+  updated_time: string
+  enabled: boolean
 }
 
-// Tab 筛选
-const activeTab = ref('all');
-const totalCount = ref(24);
-const enabledCount = ref(10);
-const disabledCount = ref(14);
+interface IExampleForm {
+  id: number
+  name: string
+  description: string
+}
 
-// 搜索
-const searchKey = ref('');
+const { t } = useI18n();
 
-// 表格配置
-const columns = [
-  { label: '名称', field: 'name', width: 150 },
+const tableRef = useTemplateRef<IAgTableInstance<IExampleRow>>('tableRef');
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
+
+// 列表与筛选状态
+const activeStatus = shallowRef<'all' | 'enabled' | 'disabled'>('all');
+const keyword = shallowRef('');
+const tableData = ref<IExampleRow[]>([]);
+const filterData = ref<FilterValue>({});
+
+const columns = shallowRef<ITableColumn<IExampleRow>[]>([
   {
-    label: '来源',
-    field: 'source',
-    width: 100,
+    title: t('名称'),
+    colKey: 'name',
+    ellipsis: true,
+    fixed: 'left',
+  },
+  {
+    title: t('来源'),
+    colKey: 'source',
+    width: 120,
     filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
       list: [
-        { text: '内置', value: 'builtin' },
-        { text: '自定义', value: 'custom' }
-      ]
-    }
+        {
+          label: t('内置'),
+          value: 'builtin',
+        },
+        {
+          label: t('自定义'),
+          value: 'custom',
+        },
+      ],
+    },
+    cell: (_h, { row }) => (
+      <Tag theme={row.source === 'builtin' ? 'info' : 'success'}>
+        {row.source === 'builtin' ? t('内置') : t('自定义')}
+      </Tag>
+    ),
   },
-  { label: '定义', field: 'definition', showOverflowTooltip: true },
-  { label: '描述', field: 'description', showOverflowTooltip: true },
   {
-    label: '更新人',
-    field: 'updatedBy',
-    width: 100,
-    filter: {
-      list: [] // 动态填充
-    }
+    title: t('描述'),
+    colKey: 'description',
+    ellipsis: true,
   },
   {
-    label: '更新时间',
-    field: 'updatedAt',
-    width: 170,
-    sort: { value: 'desc' }
+    title: t('更新人'),
+    colKey: 'updated_by',
+    width: 120,
   },
-  { label: '启停', field: 'enabled', width: 80 },
-  { label: '操作', field: 'operation', width: 120 }
-];
+  {
+    title: t('更新时间'),
+    colKey: 'updated_time',
+    width: 180,
+    sorter: true,
+  },
+  {
+    title: t('启停'),
+    colKey: 'enabled',
+    width: 90,
+    cell: (_h, { row }) => (
+      <Switcher
+        modelValue={row.enabled}
+        theme="primary"
+        size="small"
+        onChange={(val: boolean) => handleToggle(row, val)}
+      />
+    ),
+  },
+  {
+    title: t('操作'),
+    colKey: 'operate',
+    width: 140,
+    fixed: 'right',
+    cell: (_h, { row }) => (
+      <div class="flex items-center gap-12px">
+        <Button
+          theme="primary"
+          text
+          onClick={() => handleEdit(row)}
+        >
+          {t('编辑')}
+        </Button>
+        <Button
+          theme="danger"
+          text
+          onClick={() => handleDelete(row)}
+        >
+          {t('删除')}
+        </Button>
+      </div>
+    ),
+  },
+]);
 
-const tableData = ref<RowData[]>([]);
-const pagination = reactive({
-  current: 1,
-  count: 198,
-  limit: 10,
-  showTotalCount: true,
-  location: 'left'
-});
-
-// 弹窗
-const dialogVisible = ref(false);
-const dialogTitle = ref('新建');
-const formRef = ref();
-const formData = reactive({
-  id: 0,
-  name: '',
-  definition: '',
-  description: ''
-});
-
-const formRules = {
-  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
-  definition: [{ required: true, message: '请输入定义', trigger: 'blur' }]
-};
-
-// 方法
-const handleTabChange = (tab: string) => {
-  activeTab.value = tab;
-  pagination.current = 1;
-  fetchData();
+const getTableData = async (params: ITableQuery): Promise<ICountAndResults<IExampleRow>> => {
+  // 替换为 src/services/source/ 下的实际接口调用
+  const query = {
+    ...params,
+    keyword: keyword.value || undefined,
+    status: activeStatus.value === 'all' ? undefined : activeStatus.value,
+  };
+  void query;
+  return {
+    count: 0,
+    results: [],
+  };
 };
 
 const handleSearch = () => {
-  pagination.current = 1;
-  fetchData();
+  tableRef.value?.fetchData(filterData.value, { resetPage: true });
 };
 
-const handlePageChange = (page: number) => {
-  pagination.current = page;
-  fetchData();
+const handleFilterChange = (filterItem: FilterValue) => {
+  filterData.value = {
+    ...filterData.value,
+    ...filterItem,
+  };
+  handleSearch();
 };
 
-const handleLimitChange = (limit: number) => {
-  pagination.limit = limit;
-  pagination.current = 1;
-  fetchData();
+const handleClearFilter = () => {
+  activeStatus.value = 'all';
+  keyword.value = '';
+  filterData.value = {};
+  handleSearch();
 };
 
-const handleFilterChange = (filters: Record<string, any>) => {
-  console.log('Filter changed:', filters);
-  fetchData();
+const handleToggle = async (row: IExampleRow, enabled: boolean) => {
+  // 调用启停接口（使用 row.id 与 enabled）成功后刷新当前页，避免乐观修改失败难以回滚
+  void row;
+  void enabled;
+  tableRef.value?.refresh();
 };
 
-const handleSortChange = ({ column, prop, order }: any) => {
-  console.log('Sort changed:', { column, prop, order });
-  fetchData();
+const handleDelete = async (row: IExampleRow) => {
+  // 接入 usePopInfoBox 二次确认后按 row.id 调用删除接口并 refresh
+  void row;
+  tableRef.value?.refresh();
 };
 
-const handleToggle = (row: RowData, enabled: boolean) => {
-  console.log('Toggle:', row.id, enabled);
-  // TODO: 调用启停 API
-};
+// 新建/编辑弹窗状态
+const dialogVisible = shallowRef(false);
+const isEdit = shallowRef(false);
+const submitting = shallowRef(false);
+const formData = reactive<IExampleForm>({
+  id: 0,
+  name: '',
+  description: '',
+});
+
+const formRules = computed(() => ({
+  name: [
+    {
+      required: true,
+      message: t('请输入名称'),
+      trigger: 'blur',
+    },
+  ],
+}));
 
 const handleCreate = () => {
-  dialogTitle.value = '新建';
-  Object.assign(formData, { id: 0, name: '', definition: '', description: '' });
+  isEdit.value = false;
+  Object.assign(formData, {
+    id: 0,
+    name: '',
+    description: '',
+  });
   dialogVisible.value = true;
 };
 
-const handleEdit = (row: RowData) => {
-  dialogTitle.value = '编辑';
-  Object.assign(formData, row);
+const handleEdit = (row: IExampleRow) => {
+  isEdit.value = true;
+  Object.assign(formData, {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+  });
   dialogVisible.value = true;
-};
-
-const handleDelete = async (row: RowData) => {
-  // TODO: 调用删除 API
-  console.log('Delete:', row.id);
 };
 
 const handleConfirm = async () => {
   await formRef.value?.validate();
-  // TODO: 调用保存 API
-  dialogVisible.value = false;
-  fetchData();
+  submitting.value = true;
+  try {
+    // 调用新建或更新接口
+    dialogVisible.value = false;
+    tableRef.value?.refresh();
+  }
+  finally {
+    submitting.value = false;
+  }
 };
 
-const fetchData = async () => {
-  // TODO: 调用列表 API
-  console.log('Fetch data:', { tab: activeTab.value, searchKey: searchKey.value, ...pagination });
+const handleDialogClosed = () => {
+  formRef.value?.clearValidate();
 };
-
-// 初始化
-fetchData();
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .table-page {
   height: 100%;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-/* Tab 按钮组样式 */
-.filter-tab :deep(.bk-tab-header) {
-  border: 1px solid #dcdee5;
-  border-radius: 2px;
-  background: #fff;
-}
-
-.filter-tab :deep(.bk-tab-header-item) {
-  border: none;
-  background: transparent;
-  padding: 0 16px;
-}
-
-.filter-tab :deep(.bk-tab-header-item.is-active) {
-  background: #e1ecff;
-  color: #3a84ff;
-}
-
-.search-icon {
-  cursor: pointer;
-}
-
-.mb16 {
-  margin-bottom: 16px;
 }
 </style>

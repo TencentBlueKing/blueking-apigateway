@@ -21,6 +21,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
+from apigateway.apis.web.validators import MetricsTimeRangeValidator
 from apigateway.apps.metrics.constants import (
     MetricsInstantEnum,
     MetricsRangeEnum,
@@ -35,18 +36,16 @@ class MetricsQueryRangeInputSLZ(serializers.Serializer):
     backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称")
     resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 id")
     metrics = serializers.ChoiceField(choices=MetricsRangeEnum.get_choices(), help_text="metric 类型")
-    time_range = serializers.IntegerField(required=False, min_value=0, help_text="时间范围")
+    time_range = serializers.IntegerField(
+        required=False, min_value=0, help_text="时间范围（秒，最多 180 天；有效起止时间优先）"
+    )
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")
     step = serializers.ChoiceField(choices=MetricsStepEnum.get_choices(), required=False, help_text="精度")
 
     class Meta:
         ref_name = "apigateway.apis.web.metrics.serializers.MetricsQueryRangeInputSLZ"
-
-    def validate(self, data):
-        if not (data.get("time_start") and data.get("time_end") or data.get("time_range")):
-            raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
-        return data
+        validators = [MetricsTimeRangeValidator()]
 
 
 class MetricsQueryInstantInputSLZ(serializers.Serializer):
@@ -54,17 +53,15 @@ class MetricsQueryInstantInputSLZ(serializers.Serializer):
     backend_name = serializers.CharField(allow_blank=True, required=False, help_text="后端服务名称")
     resource_id = serializers.IntegerField(allow_null=True, required=False, help_text="资源 id")
     metrics = serializers.ChoiceField(choices=MetricsInstantEnum.get_choices(), help_text="metric 类型")
-    time_range = serializers.IntegerField(required=False, min_value=0, help_text="时间范围")
+    time_range = serializers.IntegerField(
+        required=False, min_value=0, help_text="时间范围（秒，最多 180 天；有效起止时间优先）"
+    )
     time_start = serializers.IntegerField(required=False, min_value=0, help_text="开始时间")
     time_end = serializers.IntegerField(required=False, min_value=0, help_text="结束时间")
 
     class Meta:
         ref_name = "apigateway.apis.web.metrics.serializers.MetricsQueryInstantInputSLZ"
-
-    def validate(self, data):
-        if not (data.get("time_start") and data.get("time_end") or data.get("time_range")):
-            raise serializers.ValidationError(_("参数 time_start+time_end, time_range 必须一组有效。"))
-        return data
+        validators = [MetricsTimeRangeValidator()]
 
 
 class MetricsQuerySummaryBaseInputSLZ(serializers.Serializer):
