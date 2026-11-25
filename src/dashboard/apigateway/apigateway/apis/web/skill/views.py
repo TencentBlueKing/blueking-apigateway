@@ -38,6 +38,7 @@ from apigateway.biz.skill import (
     build_skill_package_zip,
     check_skill_package,
     delete_skill,
+    get_skill_audit_data,
     get_skill_package_filename,
     publish_gateway_skill,
     set_current_version,
@@ -45,7 +46,6 @@ from apigateway.biz.skill import (
     update_skill_basic_info,
 )
 from apigateway.common.error_codes import error_codes
-from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
 from .serializers import (
@@ -125,7 +125,7 @@ def _publish(request, data: Dict[str, Any], skill_name: Optional[str] = None):
         instance_id=saved.metadata.id,
         instance_name=saved.metadata.code,
         data_before=saved.data_before,
-        data_after=get_model_dict(saved.metadata),
+        data_after=get_skill_audit_data(saved.metadata),
         comment=comment,
     )
     return OKJsonResponse(
@@ -274,7 +274,7 @@ class SkillRetrieveUpdateDestroyApi(SkillQuerySetMixin, generics.RetrieveUpdateD
         slz = SkillBasicInfoInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        data_before = get_model_dict(metadata)
+        data_before = get_skill_audit_data(metadata)
         update_skill_basic_info(metadata, operator=request.user.username, **slz.validated_data)
 
         Auditor.record_skill_op_success(
@@ -284,14 +284,14 @@ class SkillRetrieveUpdateDestroyApi(SkillQuerySetMixin, generics.RetrieveUpdateD
             instance_id=metadata.id,
             instance_name=metadata.code,
             data_before=data_before,
-            data_after=get_model_dict(metadata),
+            data_after=get_skill_audit_data(metadata),
             comment="更新 Skill 基本信息",
         )
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, *args, **kwargs):
         metadata = self.get_skill()
-        data_before = get_model_dict(metadata)
+        data_before = get_skill_audit_data(metadata)
         metadata_id, code = metadata.id, metadata.code
         delete_skill(metadata)
 
@@ -360,7 +360,7 @@ class SkillCurrentVersionUpdateApi(SkillQuerySetMixin, generics.UpdateAPIView):
         slz.is_valid(raise_exception=True)
         version = SkillHandler.get_version(metadata, slz.validated_data["version"])
 
-        data_before = get_model_dict(metadata)
+        data_before = get_skill_audit_data(metadata)
         set_current_version(metadata, version, operator=request.user.username)
 
         Auditor.record_skill_op_success(
@@ -370,7 +370,7 @@ class SkillCurrentVersionUpdateApi(SkillQuerySetMixin, generics.UpdateAPIView):
             instance_id=metadata.id,
             instance_name=metadata.code,
             data_before=data_before,
-            data_after=get_model_dict(metadata),
+            data_after=get_skill_audit_data(metadata),
             comment="切换 Skill 线上版本",
         )
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)
@@ -393,7 +393,7 @@ class SkillUpdateStatusApi(SkillQuerySetMixin, generics.UpdateAPIView):
         slz = SkillStatusUpdateInputSLZ(data=request.data)
         slz.is_valid(raise_exception=True)
 
-        data_before = get_model_dict(metadata)
+        data_before = get_skill_audit_data(metadata)
         set_skill_status(metadata, slz.validated_data["status"], operator=request.user.username)
 
         Auditor.record_skill_op_success(
@@ -403,7 +403,7 @@ class SkillUpdateStatusApi(SkillQuerySetMixin, generics.UpdateAPIView):
             instance_id=metadata.id,
             instance_name=metadata.code,
             data_before=data_before,
-            data_after=get_model_dict(metadata),
+            data_after=get_skill_audit_data(metadata),
             comment=_STATUS_COMMENTS[slz.validated_data["status"]],
         )
         return OKJsonResponse(status=status.HTTP_204_NO_CONTENT)

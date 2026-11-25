@@ -23,7 +23,7 @@ from .package import build_skill_package_files, build_skill_package_zip, get_ski
 from .skill import SkillHandler
 from .syncer import DECLARATION_FILE_PATTERN, sync_platform_skills
 from .uploader import SkillPackageInvalidError, SkillUploadForm, check_skill_package, publish_gateway_skill
-from .writer import SkillArchivedError, SkillVersionExistsError, SkillVersionNotNewerError
+from .writer import SkillArchivedError, SkillVersionExistsError, SkillVersionNotNewerError, get_skill_audit_data
 
 __all__ = [
     # constant
@@ -47,6 +47,7 @@ __all__ = [
     "check_skill_package",
     "check_skill_tags",
     "delete_skill",
+    "get_skill_audit_data",
     "get_skill_package_filename",
     "publish_gateway_skill",
     "set_current_version",

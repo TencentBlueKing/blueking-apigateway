@@ -133,7 +133,7 @@ def save_skill_version(
     调用方需保证同一来源的写入串行执行。能否写入、覆盖哪一版：内置 Skill 由 check_version 判断（只能覆盖当前版本），
     网关 Skill 由 check_gateway_version 判断（可以覆盖任意已有版本），已归档的网关 Skill 抛 SkillArchivedError。
     覆盖时更新那一版的 changelog、编排、正文和关联资源，不新增版本行，created_by、created_time 保持不变。
-    已有 metadata 时，返回值的 data_before 是加锁后、写入前的 metadata 字段。
+    已有 metadata 时，返回值的 data_before 是加锁后、写入前的审计快照，见 get_skill_audit_data。
 
     例如：
         首次写入 1.0.0 -> created 为真，新建 metadata、编排、版本和关联资源，data_before 为空
@@ -147,7 +147,7 @@ def save_skill_version(
         .first()
     )
     created = metadata is None
-    data_before = {} if metadata is None else get_model_dict(metadata)
+    data_before = {} if metadata is None else get_skill_audit_data(metadata)
     existing_version: Optional[SkillVersion] = None
     if metadata is None:
         metadata = SkillMetadata(type=skill_type, gateway=gateway, name=declaration.name, created_by=operator)
@@ -216,6 +216,16 @@ def get_or_create_tags(names: List[str]) -> List[SkillTag]:
     例如：["运维", "job"]，「运维」已存在 -> 复用它，新建「job」
     """
     return [SkillTag.objects.get_or_create(name=name)[0] for name in names]
+
+
+def get_skill_audit_data(metadata: SkillMetadata) -> Dict[str, Any]:
+    """审计记录里的 Skill 快照：metadata 的字段加上标签名；get_model_dict 不含多对多字段，只改标签时也能看出变化
+
+    例如：带标签「只读」「job」的 Skill -> {"id": 1, "name": "release-check", ..., "tags": ["job", "只读"]}
+    """
+    data = get_model_dict(metadata)
+    data["tags"] = sorted(tag.name for tag in metadata.tags.all())
+    return data
 
 
 def _save_config(metadata: SkillMetadata, orchestration: dict, operator: str) -> None:

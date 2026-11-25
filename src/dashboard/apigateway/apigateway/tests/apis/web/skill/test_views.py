@@ -327,6 +327,7 @@ class TestSkillRetrieveUpdateDestroyApi:
         assert resp.status_code == 404
 
     def test_update(self, request_view, gateway, skill):
+        tags_before = sorted(skill.tags.values_list("name", flat=True))
         resp = request_view(
             "PUT",
             "skill.retrieve_update_destroy",
@@ -343,6 +344,11 @@ class TestSkillRetrieveUpdateDestroyApi:
         assert list(skill.tags.values_list("name", flat=True)) == ["新标签"]
         assert SkillVersion.objects.filter(metadata=skill).count() == 1
         assert _audit_comments(skill.id)[-1] == (OpTypeEnum.MODIFY.value, "更新 Skill 基本信息")
+        log = AuditEventLog.objects.filter(
+            op_object_type=OpObjectTypeEnum.SKILL.value, op_object_id=str(skill.id)
+        ).latest("id")
+        assert json.loads(log.data_before)["tags"] == tags_before
+        assert json.loads(log.data_after)["tags"] == ["新标签"]
 
     def test_update_archived(self, request_view, gateway, skill):
         SkillMetadata.objects.filter(id=skill.id).update(status=SkillStatusEnum.ARCHIVED.value)

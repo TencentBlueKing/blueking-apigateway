@@ -190,6 +190,15 @@ class TestCheckSkillPackage:
         }
         assert result.basic_info_diffs == ["description", "tags"]
 
+    def test_existing_skill_archived(self, gateway, data):
+        saved = publish_gateway_skill(gateway, build_skill_zip(data), _form(data), operator="admin")
+        SkillMetadata.objects.filter(id=saved.metadata.id).update(status=SkillStatusEnum.ARCHIVED.value)
+
+        result = _check(gateway, build_skill_zip(data), skill_name=NAME)
+
+        assert _errors(result) == [(None, None, f"Skill {NAME} 已归档，请先恢复")]
+        assert result.existing_skill["status"] == SkillStatusEnum.ARCHIVED.value
+
 
 class TestPublishGatewaySkill:
     def test_create_with_form_values(self, gateway, data):

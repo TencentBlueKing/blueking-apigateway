@@ -154,6 +154,7 @@ class TestSaveSkillVersion:
     def test_new_version(self, job_plan_data):
         first = _save(job_plan_data)
         SkillMetadata.objects.filter(id=first.metadata.id).update(download_count=F("download_count") + 5)
+        first_tags = sorted(first.metadata.tags.values_list("name", flat=True))
 
         set_version(job_plan_data, "1.1.0").update(display_name="新名字", tags=["job"])
         second = _save(job_plan_data, body="# v2\n")
@@ -162,6 +163,7 @@ class TestSaveSkillVersion:
         assert not second.created
         assert second.data_before["display_name"] == first.metadata.display_name
         assert second.data_before["current_version"] == first.version.id
+        assert second.data_before["tags"] == first_tags
         assert second.metadata.id == first.metadata.id
         assert second.version.version == "1.1.0"
         assert second.version.changelog["version"] == "1.1.0"

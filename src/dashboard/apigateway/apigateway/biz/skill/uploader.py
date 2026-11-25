@@ -31,7 +31,7 @@ from typing import IO, TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from django.utils.translation import gettext as _
 
-from apigateway.apps.skill.constants import SkillTypeEnum
+from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata
 
 from .archive import SkillArchiveError, SkillPackage, ValidationMessage, read_skill_package
@@ -118,9 +118,11 @@ def check_skill_package(
     """上传预检：只校验、不写库；skill_name 为更新侧滑的 Skill 的 name，包里的 name 和它不一致时报 error
 
     不叠加表单值，包里的基本信息也须合法；不检查版本号，只在 existing_skill 里返回已有的最高版本，供页面提示。
+    本网关已有的同名 Skill 已归档时报 error，提交时也会被拒绝。
 
     例如：包里是 1.2.0、本网关已有这个 Skill、线上 1.1.0 -> errors 为空，
-        existing_skill 为 {"skill_id": "g_demo_release-check", "current_version": "1.1.0", ...}
+        existing_skill 为 {"skill_id": "g_demo_release-check", "current_version": "1.1.0", ...}；
+        同名 Skill 已归档 -> errors 多一条「Skill release-check 已归档，请先恢复」
     """
     validation = _validate(gateway, fileobj, form=None, skill_name=skill_name, provider=provider)
     result = SkillPackageCheckResult(errors=validation.errors, warnings=validation.warnings)
@@ -143,6 +145,10 @@ def check_skill_package(
             "status": metadata.status,
         }
         result.basic_info_diffs = _basic_info_diffs(declaration, metadata)
+        if metadata.status == SkillStatusEnum.ARCHIVED.value:
+            result.errors.append(
+                ValidationMessage(None, None, _("Skill {name} 已归档，请先恢复").format(name=metadata.name))
+            )
     return result
 
 
