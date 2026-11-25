@@ -23,6 +23,31 @@
     }
   }
 
+  .t-table__header {
+
+    th.t-table__th-row-select {
+      line-height: 1;
+      vertical-align: middle;
+
+      .t-table__cell--title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .t-table__th-cell-inner {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        vertical-align: middle;
+      }
+
+      .bk-checkbox {
+        vertical-align: middle;
+      }
+    }
+  }
+
   .t-table__body {
     color: #63656e;
 
@@ -104,10 +129,6 @@
 
       th {
         padding-top: 11px;
-
-        &.t-table__th-row-select {
-          padding-top: 10px;
-        }
       }
     }
   }

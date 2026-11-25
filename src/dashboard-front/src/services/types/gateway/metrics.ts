@@ -12,9 +12,9 @@ export interface IGatewaysMetricsQueryInstantListQuery {
   resource_id?: number | null
   /** metric 类型 */
   metrics: 'requests_total' | 'health_rate'
-  /** 最近 N 秒（按服务器时间）；与 time_start/time_end 同时传时以起止为准 */
+  /** 最近 N 秒（按服务器时间）；完整非零 time_start/time_end 优先；有效查询跨度最多 180 天 */
   time_range?: number
-  /** 开始时间（Unix 秒）；须与 time_end 成对，或改传 time_range；后端不校验先后 */
+  /** 开始时间（Unix 秒）；须与 time_end 成对且均非零，或改传 time_range；有效起点不得晚于终点 */
   time_start?: number
   /** 结束时间（Unix 秒） */
   time_end?: number
@@ -34,9 +34,9 @@ export interface IGatewaysMetricsQueryRangeListQuery {
   resource_id?: number | null
   /** metric 类型 */
   metrics: 'requests' | 'non_20x_status' | 'app_requests' | 'resource_requests' | 'response_time_90th' | 'response_time_50th' | 'response_time_95th' | 'response_time_99th' | 'ingress' | 'egress' | 'llm_latency_avg' | 'llm_latency_95th' | 'llm_token_usage' | 'llm_token_95th' | 'llm_active_connections'
-  /** 最近 N 秒（按服务器时间）；与 time_start/time_end 同时传时以起止为准 */
+  /** 最近 N 秒（按服务器时间）；完整非零 time_start/time_end 优先；有效查询跨度最多 180 天 */
   time_range?: number
-  /** 开始时间（Unix 秒）；须与 time_end 成对，或改传 time_range；后端不校验先后 */
+  /** 开始时间（Unix 秒）；须与 time_end 成对且均非零，或改传 time_range；有效起点不得晚于终点 */
   time_start?: number
   /** 结束时间（Unix 秒） */
   time_end?: number

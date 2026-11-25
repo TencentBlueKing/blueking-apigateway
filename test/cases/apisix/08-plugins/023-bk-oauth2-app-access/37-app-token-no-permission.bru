@@ -1,0 +1,30 @@
+meta {
+  name: app-token-no-permission
+  type: http
+  seq: 37
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/app_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{oauth2_app_no_permission_token}}
+}
+
+script:pre-request {
+  if (!bru.getEnvVar("oauth2_app_no_permission_token")) {
+    if (String(bru.getEnvVar("oauth2_app_tokens_required")) === "true") {
+      throw new Error("oauth2_app_no_permission_token is required");
+    }
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.code_name: eq APP_NO_PERMISSION
+  res.headers['www-authenticate']: isUndefined
+}

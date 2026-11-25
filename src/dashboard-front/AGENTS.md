@@ -15,11 +15,17 @@
 
 | ID                   | 名称           | 场景               |
 |----------------------|--------------|------------------|
-| `bkui-builder`       | 设计稿还原专家      | UI 开发            |
-| `api-standard`       | 统一网络请求       | HTTP 封装          |
-| `pinia-setup`        | 全局状态管理       | Pinia            |
-| `bkui-cheatsheet`    | BKUI 组件速查    | 快速参考             |
-| `tapd-workitem`      | TAPD 单据查询    | 需求/缺陷/任务详情     |
+| `bkui-builder`       | 设计稿还原专家      | UI 开发与页面搭建       |
+| `bkui-cheatsheet`    | BKUI 组件速查    | BKUI 3.0 属性与避坑  |
+| `i18n-maintainer`    | 国际化词条同步      | 校验并同步中英文词条包     |
+
+### 推荐安装的外部 Vue Skills（可选）
+
+推荐开发者及其 AI Agents 在本机按需安装 [vuejs-ai/skills](https://github.com/vuejs-ai/skills) 中的 Vue 3 技能（非强制），用于补充 Vue 3 最佳实践与问题排查参考：
+
+- 推荐按需选用：`vue-best-practices`、`vue-pinia-best-practices`、`vue-router-best-practices`、`vue-testing-best-practices`、`vue-jsx-best-practices`、`vue-debug-guides`、`create-adaptable-composable`（本项目全面采用 Composition API，无需 `vue-options-api-best-practices`）。
+- 参考安装命令：`npx skills add vuejs-ai/skills`
+- **优先级**：若外部技能与本仓约定存在差异，**以本仓 `AGENTS.md`、`.agents/rules/` 及 ESLint 配置为准**（例如本仓的 `<template>` → `<script>` → `<style>` 块顺序、`unplugin-auto-import` 自动导入、`interface` 强制 `I` 前缀、Pinia 默认 Option Store）。
 
 ## 技术栈
 
@@ -54,10 +60,10 @@ pnpm dev
 # 切换到多租户环境开发，根目录要有 `.env.local.tenant` 文件
 pnpm dev:tenant
 
-# 构建（跳过类型检查），这是构建的主要方式，因为项目中有遗留的类型错误，所以跳过类型检查
+# 仅打包构建（跳过类型检查；CI 与 pre-commit 均会独立运行 type-check，提交前须确保 type-check 通过）
 pnpm build-only
 
-# 仅类型检查
+# 类型检查（CI 与 pre-commit 必过门禁）
 pnpm type-check    # vue-tsc --build
 
 # 单元测试（unit project，CI 会跑 test:unit，覆盖率报告输出到 coverage/）
@@ -122,21 +128,21 @@ src/dashboard-front/
 │   ├── enums/                  # TypeScript 枚举
 │   ├── hooks/                  # 共享组合式函数
 │   ├── images/                 # Logo 和图片资源
-│   ├── layout/                 # 5 个布局组件（my-gateway、platform-tools 等）
+│   ├── layout/                 # 布局与头部组件（my-gateway、platform-tools、docs、mcp-market、personal-workbench、app-header）
 │   ├── locales/                # 国际化翻译（cn.json、en.json）
-│   ├── router/                 # 路由定义，15 个功能模块
+│   ├── router/                 # 路由定义与权限守卫
 │   ├── services/
 │   │   ├── http/               # Axios 封装（缓存、CSRF、中间件）
 │   │   ├── source/             # API 接口函数，按作用域分目录（见「API 服务层」）
 │   │   └── types/              # 按业务模块组织的接口查询、请求体和响应类型
-│   ├── stores/                 # 11 个 Pinia Store
+│   ├── stores/                 # 15 个 Pinia Store
 │   ├── styles/                 # 全局 SCSS 样式
 │   ├── types/                  # 领域类型与视图类型（见「类型系统」）
-│   ├── utils/                  # 26 个工具函数
-│   └── views/                  # 15 个功能视图模块
+│   ├── utils/                  # 纯工具函数（无响应式状态）
+│   └── views/                  # 17 个功能视图模块
 ├── .env                        # 环境变量模板
 ├── .env.local                  # 本地开发环境覆盖
-├── eslint.config.ts            # ESLint 9 扁平化配置
+├── eslint.config.ts            # ESLint 10 扁平化配置
 ├── stylelint.config.js         # SCSS/CSS 检查
 ├── tsconfig.json               # TypeScript 配置入口
 ├── tsconfig.vitest.json        # 单元测试 TypeScript 配置
@@ -184,19 +190,23 @@ src/dashboard-front/
 
 基于 Pinia，所有 Store 从 `src/stores/index.ts` 统一导出：
 
-| Store                | 说明                           |
-|----------------------|------------------------------|
-| `useGateway`         | 当前网关数据（**核心 Store**，大多数视图依赖） |
-| `useEnv`             | 环境配置（BK_DASHBOARD_URL、站点路径）  |
-| `useUserInfo`        | 当前用户和租户信息                    |
-| `useFeatureFlag`     | 功能开关                         |
-| `useStage`           | 环境/阶段状态                      |
-| `usePermission`      | 权限相关状态                       |
-| `useAccessLog`       | 访问日志                         |
-| `useAuditLog`        | 审计日志                         |
-| `useResourceVersion` | 资源版本                         |
-| `useResourceSetting` | 资源配置                         |
-| `useStaff`           | 人员管理                         |
+| Store                    | 说明                              |
+|--------------------------|---------------------------------|
+| `useGateway`             | 当前网关数据（**核心 Store**，大多数视图依赖）    |
+| `useGatewayRoleStore`    | 当前用户在网关中的角色与缓存（`useGatewayRole.ts`，Setup Store） |
+| `useEnv`                 | 环境配置（BK_DASHBOARD_URL、站点路径）     |
+| `usePlatformConfig`      | 平台级配置（标题、品牌、页脚等）                |
+| `useUserInfo`            | 当前用户和租户信息                       |
+| `useFeatureFlag`         | 功能开关                            |
+| `useStage`               | 环境/阶段状态                         |
+| `usePermission`          | 权限相关状态                          |
+| `useAccessLog`           | 访问日志                            |
+| `useAuditLog`            | 审计日志                            |
+| `useResourceVersion`     | 资源版本                            |
+| `useResourceSetting`     | 资源配置                            |
+| `useResourceDebugging`   | 在线调试状态（`useOnlineDebugging.ts`） |
+| `useTrace`               | MCP 调用链与瀑布图状态（Setup Store）      |
+| `useStaff`               | 人员管理                            |
 
 ### API 服务层 (`src/services/`)
 
@@ -278,23 +288,33 @@ services/source/
 
 ### 组合式函数 (`src/hooks/`)
 
-| Hook                        | 说明              |
-|-----------------------------|-----------------|
-| `use-query-list`            | 分页列表查询（含查询参数管理） |
-| `use-selection-data`        | 表格选择状态          |
-| `use-sidebar`               | 抽屉/侧边栏状态        |
-| `use-gate-way-data`         | 网关列表（含搜索）       |
-| `use-date-picker`           | 日期范围选择          |
-| `use-table-filter-change`   | TDesign 筛选逻辑    |
-| `use-table-sort-change`     | TDesign 排序逻辑    |
-| `use-stage-data`            | 环境数据状态          |
-| `use-text-getter`           | 文本内容获取          |
-| `use-sticky-bottom`         | 粘性底部            |
-| `use-operation-lock`        | 防止并发操作          |
-| `use-bk-user-display-name`  | 多租户用户名显示        |
-| `use-chart-interval-option` | 图表时间范围          |
-| `use-pop-info-box`          | 弹出信息框           |
-| `use-bk-user-selector`      | 用户选择器           |
+> 仅存放含响应式状态或生命周期的 Composable；纯无状态计算函数应放在 `src/utils/`（`use-json-transformer` 等为历史遗留，新增纯函数勿放此处）。
+
+| Hook                             | 说明                  |
+|----------------------------------|---------------------|
+| `use-query-list`                 | 分页列表查询（含查询参数管理）     |
+| `use-selection-data`             | 表格选择状态              |
+| `use-sidebar`                    | 抽屉/侧边栏变更检测状态        |
+| `use-gate-way-data`              | 网关列表（含搜索）           |
+| `use-gateway-display-name-check` | 网关展示名查重             |
+| `use-gateway-releasing-status`   | 网关发布状态轮询            |
+| `use-gateway-role`               | 当前网关角色与操作权限         |
+| `use-date-picker`                | 列表日期范围选择            |
+| `use-table-filter-change`        | TDesign 筛选逻辑        |
+| `use-table-sort-change`          | TDesign 排序逻辑        |
+| `use-stage-data`                 | 环境数据状态              |
+| `use-text-getter`                | 认证/权限文案文本转换         |
+| `use-sticky-bottom`              | 粘性底部                |
+| `use-operation-lock`             | 防止并发操作              |
+| `use-bk-user-display-name`       | 多租户用户名显示            |
+| `use-chart-interval-option`      | 图表时间范围              |
+| `use-pop-info-box`               | 弹出确认信息框             |
+| `use-mcp-auth-risk`              | MCP 应用态鉴权风险提示       |
+| `use-mcp-batch-copy-config`      | MCP 批量复制配置          |
+| `use-mcp-config-divide-ratio`    | MCP 配置分栏自适应宽度比例     |
+| `use-mcp-permission`             | MCP 权限管理与已授权应用      |
+| `use-observability-dashboard`    | MCP 可观测仪表盘状态        |
+| `use-personal-workbench`         | 个人工作台状态             |
 
 ### 国际化 (`src/locales/`)
 
@@ -304,13 +324,9 @@ services/source/
 // 语言由 Cookie `blueking_language` 决定，默认 zh-cn
 
 // 使用方式：
-t('key')                    // 直接使用导出的 t 函数
-const { t } = useI18n();   // 组合式 API（自动导入）
-{
-  {
-    t('key')
-  }
-}              // 模板中使用
+t('key');                  // 非组件模块直接使用导出的 t 函数
+const { t } = useI18n();   // 组件内组合式 API（已自动导入）
+// 模板中使用：{{ t('key') }}
 ```
 
 ### 样式系统
@@ -376,25 +392,26 @@ Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方
 
 ## 代码风格规范
 
-由 ESLint 9 扁平化配置 + oxlint + stylelint 强制执行：
+由 ESLint 10 扁平化配置 + oxlint + stylelint 强制执行（另见 `./.agents/rules/vue-code-style.md`、`./.agents/rules/ts-style.md`）：
 
 ### 通用规则
 
-| 规则       | 要求                                            |
-|----------|-----------------------------------------------|
-| 分号       | **必须**（`semi: 'always'`）                      |
-| 引号       | **单引号**（`quotes: 'single'`）                   |
-| 缩进       | **2 空格**                                      |
-| 行宽       | **120 字符**（注释、URL、字符串、模板字符串、正则除外）             |
-| 尾逗号      | **多行时必须**（`comma-dangle: 'always-multiline'`） |
-| 导入排序     | **强制**（声明排序忽略，成员排序强制）                         |
-| 重复导入     | **禁止**                                        |
-| `any` 类型 | 允许（`no-explicit-any: 'off'`）                  |
+| 规则          | 要求                                                     |
+|-------------|--------------------------------------------------------|
+| 分号          | **必须**（`semi: 'always'`）                               |
+| 引号          | **单引号**（`quotes: 'single'`）                            |
+| 缩进          | **2 空格**                                               |
+| 行宽          | **120 字符**（注释、URL、字符串、模板字符串、正则除外）                      |
+| 尾逗号         | **多行时必须**（`comma-dangle: 'always-multiline'`）          |
+| 导入排序        | **强制**（声明排序忽略，成员排序强制）                                  |
+| 重复导入        | **禁止**                                                 |
+| `interface` | **必须以 `I` 开头**（`ts-style.md`）                         |
+| `any` 类型    | ESLint 为兼容存量关闭（`no-explicit-any: 'off'`），**新增代码避免使用** |
 
 ### 对象/数组格式化
 
 - 多行对象属性必须换行（`object-property-newline`）
-- 花括号换行规则（`object-curly-newline: multiline`）
+- 花括号换行保持一致（`object-curly-newline: { consistent: true }`）
 - `curly-newline: 'always'`
 - 数组方括号换行保持一致（`array-bracket-newline: 'consistent'`）
 
@@ -402,11 +419,13 @@ Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方
 
 | 规则          | 要求                                                                                                   |
 |-------------|------------------------------------------------------------------------------------------------------|
-| 脚本语法        | 必须使用 `<script lang="ts" setup>`                                                                      |
+| 块顺序         | **`<template>` → `<script>` → `<style>`**（`vue/block-order`，本仓既有约定）                                 |
+| 脚本语法        | 必须使用 `<script setup lang="ts">`（含 JSX 时用 `lang="tsx"`）                                                |
 | 宏顺序         | `defineOptions` → `defineModel` → `defineProps` → `defineEmits` → `defineSlots`，`defineExpose` 必须在最后 |
-| Emits 声明    | 必须使用**类型字面量** (`type-literal`)                                                                       |
-| Props 解构    | **强制**                                                                                               |
-| 多词组件名       | **已关闭**（`ag-*` 前缀组件不需要）                                                                              |
+| 逻辑组织        | 允许并推荐按**逻辑关注点**聚合同一功能的 `ref` / `computed` / `watch` / 方法（不强制按语法类别分组）                         |
+| Emits 声明    | 必须使用**类型字面量成员语法**（`type-literal`）                                                                    |
+| Props 解构    | **强制**（Vue 3.5+ 响应式解构，禁止 `withDefaults`；传入 `watch`/composable 须用 getter 包裹）                           |
+| 多词组件名       | **已关闭**（兼容 `Index.vue`、`Detail.vue` 等目录入口与单文件页面）                                                     |
 | 根级 v-if     | **禁止**                                                                                               |
 | 未使用的 emit   | **禁止**                                                                                               |
 | 未使用的 ref    | **禁止**                                                                                               |
@@ -439,50 +458,89 @@ Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方
 ### 新增 Vue 组件
 
 ```vue
-
 <template>
   <div class="my-component">
-    <!-- 使用 PascalCase 引用组件 -->
-    <BkButton theme="primary" @click="handleClick">
-      {{ t('common.confirm') }}
+    <!-- 使用 PascalCase 引用组件，布尔属性使用简写 -->
+    <BkInput
+      ref="inputRef"
+      v-model="keyword"
+      clearable
+    />
+    <BkButton
+      theme="primary"
+      :loading="loading"
+      @click="handleSubmit"
+    >
+      {{ t('确定') }}
     </BkButton>
   </div>
 </template>
 
-<script lang="ts" setup>
-  // ref, computed, useRouter, useI18n 等已自动导入，无需手动引入
-  const { t } = useI18n();
-  const router = useRouter();
+<script setup lang="ts">
+// 1. 类型定义（interface 必须以 I 开头；多行成员不加分号）
+interface IProps {
+  id: number
+  name?: string
+}
 
-  // 宏顺序：defineProps → defineEmits，defineExpose 在最后
-  // 用对象结构式声明 Props 及其默认值
-  const {
-    id,
-    name = 'unknown user'
-  } = defineProps<{
-    id: number;
-    name: stirng;
-  }>();
+// 2. 编译器宏：defineOptions → defineModel → defineProps → defineEmits → defineSlots
+const {
+  id,
+  name = '',
+} = defineProps<IProps>();
 
-  const emit = defineEmits<{
-    update: [value: string];
-  }>();
+const emit = defineEmits<{
+  update: [value: string]
+}>();
 
-  const loading = ref(false);
+// 3. 业务逻辑：按关注点聚合相关状态、计算属性、监听与方法（ref、shallowRef、computed、watch、useTemplateRef、useI18n 等已自动导入）
+const { t } = useI18n();
 
-  const computedData = computed(() => {
-    // ...
+const inputRef = useTemplateRef<{ focus?: () => void }>('inputRef');
+const keyword = shallowRef(name);
+const loading = shallowRef(false);
+
+const displayLabel = computed(() => `${id}-${keyword.value}`);
+
+// 解构的 prop 传入 watch 必须使用 getter；异步 watch 用 onWatcherCleanup 处理竞态
+watch(() => id, async (nextId) => {
+  let active = true;
+  onWatcherCleanup(() => {
+    active = false;
   });
+  loading.value = true;
+  try {
+    // await fetchDetail(nextId)
+    void nextId;
+    if (!active) return;
+  }
+  finally {
+    if (active) {
+      loading.value = false;
+    }
+  }
+});
 
-  onMounted(() => {
-    // ...
-  });
+function handleSubmit() {
+  emit('update', displayLabel.value);
+}
+
+function focusInput() {
+  inputRef.value?.focus?.();
+}
+
+// 4. defineExpose 必须在最后
+defineExpose({
+  focusInput,
+});
 </script>
 
 <style lang="scss" scoped>
-  .my-component {
-    // ...
-  }
+.my-component {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 </style>
 ```
 
@@ -539,62 +597,103 @@ export const createXxx = (gatewayId: number, data: IXxxInputSLZ) =>
 
 ### 新增 Pinia Store
 
-```typescript
-// src/stores/xxx.ts
-import { defineStore } from 'pinia';
+- **默认使用 Option Store**（自动追踪全部 state、自带 `$reset()`，与存量多数 Store 一致）。
+- **复杂场景允许使用 Setup Store**（如需要 `watch` 跨 Store 状态、维护内部非响应式 `Map`/在途请求缓存，参考 `src/stores/useGatewayRole.ts`、`src/stores/useTrace.ts`）。
+- **关键约束**：
+  - 文件放在 `src/stores/useXxx.ts`，并在 `src/stores/index.ts` 统一导出；接口请求调用 `src/services/source/` 封装函数，不在 Store 内手写裸 URL；
+  - 使用 Setup Store 时，**必须 `return` 全部响应式 state**（不得省略“私有” `ref`，否则破坏 DevTools 与插件；非响应式内部缓存如 `Map`/Promise 可不返回）；如需重置需显式实现 `$reset()`；
+  - 组件内解构 state / getters 必须使用 `storeToRefs(store)`，actions 可直接解构；
+  - **禁止在模块顶层调用 `useXxx()`**，仅在组件 setup、函数或路由守卫回调内调用（避免 `getActivePinia()` 错误）。
 
-export const useXxx = defineStore('xxx', {
-  state: () => ({
-    list: [] as XxxItem[],
+```typescript
+// src/stores/useXxx.ts（默认 Option Store）
+import { defineStore } from 'pinia';
+import { getXxxList } from '@/services/source/gateway/xxx';
+import type { IXxxListOutput } from '@/services/types/gateway/xxx';
+
+interface IXxxState {
+  list: IXxxListOutput[]
+}
+
+export const useXxx = defineStore('useXxx', {
+  state: (): IXxxState => ({
+    list: [],
   }),
   getters: {
-    filteredList: (state) => state.list.filter(/* ... */),
+    activeList: state => state.list.filter(item => item.status === 1),
   },
   actions: {
     async fetchList(gatewayId: number) {
-      this.list = await getXxxList(gatewayId, {});
+      const { results } = await getXxxList(gatewayId, {});
+      this.list = results;
     },
   },
 });
 ```
 
-### 新增组合式函数 (Hook)
+### 新增组合式函数 (Composable)
+
+- `src/hooks/` 仅存放**含响应式状态或生命周期**的 Composable；纯无状态计算函数请放 `src/utils/`。
+- 返回包含 `ref` 的普通对象（禁止直接返回 `reactive` 对象）；需保护内部状态时用 `readonly()` 包装；通用复用型入参考虑 `MaybeRefOrGetter<T>` + `toValue()`/`toRef()`。
 
 ```typescript
 // src/hooks/use-xxx.ts
-export const useXxx = (fetchFn: () => Promise<any[]>) => {
-  const list = ref<any[]>([]);
-  const loading = ref(false);
+export function useXxx<T>(fetchFn: () => Promise<T[]>) {
+  const list = shallowRef<T[]>([]);
+  const loading = shallowRef(false);
+  const error = shallowRef<unknown>(null);
+
+  let requestId = 0;
 
   const fetchData = async () => {
+    const currentId = ++requestId;
     loading.value = true;
+    error.value = null;
     try {
-      list.value = await fetchFn();
-    } finally {
-      loading.value = false;
+      const data = await fetchFn();
+      if (currentId === requestId) {
+        list.value = data;
+      }
+    }
+    catch (err) {
+      if (currentId === requestId) {
+        error.value = err;
+      }
+    }
+    finally {
+      if (currentId === requestId) {
+        loading.value = false;
+      }
     }
   };
 
-  return { list, loading, fetchData };
-};
+  return {
+    list: readonly(list),
+    loading: readonly(loading),
+    error: readonly(error),
+    fetchData,
+  };
+}
 ```
 
 ### 新增路由模块
 
 ```typescript
-// src/views/xxx/route.ts
-export function getXxxRoutes() {
+// src/views/xxx/routes.ts
+import type { RouteRecordRaw } from 'vue-router';
+
+export default function getXxxRoutes(): RouteRecordRaw[] {
   return [
     {
       path: 'xxx',
-      name: 'xxx',
-      component: () => import('./index.vue'),
+      name: 'Xxx',
+      component: () => import('./Index.vue'),
     },
   ];
 }
 ```
 
-然后在 `src/router/index.ts` 中引入并注册。
+然后在 `src/router/index.ts` 中默认引入并注册（注意入口文件命名为大写 `Index.vue`）。
 
 ### 新增国际化文本
 
@@ -632,11 +731,11 @@ fix(permission): 修复权限列表分页异常
 refactor(hooks): 重构 use-query-list 支持自定义排序
 ```
 
-Pre-commit 钩子自动对暂存的 `.{js,jsx,ts,tsx,vue}` 文件执行 `eslint --fix`。
+Pre-commit 钩子会自动对暂存的 `.{js,jsx,ts,tsx,vue}` 文件执行 `oxlint` 与 `eslint --fix`，并运行 `npm run type-check`（`vue-tsc --build`）。
 
 ## 应忽视的目录
 
-* `public/bk_icon_font` ，这里防止静态的图标字体文件，不需要做任何分析和变更
+* `src/assets/bk_icon_font`：放置静态图标字体与 SVG 雪碧图文件，不需要做任何分析和变更
 
 ## 注意事项
 

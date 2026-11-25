@@ -254,13 +254,15 @@
                 v-model:table-data="tableData"
                 cache-identifier="ResourceSetting"
                 show-settings
+                :immediate="false"
                 :api-method="getTableData"
                 :columns="columns"
                 :hidden-column="hiddenColumns"
                 :unchecked-column="['user_auth_method', 'oauth2_personal_client_enabled']"
                 :show-selection="isShowSelection"
                 :show-first-full-row="selectedRows.length > 0"
-                :filter-value="getFilterValue"
+                :filter-value="tableFilterValue"
+                :sort="tableSort"
                 @filter-change="handleFilterChange"
                 @sort-change="handleSortChange"
                 @selection-change="handleSelectionChange"
@@ -489,7 +491,6 @@ import {
   cloneDeep,
   differenceBy,
 } from 'lodash-es';
-import { useRouteQuery } from '@vueuse/router';
 import { Divider, Message } from 'bkui-vue';
 import type {
   IDialog,
@@ -500,14 +501,14 @@ import type {
 import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { isAfter24h } from '@/utils';
-import { getAuthTypeLabel, getUserAuthMethodLabels, isAuthConfigEmpty } from '@/utils/auth-config';
+import { getAuthKind, getAuthTypeLabel, getUserAuthMethodLabels, isAuthConfigEmpty } from '@/utils/auth-config';
 import {
   useFeatureFlag,
   useGateway,
   useResourceSetting,
   useResourceVersion,
 } from '@/stores';
-import { usePopInfoBox, useTableFilterChange } from '@/hooks';
+import { usePopInfoBox } from '@/hooks';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type { IGatewaysResourcesListQuery, IResourceListPageOutput } from '@/services/types/gateway/resource.ts';
 import { exportDocs } from '@/services/source/gateway/resource-doc';
@@ -532,16 +533,15 @@ import PageNotFound from '@/views/404.vue';
 import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
 import PluginManage from '@/components/plugin/plugin-manage/Index.vue';
 import AgTable, {
-  type FilterValue,
   type IAgTableInstance,
   type ITableColumn,
   type ITableSelection,
   type TableRow,
-  type TableSort,
 } from '@/components/base/ag-table';
 import CreateResourceVersionSlider from '@/components/release/create-resource-version-slider/Index.vue';
 import VersionDiff from '@/components/release/version-diff/Index.vue';
 import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
+import { useResourceFilters } from './use-resource-filters';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
 
@@ -564,19 +564,32 @@ const gatewayStore = useGateway();
 const resourceVersionStore = useResourceVersion();
 const resourceSettingStore = useResourceSetting();
 const featureFlagStore = useFeatureFlag();
-const { handleTableFilterChange } = useTableFilterChange();
-
-// 资源列表 url query
-const queryKeyword = useRouteQuery('keyword');
-const queryName = useRouteQuery('name');
-const queryPath = useRouteQuery('path');
-const queryMethod = useRouteQuery('method');
-const queryBackendName = useRouteQuery('backend_name');
-const queryBackendId = useRouteQuery('backend_id');
 
 const tableData = ref<IResourceRow[]>([]);
 const tableRef = useTemplateRef<IAgTableInstance<IResourceRow>>('tableRef');
-const tableQueries = ref<Record<string, any>>({});
+const {
+  authTypeFilterList,
+  searchData,
+  searchValue,
+  tableFilterValue,
+  tableSort,
+  apiQuery,
+  handleFilterChange,
+  handleSortChange,
+  handleClearQueries,
+  markInitialFetchDispatched,
+  startInitialFetch,
+} = useResourceFilters({
+  gatewayId: () => gatewayId,
+  isResourceAuthV2: () => gatewayStore.isResourceAuthV2,
+  isGatewayReady: () => gatewayStore.currentGateway?.id === gatewayId,
+  route,
+  router,
+  t,
+  onQueryChange: (query) => {
+    tableRef.value?.fetchData(query, { resetPage: true });
+  },
+});
 const selectedRowKeys = ref<number[]>([]);
 const selectedRows = ref<IResourceRow[]>([]);
 const deleteLoading = ref(false);
@@ -630,37 +643,6 @@ const curResource = ref<any>({});
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(false);
-
-const searchValue = ref<any[]>([]);
-const searchData = ref([
-  {
-    name: t('资源名称'),
-    id: 'name',
-    placeholder: t('请输入资源名称'),
-  },
-  {
-    name: t('前端请求路径'),
-    id: 'path',
-    placeholder: t('请输入前端请求路径'),
-  },
-  {
-    name: t('前端请求方法'),
-    id: 'method',
-    placeholder: t('请选择前端请求方法'),
-    children: HTTP_METHODS,
-    multiple: true,
-  },
-  {
-    name: t('后端服务'),
-    id: 'backend_name',
-    placeholder: t('请输入后端服务'),
-  },
-  {
-    name: t('后端服务ID'),
-    id: 'backend_id',
-    placeholder: t('请输入后端服务ID'),
-  },
-]);
 
 // 标签数据
 const labelsData = ref<any[]>([]);
@@ -920,8 +902,14 @@ const columns = computed<ITableColumn<IResourceRow>[]>(() => [
   {
     colKey: 'auth_config',
     title: t('认证方式'),
-    width: 110,
+    width: 120,
     ellipsis: true,
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: authTypeFilterList.value,
+    },
     cell: (_h, { row }) => {
       const label = getAuthTypeLabel(row.auth_config, t, gatewayStore.isResourceAuthV2);
       if (label === '--') return label;
@@ -937,8 +925,9 @@ const columns = computed<ITableColumn<IResourceRow>[]>(() => [
           </bk-tag>
         );
       }
+      const theme = getAuthKind(row.auth_config) === 'user' ? 'success' : 'info';
       return (
-        <bk-tag theme="info">
+        <bk-tag theme={theme}>
           {label}
         </bk-tag>
       );
@@ -1165,23 +1154,6 @@ const columns = computed<ITableColumn<IResourceRow>[]>(() => [
   },
 ]);
 
-const getFilterValue = computed(() => {
-  const resultObj: Record<string, string | string[]> = {};
-  Object.keys(tableQueries.value).forEach((key) => {
-    const val = tableQueries.value[key];
-    if (!val) return;
-
-    if (Array.isArray(val) || !val.includes(',')) {
-      resultObj[key] = val;
-    }
-    else {
-      resultObj[key] = String(val).split(',');
-    }
-  });
-
-  return resultObj;
-});
-
 const alertTipsRef = useTemplateRef('alertTipsRef');
 
 watch(
@@ -1252,229 +1224,6 @@ watch(
         e.disabled = !selectedRowKeys.value.length;
       }
     });
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
-
-// Search Select选中的值
-watch(
-  searchValue,
-  () => {
-    // 网关切换期间，route.params.id 尚未更新，跳过以避免 useRouteQuery 的 router.replace 中断导航
-    if (Number(route.params.id) !== gatewayId) {
-      return;
-    }
-    tableQueries.value = {
-      order_by: tableQueries.value.order_by,
-      label_ids: tableQueries.value.label_ids,
-      kind: tableQueries.value.kind,
-    };
-
-    if (route.query?.backend_id) {
-      const { backend_id } = route.query;
-      tableQueries.value.backend_id = backend_id;
-    }
-    else {
-      delete tableQueries.value.backend_id;
-    }
-
-    if (!tableQueries.value.order_by) {
-      delete tableQueries.value.order_by;
-    }
-
-    if (searchValue.value.length) {
-      searchValue.value.forEach((e: any) => {
-        if (e.id === e.name) {
-          tableQueries.value.keyword = e.name;
-        }
-        else {
-          if (e.id === 'method') {
-            tableQueries.value[e.id] = e.values?.map((item: any) => item.id)?.join(',');
-          }
-          else {
-            tableQueries.value[e.id] = e.values[0].id;
-          }
-        }
-
-        if (e.id === e.name) {
-          queryKeyword.value = e.name;
-        }
-        else if (e.id === 'name') {
-          queryName.value = e.values[0].id;
-        }
-        else if (e.id === 'path') {
-          queryPath.value = e.values[0].id;
-        }
-        else if (e.id === 'method') {
-          queryMethod.value = e.values?.map((item: any) => item.id)?.join(',');
-        }
-        else if (e.id === 'backend_name') {
-          queryBackendName.value = e.values[0].id;
-        }
-        else if (e.id === 'backend_id') {
-          queryBackendId.value = e.values[0].id;
-        }
-      });
-    }
-    else {
-      tableQueries.value = {
-        label_ids: tableQueries.value.label_ids,
-        kind: tableQueries.value.kind,
-      };
-      queryKeyword.value = undefined;
-      queryName.value = undefined;
-      queryPath.value = undefined;
-      queryMethod.value = undefined;
-      queryBackendName.value = undefined;
-      queryBackendId.value = undefined;
-    }
-
-    exportDropData.value.forEach((e: IDropList) => {
-      // 已选资源
-      if (['filtered'].includes(e.value)) {
-        e.disabled = false;
-      }
-    });
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
-
-watch(tableQueries, () => {
-  nextTick(() => {
-    tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
-  });
-}, { deep: true });
-
-// 标记是否刚从网关切换过渡期进入正常状态，用于清除旧网关残留的 query 参数
-const wasInTransition = ref(false);
-
-watch(
-  () => route.query,
-  () => {
-    // 网关切换期间，route.params.id 尚未更新而 gatewayId prop 已更新（:key 触发组件重建），
-    // 此时 route.query 仍来自旧网关，跳过该 watcher 避免 useRouteQuery 的 router.replace 中断导航
-    if (Number(route.params.id) !== gatewayId) {
-      wasInTransition.value = true;
-      return;
-    }
-
-    // 刚从网关切换过渡期进入正常状态，此时 route.query 可能携带旧网关残留的查询参数
-    // 需要主动清除（searchValue 为空表示新组件尚未有用户筛选操作）
-    if (wasInTransition.value) {
-      wasInTransition.value = false;
-      if (!searchValue.value.length && Object.keys(route.query).some(k => route.query[k])) {
-        // 使用 router.replace 清除所有 query 参数，避免旧网关数据污染新网关
-        router.replace({ query: {} });
-        return;
-      }
-    }
-
-    if (route.query?.keyword) {
-      queryKeyword.value = route.query.keyword as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === queryKeyword.value);
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: queryKeyword.value,
-          name: queryKeyword.value,
-          type: 'text',
-        });
-      }
-    }
-    if (route.query?.name) {
-      queryName.value = route.query.name as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'name',
-          name: t('资源名称'),
-          values: [
-            {
-              id: queryName.value,
-              name: queryName.value,
-            },
-          ],
-        });
-      }
-    }
-    if (route.query?.path) {
-      queryPath.value = route.query.path as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'path');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'path',
-          name: t('前端请求路径'),
-          values: [
-            {
-              id: queryPath.value,
-              name: queryPath.value,
-            },
-          ],
-        });
-      }
-    }
-    if (route.query?.method) {
-      queryMethod.value = route.query.method as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'method');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'method',
-          name: t('前端请求方法'),
-          values: queryMethod.value.split(',').map((item: string) => ({
-            id: item,
-            name: item,
-          })),
-        });
-      }
-    }
-    if (route.query?.backend_name) {
-      queryBackendName.value = route.query.backend_name as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'backend_name');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'backend_name',
-          name: t('后端服务'),
-          values: [
-            {
-              id: queryBackendName.value,
-              name: queryBackendName.value,
-            },
-          ],
-        });
-      }
-    }
-    if (route.query?.backend_id) {
-      queryBackendId.value = route.query.backend_id as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'backend_id');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'backend_id',
-          name: t('后端服务ID'),
-          values: [
-            {
-              id: queryBackendId.value,
-              name: queryBackendId.value,
-            },
-          ],
-        });
-      }
-    }
-    // 从资源详情页返回时，恢复翻页位置
-    if (!Object.keys(route.query).length && resourceSettingStore.previousPagination) {
-      nextTick(() => {
-        const { current, pageSize } = resourceSettingStore.previousPagination!;
-        tableRef.value?.setPagination({
-          current,
-          pageSize,
-        });
-        resourceSettingStore.setPagination(null);
-      });
-    }
   },
   {
     immediate: true,
@@ -1651,7 +1400,7 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
 };
 
 const handleUpdatePlugin = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   handleShowVersion();
   isComponentLoading.value = false;
 };
@@ -1741,7 +1490,7 @@ const handleExport = async ({ value }: { value: string }) => {
       exportParams.resource_filter_condition = undefined;
       break;
     case 'filtered':
-      exportParams.resource_filter_condition = tableQueries.value;
+      exportParams.resource_filter_condition = apiQuery.value;
       exportParams.resource_ids = undefined;
       break;
     case 'all':
@@ -1822,7 +1571,7 @@ const handleBatchConfirm = async () => {
     width: 'auto',
   });
   handleClearSelection();
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
 };
 
 const handleBatchCancel = () => {
@@ -1857,7 +1606,7 @@ const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
 
 // 处理保存成功 删除成功 重新请求列表
 const handleSuccess = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   handleShowVersion();
   refreshPathConflicts();
 };
@@ -1921,7 +1670,7 @@ const handleCloseSelect = (row: any, newLabelData: any = []) => {
   if (newLabelData.length > 0) {
     const diff = differenceBy(row.labels, newLabelData, 'name');
     if (diff.length > 0) {
-      tableRef.value!.fetchData(tableQueries.value);
+      tableRef.value!.fetchData(apiQuery.value);
       init();
     }
   }
@@ -1929,17 +1678,17 @@ const handleCloseSelect = (row: any, newLabelData: any = []) => {
 
 // 更新成功
 const handleUpdateLabelSuccess = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   init();
 };
 
 const handleUpdated = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
 };
 
 // 删除成功
 const handleDeleteSuccess = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   refreshPathConflicts();
   isCollapsed.value = true;
 };
@@ -1955,7 +1704,7 @@ const recoverPageStatus = () => {
 };
 
 const handleVersionCreated = () => {
-  tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
+  tableRef.value!.fetchData(apiQuery.value, { resetPage: true });
   handleShowVersion();
   refreshPathConflicts();
 };
@@ -1975,17 +1724,7 @@ onBeforeRouteLeave((to) => {
 
 const getTableData = async (
   params: IGatewaysResourcesListQuery,
-): Promise<ICountAndResults<IResourceRow>> => {
-  const requestParams = { ...params };
-  const fieldsToJoin = ['label_ids'] as const;
-  fieldsToJoin.forEach((field) => {
-    if (requestParams[field] && Array.isArray(requestParams[field])) {
-      requestParams[field] = requestParams[field].join(',');
-    }
-  });
-  const res = await getResourceList(gatewayId, requestParams as IGatewaysResourcesListQuery);
-  return res;
-};
+): Promise<ICountAndResults<IResourceRow>> => getResourceList(gatewayId, params);
 
 const handleClearSelection = () => {
   selectedRows.value = [];
@@ -1993,36 +1732,9 @@ const handleClearSelection = () => {
   tableRef.value?.handleResetSelection();
 };
 
-const handleClearQueries = () => {
-  tableQueries.value = {};
-  searchValue.value = [];
-  tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
-};
-
-const handleFilterChange = (filterItem: FilterValue) => {
-  handleTableFilterChange({
-    filterItem,
-    filterData: tableQueries,
-    searchOptions: searchData,
-    searchParams: searchValue,
-  });
-};
-
 const handleSelectionChange = ({ selections, selectionsRowKeys }: ITableSelection<TableRow<IResourceRow>>) => {
   selectedRows.value = selections;
   selectedRowKeys.value = selectionsRowKeys as number[];
-};
-
-const handleSortChange = (sort: TableSort | null | undefined) => {
-  const sortInfo = Array.isArray(sort) ? sort[0] : sort;
-  if (!sortInfo) {
-    delete tableQueries.value.order_by;
-    return;
-  }
-  const { sortBy: colKey, descending } = sortInfo;
-  if (colKey === 'updated_time') {
-    tableQueries.value.order_by = descending ? `-${colKey}` : colKey;
-  }
 };
 
 const handleCollapseChange = (collapsed: boolean) => {
@@ -2041,6 +1753,20 @@ onMounted(() => {
   init();
   if (route.meta.pageStatus) {
     recoverPageStatus();
+  }
+
+  // 从资源编辑页返回且无筛选 query 时恢复原翻页位置，否则按当前筛选条件执行一次首屏查询
+  if (!Object.keys(route.query).length && resourceSettingStore.previousPagination) {
+    const { current, pageSize } = resourceSettingStore.previousPagination;
+    resourceSettingStore.setPagination(null);
+    markInitialFetchDispatched();
+    tableRef.value?.setPagination({
+      current,
+      pageSize,
+    });
+  }
+  else {
+    startInitialFetch();
   }
 });
 

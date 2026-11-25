@@ -19,6 +19,19 @@
 
 - 如果要手动创建软链接，那么你需要执行`symlink-dot-agents:codebuddy`脚本：
 
-```pnpm symlink-dot-agents:codebuddy```
+```bash
+pnpm symlink-dot-agents:codebuddy
+```
+
+## 推荐安装的 Vue Agent Skills（可选）
+
+推荐开发者及其 AI Agents 在本机按需安装 [vuejs-ai/skills](https://github.com/vuejs-ai/skills) 中的 Vue 3 相关技能（非强制，仅作最佳实践与调试参考）：
+
+```bash
+npx skills add vuejs-ai/skills
+```
+
+- 建议按需选用：`vue-best-practices`、`vue-pinia-best-practices`、`vue-router-best-practices`、`vue-testing-best-practices`、`vue-jsx-best-practices`、`vue-debug-guides`、`create-adaptable-composable`。
+- 若与本仓规范存在差异，以本目录 [AGENTS.md](./AGENTS.md) 与 `.agents/rules/` 中的本地约定为准。
 
 

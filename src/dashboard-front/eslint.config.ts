@@ -27,8 +27,6 @@ export default defineConfigWithVueTs(
     './AGENTS.md',
   ]),
 
-  pluginVue.configs['flat/essential'],
-  pluginVue.configs['flat/strongly-recommended'],
   pluginVue.configs['flat/recommended'],
   vueTsConfigs.recommended,
   ...pluginOxlint.configs['flat/recommended'],
@@ -68,6 +66,7 @@ export default defineConfigWithVueTs(
           consistent: true,
         }],
       // Vue
+      'vue/block-order': ['error', { order: ['template', 'script', 'style'] }],
       'vue/component-name-in-template-casing': 'error',
       'vue/define-emits-declaration': ['error', 'type-literal'],
       'vue/define-macros-order': [
