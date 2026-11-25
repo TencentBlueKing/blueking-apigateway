@@ -1,84 +1,197 @@
 <template>
-  <div class="wizard-container">
-    <div class="wizard-steps-header mb30">
-      <bk-steps :cur-step="currentStep" :steps="stepList" />
+  <div class="wizard-container mx-auto py-32px">
+    <div class="mb-24px">
+      <BkSteps
+        :cur-step="currentStep"
+        :steps="stepList"
+      />
     </div>
 
-    <div class="wizard-content card-style">
+    <div class="wizard-card bg-#fff p-24px rounded-2px">
       <!-- 步骤 1: 基本信息 -->
-      <bk-form v-if="currentStep === 1" form-type="vertical">
-        <bk-form-item label="任务名称" required>
-          <bk-input v-model="form.name" placeholder="输入任务名称" />
-        </bk-form-item>
-        <bk-form-item label="任务类型">
-          <bk-radio-group v-model="form.type">
-            <bk-radio label="sync">同步任务</bk-radio>
-            <bk-radio label="async">异步任务</bk-radio>
-          </bk-radio-group>
-        </bk-form-item>
-      </bk-form>
+      <BkForm
+        v-if="currentStep === 1"
+        ref="stepOneFormRef"
+        :model="formData"
+        :rules="stepOneRules"
+        form-type="vertical"
+      >
+        <BkFormItem
+          :label="t('名称')"
+          property="name"
+          required
+        >
+          <BkInput
+            v-model="formData.name"
+            :placeholder="t('请输入名称')"
+          />
+        </BkFormItem>
+        <BkFormItem
+          :label="t('执行模式')"
+          property="mode"
+        >
+          <BkRadioGroup v-model="formData.mode">
+            <BkRadio label="sync">
+              {{ t('同步') }}
+            </BkRadio>
+            <BkRadio label="async">
+              {{ t('异步') }}
+            </BkRadio>
+          </BkRadioGroup>
+        </BkFormItem>
+      </BkForm>
 
       <!-- 步骤 2: 参数配置 -->
       <div v-else-if="currentStep === 2">
-        <bk-alert theme="warning" title="请仔细检查参数，错误的参数可能导致执行失败。" class="mb20" />
-        <bk-form form-type="vertical">
-          <bk-form-item label="并发数">
-            <bk-slider v-model="form.concurrency" :max-value="100" />
-          </bk-form-item>
-          <bk-form-item label="通知邮箱">
-            <bk-tag-input v-model="form.emails" placeholder="输入邮箱并回车" />
-          </bk-form-item>
-        </bk-form>
+        <BkAlert
+          class="mb-16px"
+          theme="warning"
+          :title="t('请仔细检查参数配置，确认无误后再进入下一步。')"
+        />
+        <BkForm
+          :model="formData"
+          form-type="vertical"
+        >
+          <BkFormItem :label="t('并发数')">
+            <BkSlider
+              v-model="formData.concurrency"
+              :max-value="100"
+            />
+          </BkFormItem>
+          <BkFormItem :label="t('通知对象')">
+            <BkTagInput
+              v-model="formData.receivers"
+              :placeholder="t('请输入并回车确认')"
+              allow-create
+            />
+          </BkFormItem>
+        </BkForm>
       </div>
 
       <!-- 步骤 3: 确认提交 -->
-      <div v-else-if="currentStep === 3" class="confirm-view">
-        <bk-exception type="empty" scene="part" title="配置确认">
-          <div class="summary">
-            <p>名称: {{ form.name }}</p>
-            <p>并发: {{ form.concurrency }}</p>
+      <div
+        v-else
+        class="text-center py-16px"
+      >
+        <BkException
+          type="empty"
+          scene="part"
+          :title="t('配置确认')"
+        >
+          <div class="inline-block w-320px text-left bg-#f5f7fa p-16px rounded-2px text-14px">
+            <div class="mb-8px">
+              {{ t('名称') }}：{{ formData.name }}
+            </div>
+            <div>
+              {{ t('并发数') }}：{{ formData.concurrency }}
+            </div>
           </div>
-        </bk-exception>
+        </BkException>
       </div>
     </div>
 
-    <div class="wizard-footer mt20">
-      <bk-button v-if="currentStep > 1" @click="currentStep--">上一步</bk-button>
-      <bk-button v-if="currentStep < 3" theme="primary" class="ml10" @click="currentStep++">下一步</bk-button>
-      <bk-button v-else theme="success" class="ml10" @click="handleFinish">立即提交</bk-button>
+    <div class="flex items-center gap-12px mt-20px">
+      <BkButton
+        v-if="currentStep > 1"
+        @click="handlePrev"
+      >
+        {{ t('上一步') }}
+      </BkButton>
+      <BkButton
+        v-if="currentStep < 3"
+        theme="primary"
+        @click="handleNext"
+      >
+        {{ t('下一步') }}
+      </BkButton>
+      <BkButton
+        v-else
+        theme="primary"
+        :loading="submitting"
+        @click="handleFinish"
+      >
+        {{ t('提交') }}
+      </BkButton>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
-import { Message } from 'bkui-vue';
+import { type Form, Message } from 'bkui-vue';
 
-const currentStep = ref(1);
-const stepList = [
-  { title: '基本信息' },
-  { title: '参数配置' },
-  { title: '确认提交' }
-];
+interface IWizardForm {
+  name: string
+  mode: 'sync' | 'async'
+  concurrency: number
+  receivers: string[]
+}
 
-const form = reactive({
+const emit = defineEmits<{
+  done: [payload: IWizardForm]
+}>();
+
+const { t } = useI18n();
+
+const stepOneFormRef = useTemplateRef<InstanceType<typeof Form>>('stepOneFormRef');
+const currentStep = shallowRef(1);
+const submitting = shallowRef(false);
+
+const formData = reactive<IWizardForm>({
   name: '',
-  type: 'sync',
+  mode: 'sync',
   concurrency: 20,
-  emails: []
+  receivers: [],
 });
 
-const handleFinish = () => {
-  Message({ theme: 'success', message: '任务已提交' });
+const stepList = computed(() => [
+  { title: t('基本信息') },
+  { title: t('参数配置') },
+  { title: t('确认提交') },
+]);
+
+const stepOneRules = computed(() => ({
+  name: [
+    {
+      required: true,
+      message: t('请输入名称'),
+      trigger: 'blur',
+    },
+  ],
+}));
+
+const handlePrev = () => {
+  currentStep.value = Math.max(1, currentStep.value - 1);
+};
+
+const handleNext = async () => {
+  if (currentStep.value === 1) {
+    await stepOneFormRef.value?.validate();
+  }
+  currentStep.value = Math.min(3, currentStep.value + 1);
+};
+
+const handleFinish = async () => {
+  submitting.value = true;
+  try {
+    // 替换为实际提交接口
+    Message({
+      theme: 'success',
+      message: t('提交成功'),
+    });
+    emit('done', { ...formData });
+  }
+  finally {
+    submitting.value = false;
+  }
 };
 </script>
 
-<style scoped>
-.wizard-container { max-width: 900px; margin: 0 auto; padding: 40px 0; }
-.card-style { background: #fff; padding: 30px; border-radius: 2px; box-shadow: 0 2px 4px 0 rgba(0,0,0,0.1); }
-.summary { text-align: left; background: #f5f7fa; padding: 15px; display: inline-block; width: 300px; }
-.mb30 { margin-bottom: 30px; }
-.mb20 { margin-bottom: 20px; }
-.mt20 { margin-top: 20px; }
-.ml10 { margin-left: 10px; }
+<style lang="scss" scoped>
+.wizard-container {
+  max-width: 900px;
+}
+
+.wizard-card {
+  box-shadow: 0 2px 4px 0 rgb(0 0 0 / 10%);
+}
 </style>
