@@ -2809,5 +2809,9 @@
   "。": ".",
   "OAuth 授权": "OAuth Authorization",
   "适用于蓝鲸应用代用户访问。用户完成登录授权后，应用即可使用该用户身份调用。": "Use this when a BlueKing app accesses the API on behalf of a user. After the user signs in and authorizes the app, the app can call using that user's identity.",
-  "关闭后，任意蓝鲸应用经用户授权后都可以调用。": "When turned off, any BlueKing app can call after user authorization."
+  "关闭后，任意蓝鲸应用经用户授权后都可以调用。": "When turned off, any BlueKing app can call after user authorization.",
+  "请选择认证方式": "Please select authentication method",
+  "用户认证-个人令牌": "User Verified - Personal Token",
+  "用户认证-公开客户端": "User Verified - Public Client",
+  "用户认证-OAuth 授权": "User Verified - OAuth Authorization"
 }
