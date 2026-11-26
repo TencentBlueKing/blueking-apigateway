@@ -17,9 +17,11 @@
 # to the current version of the project delivered to anyone in the future.
 #
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from apigateway.apps.support.constants import DocLanguageEnum
+from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.ai import AIContentTypeEnum
 
 
@@ -65,6 +67,17 @@ class BatchTranslateInputSLZ(serializers.Serializer):
 
     class Meta:
         ref_name = "apigateway.apis.web.ai_completion.serializers.BatchTranslateInputSLZ"
+
+    def validate_doc_ids(self, value):
+        if not value:
+            return value
+
+        gateway_id = self.context["request"].gateway.id
+        valid_ids = set(ResourceDoc.objects.filter(gateway_id=gateway_id, id__in=value).values_list("id", flat=True))
+        if set(value) != valid_ids:
+            raise serializers.ValidationError(_("文档不存在或不属于当前网关"))
+
+        return value
 
 
 class BatchTranslateOutputSLZ(serializers.Serializer):
