@@ -233,7 +233,7 @@ def _parse_hits(hits: list, log_prefix: str = "") -> List[Dict]:
         if "/health" in path and path.split("?")[0].split("/")[-1] == "/health":
             continue
 
-        result.append(LogDataScrubber().scrub_log(log))
+        result.append(LogDataScrubber(mcp=True).scrub_log(log))
     return result
 
 
