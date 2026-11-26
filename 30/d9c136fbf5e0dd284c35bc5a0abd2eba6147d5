@@ -1,0 +1,21 @@
+src/dashboard/apigateway/apigateway/conf/utils.py
+  s_88f3d9a927531b::t_56d4040e9db8dc 211-212
+src/dashboard/apigateway/apigateway/tests/conf/test_utils.py
+  s_88f3d9a927531b::t_e6ce736f37dfcb 56-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "30d9c136fbf5e0dd284c35bc5a0abd2eba6147d5",
+  "prompts": {},
+  "sessions": {
+    "s_88f3d9a927531b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9e3855ff-6e92-4658-a961-dbccdab2205f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
