@@ -82,7 +82,7 @@ const datasource = ref([
     label: 'TEXT',
   },
 ]);
-const resourceEditorRef = ref<InstanceType<typeof AgCodeEditor>>();
+const resourceEditorRef = useTemplateRef<InstanceType<typeof AgCodeEditor>>('resourceEditorRef');
 const editorText = ref(JSON.stringify(rawPayload, null, 2));
 
 // Body 固定为 raw 模式，无需表格校验

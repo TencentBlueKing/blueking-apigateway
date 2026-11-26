@@ -710,6 +710,7 @@ watch(
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的字段设置气泡弹层样式 -->
 <style lang="scss">
 .request-params-field-settings-popover.bk-popover.bk-pop2-content {
   padding: 0;

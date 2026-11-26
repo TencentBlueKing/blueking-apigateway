@@ -58,7 +58,7 @@
         class="search-input"
         clearable
         :placeholder="t('搜索用户名')"
-        :right-icon="'bk-icon icon-search'"
+        right-icon="bk-icon icon-search"
       />
     </div>
 

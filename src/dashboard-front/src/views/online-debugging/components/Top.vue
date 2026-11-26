@@ -49,7 +49,7 @@ import RequestRecord from '@/views/online-debugging/components/RequestRecord.vue
 const emit = defineEmits<{ retry: [data: any] }>();
 const { t } = useI18n();
 const stage = useStage();
-const requestRecordRef = ref<InstanceType<typeof RequestRecord> | null>(null);
+const requestRecordRef = useTemplateRef<InstanceType<typeof RequestRecord>>('requestRecordRef');
 
 const showHistory = () => {
   (requestRecordRef.value as any)?.show();

@@ -78,7 +78,9 @@ pnpm test:ag-table
 
 # 代码检查（CI 会跑 lint:ci 和 lint:ci:oxlint，提交时 lint-staged 也会对暂存文件跑 oxlint 和 eslint）
 pnpm lint:eslint
-pnpm lint:ci:oxlint
+pnpm lint:ci          # eslint . --max-warnings 0
+pnpm lint:ci:oxlint   # oxlint（含 typescript/unicorn/oxc/vue 插件及 consistent-type-imports）
+pnpm stylelint        # SCSS/CSS 检查（渐进治理，按改动文件或手动运行 stylelint:fix）
 
 # 预览生产构建
 pnpm preview
@@ -403,7 +405,7 @@ Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方
 | 缩进          | **2 空格**                                               |
 | 行宽          | **120 字符**（注释、URL、字符串、模板字符串、正则除外）                      |
 | 尾逗号         | **多行时必须**（`comma-dangle: 'always-multiline'`）          |
-| 导入排序        | **强制**（声明排序忽略，成员排序强制）                                  |
+| 导入排序        | **强制**（声明排序忽略，成员排序强制）；纯类型导入用 `import type`（Oxlint `typescript/consistent-type-imports`） |
 | 重复导入        | **禁止**                                                 |
 | `interface` | **必须以 `I` 开头**（`ts-style.md`）                         |
 | `any` 类型    | ESLint 为兼容存量关闭（`no-explicit-any: 'off'`），**新增代码避免使用** |
@@ -417,22 +419,29 @@ Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方
 
 ### Vue 规则
 
-| 规则          | 要求                                                                                                   |
-|-------------|------------------------------------------------------------------------------------------------------|
-| 块顺序         | **`<template>` → `<script>` → `<style>`**（`vue/block-order`，本仓既有约定）                                 |
-| 脚本语法        | 必须使用 `<script setup lang="ts">`（含 JSX 时用 `lang="tsx"`）                                                |
-| 宏顺序         | `defineOptions` → `defineModel` → `defineProps` → `defineEmits` → `defineSlots`，`defineExpose` 必须在最后 |
-| 逻辑组织        | 允许并推荐按**逻辑关注点**聚合同一功能的 `ref` / `computed` / `watch` / 方法（不强制按语法类别分组）                         |
-| Emits 声明    | 必须使用**类型字面量成员语法**（`type-literal`）                                                                    |
-| Props 解构    | **强制**（Vue 3.5+ 响应式解构，禁止 `withDefaults`；传入 `watch`/composable 须用 getter 包裹）                           |
-| 多词组件名       | **已关闭**（兼容 `Index.vue`、`Detail.vue` 等目录入口与单文件页面）                                                     |
-| 根级 v-if     | **禁止**                                                                                               |
-| 未使用的 emit   | **禁止**                                                                                               |
-| 未使用的 ref    | **禁止**                                                                                               |
-| 组件标签大小写     | PascalCase（`component-name-in-template-casing`）                                                      |
-| 块间空行        | **必须**（`padding-line-between-blocks`）                                                                |
-| 静态 class 分离 | **强制**（`prefer-separate-static-class`）                                                               |
-| 布尔属性简写      | **强制**（`prefer-true-attribute-shorthand`）                                                            |
+> Oxlint（`.oxlintrc.json`）已启用 `vue` 插件负责 Vue 核心 `correctness` 规则（`no-side-effects-in-computed-properties`、`no-lifecycle-after-await`、`no-watch-after-await`、`no-expose-after-await`、`valid-define-props` 等），ESLint 通过 `pluginOxlint.buildFromOxlintConfigFile('./.oxlintrc.json')` 精准去重，避免两头落空；`lint:ci` 启用 `--max-warnings 0`。
+
+| 规则           | 要求                                                                                                   |
+|--------------|------------------------------------------------------------------------------------------------------|
+| 块顺序          | **`<template>` → `<script>` → `<style>`**（`vue/block-order`，本仓既有约定）                                 |
+| 块语言          | `<script>` 须为 `ts`/`tsx`，`<style>` 须为 `scss`（`vue/block-lang`）                                        |
+| 脚本语法         | 必须使用 `<script setup lang="ts">`（`vue/component-api-style`，禁止 Options API）                             |
+| 样式作用域        | 强制 `<style scoped>`（`vue/enforce-style-attribute`；弹层/全局覆盖须显式注释豁免）                                    |
+| 宏顺序          | `defineOptions` → `defineModel` → `defineProps` → `defineEmits` → `defineSlots`，`defineExpose` 必须在最后 |
+| 逻辑组织         | 允许并推荐按**逻辑关注点**聚合同一功能的 `ref` / `computed` / `watch` / 方法（不强制按语法类别分组）                         |
+| Props 声明     | 必须基于类型声明（`vue/define-props-declaration: 'type-based'`），禁止必填 prop 设默认值（`vue/no-required-prop-with-default`） |
+| Props 解构     | **强制**（Vue 3.5+ 响应式解构，禁止 `withDefaults`；传入 `watch`/composable 须用 getter 包裹）                           |
+| Emits 与事件名   | 类型字面量成员语法（`type-literal`）；自定义事件名须 `kebab-case`（`vue/custom-event-name-casing`，豁免 `update:*`）        |
+| 模板引用         | 强制使用 Vue 3.5+ `useTemplateRef`（`vue/prefer-use-template-ref`；`v-for` 列表引用可注释豁免）                     |
+| 响应式与 v-model | 无初始值 `ref()` 须标泛型（`vue/require-typed-ref`）；优先 `v-model`（`vue/prefer-v-model`）；优先 `defineOptions`（`vue/prefer-define-options`） |
+| 模板与安全        | 禁用 `v-html`（`vue/no-v-html`）、禁用静态行内 `style`（`vue/no-static-inline-styles`）、禁用无效字符串 `:bind`（`vue/no-useless-v-bind`） |
+| 多词组件名        | **已关闭**（兼容 `Index.vue`、`Detail.vue` 等目录入口与单文件页面）                                                     |
+| 根级 v-if      | **禁止**                                                                                               |
+| 未使用检查        | 禁止未使用的 emit / ref / props 属性（`no-unused-emit-declarations`、`no-unused-refs`、`no-unused-properties`） |
+| 组件标签大小写      | PascalCase（`component-name-in-template-casing`）                                                      |
+| 块间空行         | **必须**（`padding-line-between-blocks`）                                                                |
+| 静态 class 分离  | **强制**（`prefer-separate-static-class`）                                                               |
+| 布尔属性简写       | **强制**（`prefer-true-attribute-shorthand`）                                                            |
 
 ## 路径别名
 
@@ -502,17 +511,21 @@ const loading = shallowRef(false);
 
 const displayLabel = computed(() => `${id}-${keyword.value}`);
 
-// 解构的 prop 传入 watch 必须使用 getter；异步 watch 用 onWatcherCleanup 处理竞态
+// 解构的 prop 传入 watch 必须使用 getter；异步 watch 用 onWatcherCleanup 处理竞态（详见 vue-code-style.md）
 watch(() => id, async (nextId) => {
+  const controller = new AbortController();
   let active = true;
   onWatcherCleanup(() => {
     active = false;
+    controller.abort();
   });
   loading.value = true;
   try {
-    // await fetchDetail(nextId)
-    void nextId;
-    if (!active) return;
+    // 替换为 src/services/source/ 下的实际接口调用
+    const detail = await fetchDetail(nextId, controller.signal);
+    if (active) {
+      keyword.value = detail.name;
+    }
   }
   finally {
     if (active) {

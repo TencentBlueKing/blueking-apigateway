@@ -82,7 +82,7 @@ const toSetList = (value: unknown): IHeaderPair[] => (Array.isArray(value) ? val
 const toRemoveList = (value: unknown): { key: string }[] => (Array.isArray(value) ? value : [])
   .map(item => ({ key: String(isPlainObject(item) ? item.key ?? '' : item ?? '') }));
 
-const formRef = ref<InstanceType<typeof Form>>();
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 const setRef = useTemplateRef('setRef');
 const removeRef = useTemplateRef('removeRef');
 const formData = ref<IFormData>({

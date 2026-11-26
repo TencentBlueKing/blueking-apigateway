@@ -166,7 +166,7 @@ const { t } = useI18n();
 const formData = ref<IUserRateLimitFormData>(getUserRateLimitFormData({}));
 const initializationError = ref('');
 const submissionError = ref('');
-const formRef = ref<InstanceType<typeof Form>>();
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 const validatedUsernames = new Set<string>();
 
 const errorMessage = computed(() => initializationError.value || submissionError.value);

@@ -40,7 +40,7 @@
             v-model="dateValue"
             class="search-date"
             :placeholder="t('选择日期时间范围')"
-            :type="'datetimerange'"
+            type="datetimerange"
             :shortcuts="shortcutsRange"
             use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
@@ -252,11 +252,11 @@ const {
 } = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const dateKey = ref<string>('dateKey');
-const topDatePicker = ref();
+const topDatePicker = useTemplateRef('topDatePicker');
 const tableData = ref<IRequestRecordRow[]>([]);
 const expandedRowKeys = ref<Array<string | number>>([]);
 const tableRef = useTemplateRef<IAgTableInstance<IRequestRecordRow>>('tableRef');
-const resourceEditorRef: any = ref<InstanceType<typeof AgCodeEditor>>();
+const resourceEditorRef: any = useTemplateRef<InstanceType<typeof AgCodeEditor>>('resourceEditorRef');
 const tabList = ref([
   {
     name: t('请求代码'),
@@ -667,6 +667,7 @@ defineExpose({ show });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖 Monaco Editor 与请求记录表格全局样式 -->
 <style lang="scss">
 /* .td-highlight-bg {
   background: #f5f7fa !important;

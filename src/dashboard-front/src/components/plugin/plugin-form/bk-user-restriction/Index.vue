@@ -65,9 +65,9 @@ const { data } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const formRef = ref();
-const whitelistInputRef = ref();
-const blacklistInputRef = ref();
+const formRef = useTemplateRef('formRef');
+const whitelistInputRef = useTemplateRef('whitelistInputRef');
+const blacklistInputRef = useTemplateRef('blacklistInputRef');
 
 const type = ref('whitelist');
 
@@ -112,8 +112,8 @@ watch(() => data, () => {
 defineExpose({
   getValue: async () => {
     const list = type.value === 'whitelist'
-      ? await whitelistInputRef.value.getValue()
-      : await blacklistInputRef.value.getValue();
+      ? await whitelistInputRef.value?.getValue()
+      : await blacklistInputRef.value?.getValue();
     return formRef.value.validate().then(() => {
       if (type.value === 'whitelist') {
         return {

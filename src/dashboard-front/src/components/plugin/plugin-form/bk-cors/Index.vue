@@ -210,7 +210,7 @@ const getFormData = (config: Record<string, any>): IFormData => {
   };
 };
 
-const formRef = ref<InstanceType<typeof Form>>();
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 const formData = ref<IFormData>(getFormData(data));
 const validatedProps = new Set<string>();
 

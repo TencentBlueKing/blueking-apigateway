@@ -104,7 +104,7 @@ const jsonString = ref<string>('');
 const result = ref<string>('');
 const errorMsg = ref<string>('');
 
-const jsonInputRef = ref();
+const jsonInputRef = useTemplateRef('jsonInputRef');
 
 const handleInputClick = () => {
   jsonInputRef.value?.focus();

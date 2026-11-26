@@ -85,7 +85,7 @@ const {
 const emit = defineEmits<{
   'change': [data: any, data: Event]
   'update:modelValue': [data: any, data: Event]
-  'findStateChanged': [data: boolean]
+  'find-state-changed': [data: boolean]
 }>();
 
 // 修复 Monaco Editor 的 Worker 加载问题
@@ -115,7 +115,7 @@ interface IProps {
 const { t } = useI18n();
 
 let editor: monaco.editor.IStandaloneCodeEditor | null = null; // 编辑器实例
-const monacoEditor = ref();
+const monacoEditor = useTemplateRef('monacoEditor');
 // 编辑器装饰器（高亮效果等）
 let decorations: monaco.editor.IEditorDecorationsCollection | null = null;
 // 可切换字号范围
@@ -167,6 +167,7 @@ const getValue = () => {
 
 // 初始化编辑器
 const initEditor = () => {
+  if (!monacoEditor.value) return;
   editor = monaco.editor.create(monacoEditor.value, {
     value: typeof modelValue === 'string' ? modelValue : JSON.stringify(modelValue),
     theme: theme, // 主题
@@ -228,7 +229,7 @@ const editorMounted = () => {
     ?.onFindReplaceStateChange(() => {
       const isVisible = (editor!.getContribution('editor.contrib.findController') as any)
         .getState().isRevealed;
-      emit('findStateChanged', isVisible);
+      emit('find-state-changed', isVisible);
     });
 };
 

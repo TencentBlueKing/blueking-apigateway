@@ -66,7 +66,7 @@ const formData = ref<Record<string, any>>({});
 const formVersion = ref(0);
 const initializationError = ref('');
 const whitelistYaml = ref('');
-const formRef = ref<PluginFormHandle | null>(null);
+const formRef = useTemplateRef<PluginFormHandle>('formRef');
 
 const editor = computed(() => definition?.editor);
 const errorMessage = computed(() => {

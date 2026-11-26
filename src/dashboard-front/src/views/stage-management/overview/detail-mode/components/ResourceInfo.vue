@@ -97,7 +97,10 @@ type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][
 interface IProps {
   stageAddress: string
   stageId: number
+  // 动态 Tab 面板组件公共入参占位，避免透传到根 DOM
+  // eslint-disable-next-line vue/no-unused-properties
   versionId: number | undefined
+  // eslint-disable-next-line vue/no-unused-properties
   stage: Record<string, any> | undefined
 }
 const {
@@ -114,8 +117,8 @@ const filterValue = ref<Record<string, any>>({ keyword: '' });
 const resourceTableRef = useTemplateRef<IAgTableInstance<IVersionResource>>('resourceTableRef');
 const currentStage = ref<any>(null);
 const currentResource = ref<any>({});
-const resourceDetailsRef = ref();
-const stageSidesliderRef = ref();
+const resourceDetailsRef = useTemplateRef('resourceDetailsRef');
+const stageSidesliderRef = useTemplateRef('stageSidesliderRef');
 // 是否是点击了后端服务
 const highlightRowId = ref(0);
 
@@ -549,6 +552,7 @@ defineExpose({ reload: init });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的 TDesign 表头筛选弹层样式 -->
 <style lang="scss">
 .content-footer {
   justify-content: flex-end;

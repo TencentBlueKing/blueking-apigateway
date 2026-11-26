@@ -490,7 +490,7 @@ const { width: viewportWidth } = useWindowSize();
 // 网关id
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 
-const pluginEditorRef = ref<InstanceType<typeof PluginConfigEditor>>();
+const pluginEditorRef = useTemplateRef<InstanceType<typeof PluginConfigEditor>>('pluginEditorRef');
 const scopeType = ref<IGatewaysPluginsListQuery['scope_type'] | ''>('');
 const scopeId = ref(-1);
 const isBindingListLoading = ref(false);

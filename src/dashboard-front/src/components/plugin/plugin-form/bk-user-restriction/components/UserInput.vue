@@ -62,6 +62,7 @@ const { users = [] } = defineProps<IProps>();
 
 const { t } = useI18n();
 
+// eslint-disable-next-line vue/prefer-use-template-ref -- v-for 列表引用保留 ref
 const formRefs = ref();
 
 const localUsers = ref<{ key: string }[]>([]);

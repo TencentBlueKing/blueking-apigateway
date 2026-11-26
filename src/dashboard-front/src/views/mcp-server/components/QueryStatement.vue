@@ -73,8 +73,8 @@ const popoverOptions = {
   placement: 'bottom-start',
 };
 
-const queryStatement = ref<HTMLDivElement | null>(null);
-const drownDownRef = ref<InstanceType<typeof Dropdown> | null>(null);
+const queryStatement = useTemplateRef<HTMLDivElement>('queryStatement');
+const drownDownRef = useTemplateRef<InstanceType<typeof Dropdown>>('drownDownRef');
 const localPlaceholder = ref(placeholder ?? t('请输入查询语句'));
 
 const handleEnter = () => {
