@@ -275,17 +275,27 @@ def convert_parameters(v3_parameters, consumes):
     """
     v2_parameters = []
     for param in v3_parameters:
+        # Swagger 2.0 has no cookie parameter location.
+        if param.get("in") == "cookie":
+            continue
+
         v2_param = param.copy()  # 复制参数对象
-        if "schema" in param:
+        schema = v2_param.pop("schema", None)
+        if isinstance(schema, dict):
             # OpenAPI 3.0 中的 'schema' 需要被展开到参数对象的根级别
-            v2_param.update(param["schema"])
-            del v2_param["schema"]
+            v2_param.update(schema)
+            if isinstance(v2_param.get("type"), list):
+                # A Swagger 2.0 parameter accepts a single type.
+                v2_param["type"] = "string"
         if "content" in param:
             # 对于参数的 'content'，我们只能选择一个媒体类型
             content_type, content_value = next(iter(param["content"].items()))
             if "schema" not in content_value:
                 continue
-            v2_param["type"] = content_value["schema"]["type"]
+            schema = content_value["schema"]
+            schema_type = schema.get("type") if isinstance(schema, dict) else None
+            # Swagger 2.0 cannot describe a composed schema for a media-encoded parameter.
+            v2_param["type"] = schema_type if isinstance(schema_type, str) else "string"
             # 如果参数的媒体类型在 consumes 中，添加到 'consumes' 字段
             if content_type in consumes:
                 v2_param["consumes"] = [content_type]
