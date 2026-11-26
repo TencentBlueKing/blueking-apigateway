@@ -140,8 +140,7 @@ class SkillMarketplaceSkillRetrieveApi(generics.RetrieveAPIView):
 )
 class SkillMarketplaceSkillVersionListApi(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
-        metadata = SkillHandler.get_market_skill(kwargs["skill_id"], get_user_tenant_id(request))
-        versions = SkillHandler.list_versions(metadata)
+        metadata, versions = SkillHandler.list_market_versions(kwargs["skill_id"], get_user_tenant_id(request))
         slz = SkillVersionOutputSLZ(versions, many=True, context={"current_version_id": metadata.current_version_id})
         return OKJsonResponse(data=slz.data)
 
@@ -156,8 +155,9 @@ class SkillMarketplaceSkillVersionListApi(generics.ListAPIView):
 )
 class SkillMarketplaceSkillFileListApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
-        metadata = SkillHandler.get_market_skill(kwargs["skill_id"], get_user_tenant_id(request))
-        version = SkillHandler.get_version(metadata, kwargs.get("version"))
+        metadata, version = SkillHandler.get_market_version(
+            kwargs["skill_id"], kwargs.get("version"), get_user_tenant_id(request)
+        )
         files = build_skill_package_files(metadata, version)
         data = {
             "name": metadata.name,
@@ -177,8 +177,9 @@ class SkillMarketplaceSkillFileListApi(generics.RetrieveAPIView):
 )
 class SkillMarketplaceSkillDownloadApi(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
-        metadata = SkillHandler.get_market_skill(kwargs["skill_id"], get_user_tenant_id(request))
-        version = SkillHandler.get_version(metadata, kwargs.get("version"))
+        metadata, version = SkillHandler.get_market_version(
+            kwargs["skill_id"], kwargs.get("version"), get_user_tenant_id(request)
+        )
         content = build_skill_package_zip(metadata, version)
         SkillHandler.increase_download_count(metadata.id)
         return DownloadableResponse(io.BytesIO(content), filename=get_skill_package_filename(metadata, version))

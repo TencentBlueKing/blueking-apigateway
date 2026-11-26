@@ -225,6 +225,27 @@ class TestVersions:
     def test_list_versions(self, metadata):
         assert [item.version for item in SkillHandler.list_versions(metadata)] == ["1.10.0", "1.9.0", "1.2.0"]
 
+    def test_list_market_versions(self, metadata):
+        found, versions = SkillHandler.list_market_versions("p_demo-skill", "a")
+        assert found.id == metadata.id
+        assert [item.version for item in versions] == ["1.10.0", "1.9.0", "1.2.0"]
+
+        create_skill("release-check", gateway=_gateway("demo", tenant_id="a"))
+        with pytest.raises(APIError) as err:
+            SkillHandler.list_market_versions("g_demo_release-check", "b")
+        assert err.value.code.code_name == "NO_PERMISSION"
+
+    def test_get_market_version(self, metadata):
+        found, version = SkillHandler.get_market_version("p_demo-skill", None, "a")
+        assert found.id == metadata.id
+        assert version.version == "1.9.0"
+        assert SkillHandler.get_market_version("p_demo-skill", "1.2.0", "a")[1].version == "1.2.0"
+
+        create_skill("release-check", gateway=_gateway("demo", tenant_id="a"))
+        with pytest.raises(APIError) as err:
+            SkillHandler.get_market_version("g_demo_release-check", None, "b")
+        assert err.value.code.code_name == "NO_PERMISSION"
+
     def test_get_version(self, metadata):
         assert SkillHandler.get_version(metadata).version == "1.9.0"
         assert SkillHandler.get_version(metadata, "1.2.0").version == "1.2.0"

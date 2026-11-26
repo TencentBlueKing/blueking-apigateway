@@ -215,6 +215,26 @@ class SkillHandler:
         return metadata
 
     @staticmethod
+    def list_market_versions(skill_id: str, user_tenant_id: Optional[str]) -> Tuple[SkillMetadata, List[SkillVersion]]:
+        """Skill 市场的历史版本：按对外 ID 取 Skill（含租户校验），返回 metadata 和降序的版本列表
+
+        例如：用户在租户 a，网关 demo 属于租户 b -> 403；已有 1.9.0、1.10.0 -> (metadata, [1.10.0, 1.9.0])
+        """
+        metadata = SkillHandler.get_market_skill(skill_id, user_tenant_id)
+        return metadata, SkillHandler.list_versions(metadata)
+
+    @staticmethod
+    def get_market_version(
+        skill_id: str, version: Optional[str], user_tenant_id: Optional[str]
+    ) -> Tuple[SkillMetadata, SkillVersion]:
+        """Skill 市场取 Skill 的某个版本：按对外 ID 取 Skill（含租户校验），version 为空时取线上版本
+
+        例如：用户在租户 a，网关 demo 属于租户 b -> 403；version=None -> (metadata, 线上版本)；version="9.9.9" -> 404
+        """
+        metadata = SkillHandler.get_market_skill(skill_id, user_tenant_id)
+        return metadata, SkillHandler.get_version(metadata, version)
+
+    @staticmethod
     def get_open_skill(skill_id: str) -> SkillMetadata:
         """免登录下载按对外 ID 取 Skill：可见范围同 Skill 市场，但没有登录用户、不按租户过滤
 
