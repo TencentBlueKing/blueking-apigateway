@@ -235,7 +235,8 @@ class TestSkillListCreateApi:
 class TestSkillTagListApi:
     def test_list(self, request_view, gateway, skill):
         create_skill("platform-skill", tags=["平台"])
-        archived = create_skill("archived", gateway=gateway, tags=["归档"])
+        create_skill("other", gateway=G(Gateway, name="other", status=GatewayStatusEnum.ACTIVE.value), tags=["其他"])
+        archived = create_skill("archived", gateway=gateway, tags=["归档", "故障排查"])
         SkillMetadata.objects.filter(id=archived.id).update(status=SkillStatusEnum.ARCHIVED.value)
 
         resp = request_view(
@@ -243,9 +244,20 @@ class TestSkillTagListApi:
         )
 
         assert resp.status_code == 200
-        names = [item["name"] for item in resp.json()["data"]]
+        data = resp.json()["data"]
+        assert data[0] == {"name": "故障排查", "skill_count": 2}
+        names = [item["name"] for item in data]
         assert "归档" in names
         assert "平台" not in names
+        assert "其他" not in names
+
+    def test_keyword(self, request_view, gateway, skill):
+        resp = request_view(
+            "GET", "skill.tag.list", path_params={"gateway_id": gateway.id}, gateway=gateway, data={"keyword": "故障"}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["data"] == [{"name": "故障排查", "skill_count": 1}]
 
 
 class TestSkillPackageCheckApi:

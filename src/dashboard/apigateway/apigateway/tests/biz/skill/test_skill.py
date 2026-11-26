@@ -61,7 +61,7 @@ class TestParseSkillId:
         assert SkillHandler.parse_skill_id(skill_id) == expected
 
 
-class TestMarketQueryset:
+class TestListMarketSkills:
     def test_visibility(self):
         create_skill("platform-skill")
         demo = _gateway("demo")
@@ -70,7 +70,7 @@ class TestMarketQueryset:
         SkillMetadata.objects.filter(id=archived.id).update(status=SkillStatusEnum.ARCHIVED.value)
         create_skill("inactive", gateway=_gateway("stopped", status=GatewayStatusEnum.INACTIVE.value))
 
-        assert _codes(SkillHandler.get_market_queryset()) == ["g_demo_active", "p_platform-skill"]
+        assert _codes(SkillHandler.list_market_skills(None)) == ["g_demo_active", "p_platform-skill"]
 
     def test_tenant_filter(self):
         create_skill("platform-skill")
@@ -78,14 +78,14 @@ class TestMarketQueryset:
         create_skill("other", gateway=_gateway("other", tenant_id="b"))
         create_skill("global", gateway=_gateway("global", tenant_id="", tenant_mode=TenantModeEnum.GLOBAL.value))
 
-        assert _codes(SkillHandler.get_market_queryset("a")) == [
+        assert _codes(SkillHandler.list_market_skills("a")) == [
             "g_global_global",
             "g_mine_mine",
             "p_platform-skill",
         ]
 
 
-class TestFilterQueryset:
+class TestListFilters:
     @pytest.fixture(autouse=True)
     def skills(self):
         self.platform = create_skill("platform-skill", tags=["作业平台", "JOB"])
@@ -100,7 +100,7 @@ class TestFilterQueryset:
         )
 
     def _filter(self, **kwargs):
-        return _codes(SkillHandler.filter_queryset(SkillMetadata.objects.all(), **kwargs))
+        return _codes(SkillHandler.list_market_skills(None, **kwargs))
 
     @pytest.mark.parametrize(
         "keyword, expected",
@@ -118,8 +118,9 @@ class TestFilterQueryset:
     def test_keyword(self, keyword, expected):
         assert self._filter(keyword=keyword) == expected
 
-    def test_keyword_without_gateway_name(self):
-        assert self._filter(keyword="jobv3-cloud", match_gateway_name=False) == []
+    def test_gateway_keyword_without_gateway_name(self):
+        assert _codes(SkillHandler.list_gateway_skills(self.gateway, keyword="release")) == ["g_demo_release-check"]
+        assert _codes(SkillHandler.list_gateway_skills(self.gateway, keyword="jobv3-cloud")) == []
 
     def test_keyword_only_current_version_relations(self):
         old_version_id = self.platform.current_version_id
@@ -137,17 +138,20 @@ class TestFilterQueryset:
 
     def test_type_and_status(self):
         assert self._filter(skill_type="gateway") == ["g_demo_release-check"]
-        assert self._filter(status=SkillStatusEnum.ARCHIVED.value) == []
+        assert _codes(SkillHandler.list_gateway_skills(self.gateway, status=SkillStatusEnum.ARCHIVED.value)) == []
+        assert _codes(SkillHandler.list_gateway_skills(self.gateway, status=SkillStatusEnum.PUBLISHED.value)) == [
+            "g_demo_release-check"
+        ]
 
 
-class TestOrderQueryset:
+class TestListOrder:
     def test_orders(self):
         first = create_skill("b-skill")
         second = create_skill("a-skill")
         SkillMetadata.objects.filter(id=first.id).update(download_count=5)
 
         def order(order_by):
-            return [item.name for item in SkillHandler.order_queryset(SkillMetadata.objects.all(), order_by)]
+            return [item.name for item in SkillHandler.list_market_skills(None, order_by=order_by)]
 
         assert order("name") == ["a-skill", "b-skill"]
         assert order("-download_count") == ["b-skill", "a-skill"]
@@ -155,22 +159,26 @@ class TestOrderQueryset:
 
 
 class TestCountsAndTags:
-    def test_count_by_type(self):
-        create_skill("platform-skill")
-        assert SkillHandler.count_by_type(SkillMetadata.objects.all()) == {"platform": 1, "gateway": 0}
+    def test_count_market_skills(self):
+        create_skill("platform-skill", tags=["只读"])
+        create_skill("release-check", gateway=_gateway("demo"))
 
-    def test_list_tags(self):
+        assert SkillHandler.count_market_skills(None) == {"platform": 1, "gateway": 1}
+        assert SkillHandler.count_market_skills(None, tag="只读") == {"platform": 1, "gateway": 0}
+
+    def test_list_market_tags(self):
         create_skill("a", tags=["日志", "只读"])
         create_skill("b", tags=["日志"])
+        create_skill("c", gateway=_gateway("demo"), tags=["网关"])
+        archived = create_skill("d", tags=["归档"])
+        SkillMetadata.objects.filter(id=archived.id).update(status=SkillStatusEnum.ARCHIVED.value)
 
-        assert SkillHandler.list_tags(SkillMetadata.objects.all()) == [
+        assert SkillHandler.list_market_tags(None, skill_type="platform") == [
             {"name": "日志", "skill_count": 2},
             {"name": "只读", "skill_count": 1},
         ]
-        assert SkillHandler.list_tags(SkillMetadata.objects.all(), keyword="只") == [
-            {"name": "只读", "skill_count": 1}
-        ]
-        assert SkillHandler.list_tags(SkillMetadata.objects.filter(name="b")) == [{"name": "日志", "skill_count": 1}]
+        assert SkillHandler.list_market_tags(None, keyword="只") == [{"name": "只读", "skill_count": 1}]
+        assert SkillHandler.list_market_tags(None, skill_type="gateway") == [{"name": "网关", "skill_count": 1}]
 
 
 class TestGetSkill:
@@ -261,7 +269,7 @@ class TestContext:
         G(Gateway, name="jobv3-cloud", display_name="作业平台")
         for index in range(3):
             create_skill(f"skill-{index}")
-        queryset = SkillHandler.for_list(SkillMetadata.objects.all())
+        queryset = SkillHandler.list_market_skills(None)
 
         with CaptureQueriesContext(connection) as small:
             SkillHandler.build_list_context(list(queryset[:1]))

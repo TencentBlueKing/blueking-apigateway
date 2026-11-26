@@ -27,7 +27,7 @@ previews rebuild the package from the stored version (`package`).
 | `archive.py` | in-memory zip reading: path, symlink, layout, declaration size and UTF-8 checks; lists ignored files |
 | `uploader.py` | gateway Skill precheck and publish: package checks, ignored-file warning, form overlay, gateway-only `uses` |
 | `manager.py` | basic info, current version, archive/restore and delete of an existing Skill |
-| `skill.py` | `SkillHandler`: market/gateway/open querysets, filters, ordering, counts, tags, detail context, download count |
+| `skill.py` | `SkillHandler`: one complete query per use case (market list/count/tags/get/versions, gateway list/get, open get) sharing only private `Q`/lookup fragments; versions, detail context, download count |
 
 ## Where to change what
 

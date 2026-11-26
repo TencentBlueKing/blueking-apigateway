@@ -60,11 +60,13 @@ class SkillMarketplaceSkillListApi(generics.ListAPIView):
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        queryset = SkillHandler.get_market_queryset(get_user_tenant_id(request))
-        queryset = SkillHandler.filter_queryset(
-            queryset, keyword=data.get("keyword"), tag=data.get("tag"), skill_type=data.get("type")
+        queryset = SkillHandler.list_market_skills(
+            get_user_tenant_id(request),
+            keyword=data.get("keyword"),
+            tag=data.get("tag"),
+            skill_type=data.get("type"),
+            order_by=data["order_by"],
         )
-        queryset = SkillHandler.order_queryset(SkillHandler.for_list(queryset), data["order_by"])
 
         page = self.paginate_queryset(queryset)
         context = SkillHandler.build_list_context(page)
@@ -85,11 +87,10 @@ class SkillMarketplaceSkillCountApi(generics.RetrieveAPIView):
         slz = SkillMarketplaceCountInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = SkillHandler.get_market_queryset(get_user_tenant_id(request))
-        queryset = SkillHandler.filter_queryset(
-            queryset, keyword=slz.validated_data.get("keyword"), tag=slz.validated_data.get("tag")
+        counts = SkillHandler.count_market_skills(
+            get_user_tenant_id(request), keyword=slz.validated_data.get("keyword"), tag=slz.validated_data.get("tag")
         )
-        return OKJsonResponse(data=SkillHandler.count_by_type(queryset))
+        return OKJsonResponse(data=counts)
 
 
 @method_decorator(
@@ -106,9 +107,11 @@ class SkillMarketplaceTagListApi(generics.ListAPIView):
         slz = SkillMarketplaceTagListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = SkillHandler.get_market_queryset(get_user_tenant_id(request))
-        queryset = SkillHandler.filter_queryset(queryset, skill_type=slz.validated_data.get("type"))
-        tags = SkillHandler.list_tags(queryset, keyword=slz.validated_data.get("keyword"))
+        tags = SkillHandler.list_market_tags(
+            get_user_tenant_id(request),
+            skill_type=slz.validated_data.get("type"),
+            keyword=slz.validated_data.get("keyword"),
+        )
         return OKJsonResponse(data=SkillTagOutputSLZ(tags, many=True).data)
 
 

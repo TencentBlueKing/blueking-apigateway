@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""Skill 读侧：Skill 市场、网关 Skill 和免登录下载共用的查找、过滤、统计和下载计数"""
+"""Skill 读侧：Skill 市场、网关 Skill 和免登录下载的查询、统计和下载计数"""
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -36,6 +36,76 @@ from .declaration import normalize_tag_name, parse_version, split_uses
 
 # 列表不读版本的大字段，只要版本号和发布时间
 _LIST_DEFERRED_FIELDS = ("current_version__artifact", "current_version__orchestration", "current_version__changelog")
+
+# 接口的 order_by -> 排序字段；-published_time 是线上版本的发布时间，并列时按 id 保证分页稳定
+_ORDER_FIELDS = {
+    "-published_time": ("-current_version__created_time", "-id"),
+    "-updated_time": ("-updated_time", "-id"),
+    "-download_count": ("-download_count", "-id"),
+    "name": ("name", "id"),
+}
+
+
+def _market_visible_condition() -> Q:
+    """Skill 市场和免登录下载的可见范围：使用中，网关 Skill 另外要求所属网关启用中
+
+    例如：内置 Skill 都可见；已归档的、网关停用的网关 Skill 不可见
+    """
+    return Q(status=SkillStatusEnum.PUBLISHED.value) & (
+        Q(type=SkillTypeEnum.PLATFORM.value) | Q(gateway__status=GatewayStatusEnum.ACTIVE.value)
+    )
+
+
+def _skill_id_lookup(skill_id: str) -> Dict[str, Any]:
+    """对外 ID -> SkillMetadata 的查询条件；ID 解析失败抛 NOT_FOUND
+
+    例如：
+        "g_demo_release-check" -> {"type": "gateway", "name": "release-check", "gateway__name": "demo"}
+        "p_job-plan" -> {"type": "platform", "name": "job-plan", "gateway__isnull": True}
+        "x_bad" -> 404
+    """
+    parsed = SkillHandler.parse_skill_id(skill_id)
+    if parsed is None:
+        raise _skill_not_found(skill_id)
+    skill_type, gateway_name, name = parsed
+    if skill_type == SkillTypeEnum.GATEWAY.value:
+        return {"type": skill_type, "name": name, "gateway__name": gateway_name}
+    return {"type": skill_type, "name": name, "gateway__isnull": True}
+
+
+def _skill_not_found(skill_id: str):
+    """对外 ID 对应的 Skill 不存在时的 NOT_FOUND"""
+    return error_codes.NOT_FOUND.format(_("Skill {skill_id} 不存在").format(skill_id=skill_id), replace=True)
+
+
+def _tag_condition(tag: str) -> Exists:
+    """带某个标签：按规范化后的标签名精确匹配
+
+    例如：tag="JOB"、" job " -> 带标签 job 的 Skill
+    """
+    return Exists(SkillTag.objects.filter(metadata_set=OuterRef("pk"), name=normalize_tag_name(tag)))
+
+
+def _keyword_condition(keyword: str, match_gateway_name: bool) -> Q:
+    """关键词匹配名称、展示名、描述、标签名，以及当前版本调用的接口名
+
+    match_gateway_name 为真时还匹配当前版本调用的网关名（网关 Skill 只调本网关，匹配它没有意义）。
+
+    例如：
+        "sops" -> 名称、展示名、描述、标签名含 sops，或当前版本调用了 bk-sops 网关的接口
+        "get_task_status" -> 当前版本用到 get_task_status 的 Skill；只在历史版本里用过的不算
+    """
+    api_condition = Q(resource_name__icontains=keyword)
+    if match_gateway_name:
+        api_condition |= Q(gateway_name__icontains=keyword)
+    return (
+        Q(name__icontains=keyword)
+        | Q(display_name__icontains=keyword)
+        | Q(display_name_en__icontains=keyword)
+        | Q(description__icontains=keyword)
+        | Exists(SkillTag.objects.filter(metadata_set=OuterRef("pk"), name__icontains=keyword))
+        | Exists(SkillVersionRelation.objects.filter(version_id=OuterRef("current_version_id")).filter(api_condition))
+    )
 
 
 class SkillHandler:
@@ -65,115 +135,73 @@ class SkillHandler:
         return None
 
     @staticmethod
-    def get_market_queryset(user_tenant_id: Optional[str] = None) -> QuerySet:
-        """Skill 市场可见的 Skill：使用中，网关 Skill 另外要求所属网关启用中；传了租户时按租户过滤
-
-        例如：内置 Skill 都在；已归档的、网关停用的网关 Skill 不在；其他租户网关下的网关 Skill 不在
-        """
-        queryset = SkillMetadata.objects.filter(status=SkillStatusEnum.PUBLISHED.value).filter(
-            Q(type=SkillTypeEnum.PLATFORM.value) | Q(gateway__status=GatewayStatusEnum.ACTIVE.value)
-        )
-        if user_tenant_id:
-            queryset = skill_filter_by_user_tenant_id(queryset, user_tenant_id)
-        return queryset
-
-    @staticmethod
-    def get_gateway_queryset(gateway: Gateway) -> QuerySet:
-        """网关下的全部网关 Skill，不限状态
-
-        例如：网关 demo 下 2 条使用中、1 条已归档 -> 3 条
-        """
-        return SkillMetadata.objects.filter(type=SkillTypeEnum.GATEWAY.value, gateway=gateway)
-
-    @staticmethod
-    def filter_queryset(
-        queryset: QuerySet,
+    def list_market_skills(
+        user_tenant_id: Optional[str],
         keyword: Optional[str] = None,
         tag: Optional[str] = None,
         skill_type: Optional[str] = None,
-        status: Optional[str] = None,
-        match_gateway_name: bool = True,
+        order_by: str = "-published_time",
     ) -> QuerySet:
-        """按类型、状态、标签、关键词筛选；标签按规范化后的名字精确匹配，关键词还匹配当前版本调用的接口
-
-        match_gateway_name 为假时关键词不匹配当前版本调用的网关名（网关 Skill 只调本网关，匹配它没有意义）。
+        """Skill 市场列表：可见范围内按租户、类型、标签、关键词筛选并排序，带上列表要用的关联
 
         例如：
-            keyword="sops" -> 名称、展示名、描述、标签名含 sops，或当前版本调用了 bk-sops 网关的接口
-            keyword="get_task_status" -> 当前版本用到 get_task_status 的 Skill；只在历史版本里用过的不算
-            tag="JOB" -> 带标签 job 的 Skill
+            用户在租户 a -> 内置 Skill、全租户网关和租户 a 网关下使用中的网关 Skill
+            keyword="sops"、tag="JOB" -> 带标签 job、且名称等字段或当前版本调用的接口匹配 sops 的 Skill
+            order_by="-published_time" -> 最近发布线上版本的在前
         """
+        queryset = SkillMetadata.objects.filter(_market_visible_condition())
+        if user_tenant_id:
+            queryset = skill_filter_by_user_tenant_id(queryset, user_tenant_id)
         if skill_type:
             queryset = queryset.filter(type=skill_type)
-        if status:
-            queryset = queryset.filter(status=status)
         if tag:
-            queryset = queryset.filter(
-                Exists(SkillTag.objects.filter(metadata_set=OuterRef("pk"), name=normalize_tag_name(tag)))
-            )
+            queryset = queryset.filter(_tag_condition(tag))
         if keyword:
-            api_condition = Q(resource_name__icontains=keyword)
-            if match_gateway_name:
-                api_condition |= Q(gateway_name__icontains=keyword)
-            queryset = queryset.filter(
-                Q(name__icontains=keyword)
-                | Q(display_name__icontains=keyword)
-                | Q(display_name_en__icontains=keyword)
-                | Q(description__icontains=keyword)
-                | Exists(SkillTag.objects.filter(metadata_set=OuterRef("pk"), name__icontains=keyword))
-                | Exists(
-                    SkillVersionRelation.objects.filter(version_id=OuterRef("current_version_id")).filter(
-                        api_condition
-                    )
-                )
-            )
-        return queryset
-
-    @staticmethod
-    def order_queryset(queryset: QuerySet, order_by: str) -> QuerySet:
-        """按接口的 order_by 排序；-published_time 是线上版本的发布时间，并列时按 id 倒序保证分页稳定
-
-        例如："-published_time" -> 最近发布线上版本的在前；"name" -> 按规范名升序
-        """
-        fields = {
-            "-published_time": ("-current_version__created_time", "-id"),
-            "-updated_time": ("-updated_time", "-id"),
-            "-download_count": ("-download_count", "-id"),
-            "name": ("name", "id"),
-        }
-        return queryset.order_by(*fields[order_by])
-
-    @staticmethod
-    def for_list(queryset: QuerySet) -> QuerySet:
-        """列表要用到的关联：网关、线上版本（不读大字段）、标签
-
-        例如：分页后序列化 10 条，标签和网关都不再逐条查询
-        """
+            queryset = queryset.filter(_keyword_condition(keyword, match_gateway_name=True))
         return (
             queryset.select_related("gateway", "current_version")
             .defer(*_LIST_DEFERRED_FIELDS)
             .prefetch_related("tags")
+            .order_by(*_ORDER_FIELDS[order_by])
         )
 
     @staticmethod
-    def count_by_type(queryset: QuerySet) -> Dict[str, int]:
-        """各类型的数量，没有的类型为 0
+    def count_market_skills(
+        user_tenant_id: Optional[str], keyword: Optional[str] = None, tag: Optional[str] = None
+    ) -> Dict[str, int]:
+        """Skill 市场各类型的数量：筛选条件同列表（不含类型），没有的类型为 0
 
-        例如：3 条内置、1 条网关 Skill -> {"platform": 3, "gateway": 1}
+        例如：可见的有 3 条内置、1 条网关 Skill -> {"platform": 3, "gateway": 1}
         """
+        queryset = SkillMetadata.objects.filter(_market_visible_condition())
+        if user_tenant_id:
+            queryset = skill_filter_by_user_tenant_id(queryset, user_tenant_id)
+        if tag:
+            queryset = queryset.filter(_tag_condition(tag))
+        if keyword:
+            queryset = queryset.filter(_keyword_condition(keyword, match_gateway_name=True))
+
         counts = dict.fromkeys(SkillTypeEnum.get_values(), 0)
-        for item in queryset.order_by().values("type").annotate(count=Count("id")):
+        for item in queryset.values("type").annotate(count=Count("id")):
             counts[item["type"]] = item["count"]
         return counts
 
     @staticmethod
-    def list_tags(queryset: QuerySet, keyword: Optional[str] = None) -> List[Dict[str, Any]]:
-        """queryset 里的 Skill 用到的标签和各自的 Skill 数，按数量降序、名字升序；keyword 搜标签名
+    def list_market_tags(
+        user_tenant_id: Optional[str], skill_type: Optional[str] = None, keyword: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Skill 市场可见的 Skill 用到的标签和各自的 Skill 数，按数量降序、名字升序；keyword 搜标签名
 
-        例如：两条 Skill 都带「日志」，一条带「只读」 ->
+        例如：两条可见 Skill 都带「日志」，一条带「只读」 ->
             [{"name": "日志", "skill_count": 2}, {"name": "只读", "skill_count": 1}]
         """
-        relations = SkillMetadata.tags.through.objects.filter(skillmetadata__in=queryset.order_by().values("id"))
+        metadata_queryset = SkillMetadata.objects.filter(_market_visible_condition())
+        if user_tenant_id:
+            metadata_queryset = skill_filter_by_user_tenant_id(metadata_queryset, user_tenant_id)
+        if skill_type:
+            metadata_queryset = metadata_queryset.filter(type=skill_type)
+
+        relations = SkillMetadata.tags.through.objects.filter(skillmetadata__in=metadata_queryset.values("id"))
         if keyword:
             relations = relations.filter(skilltag__name__icontains=keyword)
         rows = (
@@ -184,24 +212,34 @@ class SkillHandler:
         return [{"name": row["skilltag__name"], "skill_count": row["skill_count"]} for row in rows]
 
     @staticmethod
-    def _get_skill(queryset: QuerySet, skill_id: str) -> SkillMetadata:
-        """按对外 ID 在 queryset 里找 Skill；ID 解析失败或不在 queryset 里抛 NOT_FOUND
+    def list_gateway_skills(
+        gateway: Gateway,
+        keyword: Optional[str] = None,
+        tag: Optional[str] = None,
+        status: Optional[str] = None,
+        order_by: str = "-updated_time",
+    ) -> QuerySet:
+        """网关下的网关 Skill 列表，不限状态；按状态、标签、关键词筛选并排序，带上列表要用的关联
 
-        例如：queryset 只有网关 demo 的 Skill 时，"g_demo_release-check" 能找到；"g_other_release-check"、"p_release-check" -> 404
+        关键词不匹配当前版本调用的网关名：网关 Skill 只调本网关。
+
+        例如：
+            网关 demo 下 2 条使用中、1 条已归档 -> 3 条；status="archived" -> 1 条
+            keyword="demo" -> 不会因为调用了 demo 网关的接口就全部命中
         """
-        parsed = SkillHandler.parse_skill_id(skill_id)
-        if parsed is None:
-            raise error_codes.NOT_FOUND.format(_("Skill {skill_id} 不存在").format(skill_id=skill_id), replace=True)
-        skill_type, gateway_name, name = parsed
-        lookup: Dict[str, Any] = {"type": skill_type, "name": name}
-        if skill_type == SkillTypeEnum.GATEWAY.value:
-            lookup["gateway__name"] = gateway_name
-        else:
-            lookup["gateway__isnull"] = True
-        metadata = queryset.select_related("gateway", "current_version").filter(**lookup).first()
-        if metadata is None:
-            raise error_codes.NOT_FOUND.format(_("Skill {skill_id} 不存在").format(skill_id=skill_id), replace=True)
-        return metadata
+        queryset = SkillMetadata.objects.filter(type=SkillTypeEnum.GATEWAY.value, gateway=gateway)
+        if status:
+            queryset = queryset.filter(status=status)
+        if tag:
+            queryset = queryset.filter(_tag_condition(tag))
+        if keyword:
+            queryset = queryset.filter(_keyword_condition(keyword, match_gateway_name=False))
+        return (
+            queryset.select_related("gateway", "current_version")
+            .defer(*_LIST_DEFERRED_FIELDS)
+            .prefetch_related("tags")
+            .order_by(*_ORDER_FIELDS[order_by])
+        )
 
     @staticmethod
     def get_market_skill(skill_id: str, user_tenant_id: Optional[str]) -> SkillMetadata:
@@ -209,7 +247,14 @@ class SkillHandler:
 
         例如：用户在租户 a，网关 demo 属于租户 b -> "g_demo_release-check" 返回 403
         """
-        metadata = SkillHandler._get_skill(SkillHandler.get_market_queryset(), skill_id)
+        metadata = (
+            SkillMetadata.objects.filter(_market_visible_condition(), **_skill_id_lookup(skill_id))
+            .select_related("gateway", "current_version")
+            .first()
+        )
+        if metadata is None:
+            raise _skill_not_found(skill_id)
+        # 不在查询里按租户过滤：其他租户的网关 Skill 返回 403 而不是 404
         if metadata.gateway is not None and user_tenant_id:
             check_user_can_access_gateway(metadata.gateway.tenant_mode, metadata.gateway.tenant_id, user_tenant_id)
         return metadata
@@ -240,7 +285,14 @@ class SkillHandler:
 
         例如：其他租户网关下使用中的网关 Skill 也能取到；已归档的抛 NOT_FOUND
         """
-        return SkillHandler._get_skill(SkillHandler.get_market_queryset(), skill_id)
+        metadata = (
+            SkillMetadata.objects.filter(_market_visible_condition(), **_skill_id_lookup(skill_id))
+            .select_related("gateway", "current_version")
+            .first()
+        )
+        if metadata is None:
+            raise _skill_not_found(skill_id)
+        return metadata
 
     @staticmethod
     def get_gateway_skill(gateway: Gateway, skill_id: str) -> SkillMetadata:
@@ -248,7 +300,15 @@ class SkillHandler:
 
         例如：路径是网关 demo，ID 为 "g_other_release-check" -> 404，即使 other 下有这条 Skill
         """
-        return SkillHandler._get_skill(SkillHandler.get_gateway_queryset(gateway), skill_id)
+        metadata = (
+            SkillMetadata.objects.filter(type=SkillTypeEnum.GATEWAY.value, gateway=gateway)
+            .filter(**_skill_id_lookup(skill_id))
+            .select_related("gateway", "current_version")
+            .first()
+        )
+        if metadata is None:
+            raise _skill_not_found(skill_id)
+        return metadata
 
     @staticmethod
     def get_version(metadata: SkillMetadata, version: Optional[str] = None) -> SkillVersion:

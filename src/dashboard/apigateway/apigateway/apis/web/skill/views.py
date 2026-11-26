@@ -16,8 +16,9 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import io
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import Any, Dict, Optional
 
+from django.db.models import Count
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -25,7 +26,8 @@ from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
 from apigateway.apps.rbac.constants import GatewayActionEnum
-from apigateway.apps.skill.constants import SkillStatusEnum
+from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
+from apigateway.apps.skill.models import SkillMetadata
 from apigateway.biz.audit import Auditor
 from apigateway.biz.skill import (
     SkillArchivedError,
@@ -65,9 +67,6 @@ from .serializers import (
     SkillValidationMessageOutputSLZ,
     SkillVersionOutputSLZ,
 )
-
-if TYPE_CHECKING:
-    from apigateway.apps.skill.models import SkillMetadata
 
 _STATUS_COMMENTS = {
     SkillStatusEnum.ARCHIVED.value: "归档 Skill",
@@ -173,14 +172,13 @@ class SkillListCreateApi(generics.ListCreateAPIView):
         slz.is_valid(raise_exception=True)
         data = slz.validated_data
 
-        queryset = SkillHandler.filter_queryset(
-            SkillHandler.get_gateway_queryset(request.gateway),
+        queryset = SkillHandler.list_gateway_skills(
+            request.gateway,
             keyword=data.get("keyword"),
             tag=data.get("tag"),
             status=data.get("status"),
-            match_gateway_name=False,
+            order_by=data["order_by"],
         )
-        queryset = SkillHandler.order_queryset(SkillHandler.for_list(queryset), data["order_by"])
 
         page = self.paginate_queryset(queryset)
         return self.get_paginated_response(SkillListOutputSLZ(page, many=True).data)
@@ -207,8 +205,18 @@ class SkillTagListApi(generics.ListAPIView):
         slz = SkillTagListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
-        queryset = SkillHandler.get_gateway_queryset(request.gateway)
-        tags = SkillHandler.list_tags(queryset, keyword=slz.validated_data.get("keyword"))
+        relations = SkillMetadata.tags.through.objects.filter(
+            skillmetadata__type=SkillTypeEnum.GATEWAY.value, skillmetadata__gateway=request.gateway
+        )
+        keyword = slz.validated_data.get("keyword")
+        if keyword:
+            relations = relations.filter(skilltag__name__icontains=keyword)
+        rows = (
+            relations.values("skilltag__name")
+            .annotate(skill_count=Count("skillmetadata", distinct=True))
+            .order_by("-skill_count", "skilltag__name")
+        )
+        tags = [{"name": row["skilltag__name"], "skill_count": row["skill_count"]} for row in rows]
         return OKJsonResponse(data=SkillTagOutputSLZ(tags, many=True).data)
 
 
