@@ -115,7 +115,7 @@ const standardPathPlaceholder = t('斜线(/)开头的合法URL路径，不包含
 // 是否是模型代理 API
 const isModelProxy = computed(() => queryKind.value === 'ai');
 
-const frontRef = ref();
+const frontRef = useTemplateRef('frontRef');
 const cloneTips = ref(t('请求方法+请求路径在网关下唯一，请至少调整其中一项'));
 const frontConfigData = ref({
   path: '',

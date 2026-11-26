@@ -241,17 +241,17 @@ const { chartLoading = {}, chartData = {}, statistics } = defineProps<IProps>();
 
 const emit = defineEmits<IEmits>();
 
-const requestsRef = ref<InstanceType<typeof LineChart>>();
-const successRequestsRef = ref<InstanceType<typeof LineChart>>();
-const errorRequestsRef = ref<InstanceType<typeof LineChart>>();
-const appRequestsRef = ref<InstanceType<typeof LineChart>>();
-const toolRequestsRef = ref<InstanceType<typeof LineChart>>();
-const methodRequestsRef = ref<InstanceType<typeof LineChart>>();
-const requestBodySizeRef = ref<InstanceType<typeof LineChart>>();
-const responseBodySizeRef = ref<InstanceType<typeof LineChart>>();
-const responseTime50Ref = ref<InstanceType<typeof LineChart>>();
-const responseTime95Ref = ref<InstanceType<typeof LineChart>>();
-const responseTime99Ref = ref<InstanceType<typeof LineChart>>();
+const requestsRef = useTemplateRef<InstanceType<typeof LineChart>>('requestsRef');
+const successRequestsRef = useTemplateRef<InstanceType<typeof LineChart>>('successRequestsRef');
+const errorRequestsRef = useTemplateRef<InstanceType<typeof LineChart>>('errorRequestsRef');
+const appRequestsRef = useTemplateRef<InstanceType<typeof LineChart>>('appRequestsRef');
+const toolRequestsRef = useTemplateRef<InstanceType<typeof LineChart>>('toolRequestsRef');
+const methodRequestsRef = useTemplateRef<InstanceType<typeof LineChart>>('methodRequestsRef');
+const requestBodySizeRef = useTemplateRef<InstanceType<typeof LineChart>>('requestBodySizeRef');
+const responseBodySizeRef = useTemplateRef<InstanceType<typeof LineChart>>('responseBodySizeRef');
+const responseTime50Ref = useTemplateRef<InstanceType<typeof LineChart>>('responseTime50Ref');
+const responseTime95Ref = useTemplateRef<InstanceType<typeof LineChart>>('responseTime95Ref');
+const responseTime99Ref = useTemplateRef<InstanceType<typeof LineChart>>('responseTime99Ref');
 
 const syncParamsToCharts = () => {
   const params = { ...searchParams.value };

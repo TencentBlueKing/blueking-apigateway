@@ -874,6 +874,90 @@ class TestResourceRetrieveUpdateDestroyApi:
 
 
 class TestResourceBatchUpdateDestroyApi:
+    @pytest.mark.parametrize("label_update_flag", [False, "false", None])
+    @pytest.mark.parametrize("label_kind", ["foreign", "mixed", "missing"])
+    def test_update_without_labels_ignores_invalid_label_ids(
+        self, mocker, request_view, fake_resource, fake_resource1, label_kind, label_update_flag
+    ):
+        gateway = fake_resource.gateway
+        local_label = G(APILabel, gateway=gateway)
+        foreign_label = G(APILabel)
+        invalid_label_id = foreign_label.id
+        if label_kind == "missing":
+            foreign_label.delete()
+        resource_ids = [fake_resource.id, fake_resource1.id]
+        for resource in [fake_resource, fake_resource1]:
+            G(ResourceLabel, resource=resource, api_label=local_label)
+        labels_before = list(ResourceLabel.objects.order_by("id").values())
+        update_labels = mocker.patch("apigateway.apis.web.resource.views.ResourceHandler.batch_update_resource_labels")
+        record_audit = mocker.patch("apigateway.apis.web.resource.views.Auditor.record_resource_op_success")
+        data = {
+            "ids": resource_ids,
+            "is_public": not fake_resource.is_public,
+            "allow_apply_permission": False,
+            "label_ids": [local_label.id, invalid_label_id] if label_kind == "mixed" else [invalid_label_id],
+        }
+        if label_update_flag is not None:
+            data["is_update_labels"] = label_update_flag
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": gateway.id},
+            data=data,
+        )
+
+        assert response.status_code == 204
+        for resource in [fake_resource, fake_resource1]:
+            resource.refresh_from_db()
+            assert resource.is_public == data["is_public"]
+            assert resource.allow_apply_permission is False
+        assert list(ResourceLabel.objects.order_by("id").values()) == labels_before
+        update_labels.assert_not_called()
+        record_audit.assert_called_once()
+
+    @pytest.mark.parametrize("label_kind", ["foreign", "local_first", "foreign_first", "missing"])
+    def test_update_rejects_invalid_labels_without_writes(
+        self, mocker, request_view, fake_resource, fake_resource1, label_kind
+    ):
+        gateway = fake_resource.gateway
+        old_label = G(APILabel, gateway=gateway)
+        local_label = G(APILabel, gateway=gateway)
+        foreign_label = G(APILabel)
+        invalid_label_id = foreign_label.id
+        if label_kind == "missing":
+            foreign_label.delete()
+        resource_ids = [fake_resource.id, fake_resource1.id]
+        for resource in [fake_resource, fake_resource1]:
+            G(ResourceLabel, resource=resource, api_label=old_label)
+        resources_before = list(Resource.objects.filter(id__in=resource_ids).order_by("id").values())
+        labels_before = list(ResourceLabel.objects.order_by("id").values())
+        record_audit = mocker.patch("apigateway.apis.web.resource.views.Auditor.record_resource_op_success")
+        label_ids = {
+            "foreign": [invalid_label_id],
+            "local_first": [local_label.id, invalid_label_id],
+            "foreign_first": [invalid_label_id, local_label.id],
+            "missing": [invalid_label_id],
+        }[label_kind]
+
+        response = request_view(
+            method="PUT",
+            view_name="resource.batch_update_destroy",
+            path_params={"gateway_id": gateway.id},
+            data={
+                "ids": resource_ids,
+                "is_public": not fake_resource.is_public,
+                "allow_apply_permission": not fake_resource.allow_apply_permission,
+                "is_update_labels": True,
+                "label_ids": label_ids,
+            },
+        )
+
+        assert response.status_code == 400
+        assert list(Resource.objects.filter(id__in=resource_ids).order_by("id").values()) == resources_before
+        assert list(ResourceLabel.objects.order_by("id").values()) == labels_before
+        record_audit.assert_not_called()
+
     def test_update(self, request_view, fake_resource):
         data = {
             "ids": [fake_resource.id],

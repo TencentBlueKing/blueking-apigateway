@@ -35,3 +35,7 @@ ENABLE_ESB=true
 # Additional case-insensitive credential keys/headers for access and MCP log display.
 # Built-in rules remain active; comma-separated, for example X-Custom-Auth,X-Service-Key.
 BK_APIGW_LOG_SENSITIVE_KEYS=
+
+# 设为 true 时，Dashboard 发布网关会在生成的 APISIX Service 配置中加入 bk-debug。
+# 设置变更在下次发布渲染时生效。
+GATEWAY_DEBUG_PLUGIN_ENABLED=false

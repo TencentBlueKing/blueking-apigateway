@@ -74,7 +74,7 @@ const emit = defineEmits<IEmits>();
 
 const { getChartIntervalOption } = useChartIntervalOption();
 
-const chartBoxRef = ref<HTMLDivElement | null>(null);
+const chartBoxRef = useTemplateRef<HTMLDivElement>('chartBoxRef');
 // ECharts 实例
 const chartInstance = ref<ECharts | null>(null);
 // 图表数据（series + timeline）

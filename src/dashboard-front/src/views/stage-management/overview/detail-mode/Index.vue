@@ -343,9 +343,10 @@ const stageList = ref<ILocalStageItem[]>([]);
 const loadingProgrammableStageIds = ref<number[]>([]);
 // 当前环境信息
 const currentStage = ref<ILocalStageDetail>();
-const releaseStageRef = ref();
-const releaseProgrammableRef = ref();
-const stageSidesliderRef = ref();
+const releaseStageRef = useTemplateRef('releaseStageRef');
+const releaseProgrammableRef = useTemplateRef('releaseProgrammableRef');
+const stageSidesliderRef = useTemplateRef('stageSidesliderRef');
+// eslint-disable-next-line vue/prefer-use-template-ref -- v-for 列表引用保留 ref
 const tabComponentRefs = ref();
 
 const showDropdown = ref(false);
@@ -620,7 +621,7 @@ const handleStageDelete = async () => {
 
 // 编辑环境
 const handleEditStage = () => {
-  stageSidesliderRef.value.handleShowSideslider('edit');
+  stageSidesliderRef.value?.handleShowSideslider('edit');
 };
 
 const handleCreateStageDone = async () => {

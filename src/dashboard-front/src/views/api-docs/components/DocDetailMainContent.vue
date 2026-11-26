@@ -268,7 +268,7 @@ const { t } = useI18n();
 // 注入当前的总 tab 变量
 const curTab = inject(docTabKey);
 
-const detailWrapRef = ref<HTMLElement | null>(null);
+const detailWrapRef = useTemplateRef<HTMLElement>('detailWrapRef');
 // API 文档大标题元素集合
 const docHeadingElements = ref<HTMLElement[]>([]);
 // 当前应该高亮右侧导航的文档标题ID

@@ -360,4 +360,5 @@ defineExpose<IAgTableExpose<TRow>>({
 });
 </script>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 外部共享表格样式，含 TDesign 弹层与筛选器全局覆盖 -->
 <style lang="scss" src="./table.scss"></style>

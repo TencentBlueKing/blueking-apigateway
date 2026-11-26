@@ -156,8 +156,8 @@ const publishStatusEnum = {
 const historyId = ref<number>();
 const currentHistory = ref<IEventResponse>();
 const deployId = ref<string>();
-const logDetailsRef = ref();
-const programmableLogDetailsRef = ref();
+const logDetailsRef = useTemplateRef('logDetailsRef');
+const programmableLogDetailsRef = useTemplateRef('programmableLogDetailsRef');
 
 let timerId: ReturnType<typeof setInterval> | undefined;
 

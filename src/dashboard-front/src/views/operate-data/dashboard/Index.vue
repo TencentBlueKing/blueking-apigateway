@@ -33,10 +33,9 @@
           <DatePicker
             v-model="dateTime"
             :valid-date-range="['now-7d/d', 'now/d']"
-            class="date-choose"
+            class="date-choose min-w-150px bg-#fff"
             format="YYYY-MM-DD HH:mm:ss"
             :need-timezone="false"
-            style="min-width: 150px;background: #fff;"
             @update:model-value="handleValueChange"
           />
         </BkFormItem>
@@ -44,7 +43,7 @@
           <BkSelect
             v-model="searchParams.stage_id"
             :clearable="false"
-            style="width: 150px;"
+            class="w-150px"
           >
             <BkOption
               v-for="option in stageList"
@@ -61,7 +60,7 @@
           <BkSelect
             v-model="backend_id"
             clearable
-            style="max-width: 300px;"
+            class="max-w-300px"
             @change="handleBackendChange"
           >
             <BkOption
@@ -79,7 +78,7 @@
           <BkSelect
             v-model="backend_id"
             clearable
-            style="max-width: 300px;"
+            class="max-w-300px"
             @change="handleBackendChange"
           >
             <BkOptionGroup
@@ -112,7 +111,7 @@
             :list="resourceList"
             :need-prefix="false"
             :placeholder="t('请输入资源名称或资源URL链接')"
-            style="min-width: 300px;"
+            class="min-w-300px"
           />
         </BkFormItem>
       </BkForm>
@@ -467,22 +466,22 @@ const statisticsTypes = ref<InstantMetricsType[]>([
 ]);
 const chartData = ref<IChartDataType>({});
 const statistics = ref<IStatisticsType>({});
-const topRef = ref<InstanceType<typeof Top>>();
-const requestsRef = ref<InstanceType<typeof LineChart>>();
-const statusRef = ref<InstanceType<typeof LineChart>>();
-const appRequestsRef = ref<InstanceType<typeof LineChart>>();
-const resourceRequestsRef = ref<InstanceType<typeof LineChart>>();
-const ingressRef = ref<InstanceType<typeof LineChart>>();
-const egressRef = ref<InstanceType<typeof LineChart>>();
+const topRef = useTemplateRef<InstanceType<typeof Top>>('topRef');
+const requestsRef = useTemplateRef<InstanceType<typeof LineChart>>('requestsRef');
+const statusRef = useTemplateRef<InstanceType<typeof LineChart>>('statusRef');
+const appRequestsRef = useTemplateRef<InstanceType<typeof LineChart>>('appRequestsRef');
+const resourceRequestsRef = useTemplateRef<InstanceType<typeof LineChart>>('resourceRequestsRef');
+const ingressRef = useTemplateRef<InstanceType<typeof LineChart>>('ingressRef');
+const egressRef = useTemplateRef<InstanceType<typeof LineChart>>('egressRef');
 // const responseTimeRef = ref<InstanceType<typeof LineChart>>();
-const responseTime50Ref = ref<InstanceType<typeof LineChart>>();
-const responseTime95Ref = ref<InstanceType<typeof LineChart>>();
-const responseTime99Ref = ref<InstanceType<typeof LineChart>>();
-const llmLatency95thRef = ref<InstanceType<typeof LineChart>>();
-const llmToken95thRef = ref<InstanceType<typeof LineChart>>();
-const llmLatencyAvgRef = ref<InstanceType<typeof LineChart>>();
-const llmTokenUsageRef = ref<InstanceType<typeof LineChart>>();
-const llmActiveConnectionsRef = ref<InstanceType<typeof LineChart>>();
+const responseTime50Ref = useTemplateRef<InstanceType<typeof LineChart>>('responseTime50Ref');
+const responseTime95Ref = useTemplateRef<InstanceType<typeof LineChart>>('responseTime95Ref');
+const responseTime99Ref = useTemplateRef<InstanceType<typeof LineChart>>('responseTime99Ref');
+const llmLatency95thRef = useTemplateRef<InstanceType<typeof LineChart>>('llmLatency95thRef');
+const llmToken95thRef = useTemplateRef<InstanceType<typeof LineChart>>('llmToken95thRef');
+const llmLatencyAvgRef = useTemplateRef<InstanceType<typeof LineChart>>('llmLatencyAvgRef');
+const llmTokenUsageRef = useTemplateRef<InstanceType<typeof LineChart>>('llmTokenUsageRef');
+const llmActiveConnectionsRef = useTemplateRef<InstanceType<typeof LineChart>>('llmActiveConnectionsRef');
 const chartLoading = ref<IChartDataLoading>({});
 // 时序图采样粒度，只用于区间指标请求；与 searchParams 分开保存，切换时不重复请求瞬时统计
 const step = shallowRef<MetricsStep>('auto');

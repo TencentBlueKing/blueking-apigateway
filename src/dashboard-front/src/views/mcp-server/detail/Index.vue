@@ -343,7 +343,7 @@ const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 const { divideRatio } = useMcpConfigDivideRatio();
 
-const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
+const createSliderRef = useTemplateRef<InstanceType<typeof CreateSlider>>('createSliderRef');
 const serverId = ref(0);
 const server = ref<any>({
   id: 0,

@@ -15,12 +15,16 @@ export interface IGatewaysResourcesListQuery {
   path?: string
   /** 资源请求方法，完整匹配 */
   method?: string
+  /** 认证方式，多个以逗号 , 分割并取并集 */
+  auth_type?: string
   /** 标签 ID，多个以逗号 , 分割 */
   label_ids?: string
   /** 后端服务 ID */
   backend_id?: number | null
   /** 后端服务名称，完整匹配 */
   backend_name?: string
+  /** 资源类型 */
+  kind?: 'standard' | 'ai'
   /** 资源筛选条件，支持模糊匹配资源名称，前端请求路径 */
   keyword?: string
   /** 排序字段 */

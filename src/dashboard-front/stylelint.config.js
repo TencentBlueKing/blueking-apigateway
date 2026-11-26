@@ -8,13 +8,12 @@ export default {
       true,
       { ignoreFunctions: ['extend', 'v-bind'] },
     ],
-    'at-rule-no-unknown': [
-      true,
-      { ignoreAtRules: ['function', 'if', 'each', 'include', 'mixin', 'define-mixin', 'extend'] },
-    ],
+    // 由 stylelint-config-standard-scss 的 scss/at-rule-no-unknown 接管，支持 @use / @forward / @mixin 等 Sass 语法
+    'at-rule-no-unknown': null,
+    'no-empty-source': null,
     'selector-pseudo-class-no-unknown': [
       true,
-      { ignorePseudoClasses: ['/deep/', '/global/'] },
+      { ignorePseudoClasses: ['/deep/', '/global/', '/slotted/'] },
     ],
     'import-notation': 'string',
     'selector-class-pattern': '^[a-z][a-z0-9_-]+$',
@@ -23,7 +22,7 @@ export default {
     'selector-id-pattern': null,
     'rule-empty-line-before': 'always',
     'order/properties-order': [
-      // 指定声明块内属性的字母顺序
+      // 指定声明块内属性的逻辑顺序（定位 → 盒模型 → 排版 → 视觉 → 动画）
       'position',
       'top',
       'right',

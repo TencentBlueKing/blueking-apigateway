@@ -1187,6 +1187,7 @@ onBeforeMount(() => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的侧滑抽屉标题样式 -->
 <style lang="scss">
 .gateway-detail-sideslider {
 

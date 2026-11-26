@@ -297,7 +297,7 @@ const { data } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const formRef = ref();
+const formRef = useTemplateRef('formRef');
 const actionFormRefs = useTemplateRef<InstanceType<typeof Form>>('action-form');
 
 const form = ref<IFormModel>({

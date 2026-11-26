@@ -322,17 +322,11 @@
                   <span class="link">{{ basicInfoData.bk_app_codes?.join(',') || '--' }}</span>
                 </div>
               </div>
-              <div
-                class="pannel-content-item app-codes"
-                style="max-width: 960px"
-              >
+              <div class="pannel-content-item app-codes max-w-960px">
                 <div class="label">
                   {{ `${t('管理网关的应用列表')}：` }}
                 </div>
-                <div
-                  class="value"
-                  style="width: calc(100% - 128px)"
-                >
+                <div class="value w-[calc(100%-128px)]">
                   <EditRelatedAppCodes
                     field="related_app_codes"
                     width="100%"
@@ -661,7 +655,7 @@
       width="540"
       :is-show="delApigwDialog.isShow"
       :title="t(`确认删除网关【{basicInfoDataName}】？`, { basicInfoDataName: getGatewayFullName(basicInfoData) })"
-      :theme="'primary'"
+      theme="primary"
       @closed="delApigwDialog.isShow = false"
     >
       <div class="ps-form">
@@ -694,7 +688,7 @@
       :is-show="deprecatedDialog.isShow"
       :title="t(`确认标记为弃用？`)"
       header-align="center"
-      :theme="'primary'"
+      theme="primary"
       @closed="deprecatedDialog.isShow = false"
     >
       <div class="ps-form">
@@ -937,7 +931,7 @@ const delApigwDialog = ref({
 const statusChanging = ref(false);
 const createGatewayShow = ref(false);
 const basicInfoDetailData = ref(cloneDeep(basicInfoData.value));
-const deprecatedFormRef = ref<InstanceType<typeof import('bkui-vue')['Form']>>();
+const deprecatedFormRef = useTemplateRef<InstanceType<typeof import('bkui-vue')['Form']>>('deprecatedFormRef');
 const deprecatedDialog = ref({
   isShow: false,
   loading: false,
@@ -1715,7 +1709,8 @@ onUnmounted(() => {
 }
 </style>
 
-<style>
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖 InfoBox 删除确认提示框全局样式 -->
+<style lang="scss">
 .gateway-del-tips {
   padding: 3px 4px;
   margin: 0;

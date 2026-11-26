@@ -283,10 +283,10 @@
                           <BkFormItem
                             :label="t('超时时间')"
                             required
-                            :property="'config.timeout'"
+                            property="config.timeout"
                             class="timeout-item-cls"
                             :rules="rules.timeout"
-                            :error-display-type="'normal'"
+                            error-display-type="normal"
                           >
                             <BkInput
                               v-model="backend.config.timeout"
@@ -1015,7 +1015,7 @@ const curStageData = ref<ICurStageData>({
 const isDialogLoading = ref(true);
 
 // 获取对应Ref
-const baseInfoRef = ref();
+const baseInfoRef = useTemplateRef('baseInfoRef');
 
 // 默认为新建
 const isAdd = ref(true);

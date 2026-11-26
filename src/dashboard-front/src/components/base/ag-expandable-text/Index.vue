@@ -80,7 +80,7 @@ const {
 
 const slots = useSlots();
 
-const contentRef = ref<HTMLElement | null>(null);
+const contentRef = useTemplateRef<HTMLElement>('contentRef');
 const isExpanded = ref(false);
 const isShowExpand = ref(false);
 

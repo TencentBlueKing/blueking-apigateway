@@ -1,0 +1,79 @@
+swagger: '2.0'
+basePath: /
+info:
+  version: '2.0'
+  title: API Gateway Resources
+  description: ''
+schemes:
+- http
+paths:
+  /ua_p1:
+    get:
+      operationId: ua_p1
+      description: 'user and app verified, app permission required'
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /anything/ua_p1
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+  /app_p1:
+    get:
+      operationId: app_p1
+      description: 'app verified only, app permission required'
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /anything/app_p1
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: false
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+  /ua_personal:
+    get:
+      operationId: ua_personal
+      description: 'user and app verified, personal client enabled'
+      tags: []
+      responses:
+        default:
+          description: ''
+      x-bk-apigateway-resource:
+        isPublic: true
+        allowApplyPermission: true
+        matchSubpath: false
+        backend:
+          name: default
+          method: get
+          path: /anything/ua_personal
+          matchSubpath: false
+          timeout: 0
+        pluginConfigs: []
+        authConfig:
+          userVerifiedRequired: true
+          appVerifiedRequired: true
+          resourcePermissionRequired: true
+          oauth2PersonalClientEnabled: true

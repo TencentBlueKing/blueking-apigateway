@@ -364,7 +364,7 @@
               <div class="resource-box">
                 <ResourceDiffDetail
                   v-show="deleteItem.isExpanded"
-                  style="opacity: 35%"
+                  class="opacity-35"
                   :cur-resource="deleteItem"
                   :backends-list="backendsList"
                 />
@@ -1106,6 +1106,7 @@ onUnmounted(() => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 跨子组件共享版本差异选择器与提示样式 -->
 <style lang="scss">
 .version {
 

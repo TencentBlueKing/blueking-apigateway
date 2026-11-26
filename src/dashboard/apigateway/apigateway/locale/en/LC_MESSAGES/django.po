@@ -352,12 +352,17 @@ msgstr "Unsupported fields: {fields}"
 
 #: apigateway/apis/web/access_log/serializers.py:45
 #: apigateway/apis/web/mcp_server_log/serializers.py:59
-#: apigateway/apis/web/mcp_server_metrics/serializers.py:43
-#: apigateway/apis/web/mcp_server_metrics/serializers.py:60
-#: apigateway/apis/web/metrics/serializers.py:48
-#: apigateway/apis/web/metrics/serializers.py:66
+#: apigateway/apis/web/validators.py:32
 msgid "参数 time_start+time_end, time_range 必须一组有效。"
 msgstr "One of time_start+time_end, time_range must be valid."
+
+#: apigateway/apis/web/validators.py:38
+msgid "参数 time_start 不能晚于 time_end。"
+msgstr "Parameter time_start cannot be later than time_end."
+
+#: apigateway/apis/web/validators.py:40
+msgid "查询时间范围不可超过 180 天。"
+msgstr "The query time range cannot exceed 180 days."
 
 #: apigateway/apis/web/ai_backend/adapter.py:25
 #: apigateway/apis/web/ai_backend/presentation.py:29
@@ -3118,6 +3123,11 @@ msgstr ""
 #: apigateway/biz/validators.py:480
 msgid "负载均衡类型为 Weighted-RR 时，Host 权重必填。"
 msgstr "When the loadbalance type is Weighted-RR, the Host weight is required."
+
+#: apigateway/common/django/validators.py:33
+#, python-brace-format
+msgid "文件大小不能超过 {max_size}MB。"
+msgstr "File size cannot exceed {max_size}MB."
 
 #: apigateway/common/django/validators.py:35
 msgid "名称不能以【-】结尾。"

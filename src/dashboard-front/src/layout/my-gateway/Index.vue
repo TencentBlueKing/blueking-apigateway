@@ -36,6 +36,7 @@
             class="gateway-select"
             filterable
             :clearable="false"
+            :scroll-height="408"
             :search-placeholder="t('请搜索网关')"
             :popover-options="{
               extCls: 'gateway-select-popover',
@@ -200,10 +201,7 @@
           </template>
         </BkMenu>
       </template>
-      <div
-        class="content-view"
-        style="padding-top: 0;"
-      >
+      <div class="content-view pt-0!">
         <!-- 默认头部 -->
         <div
           v-if="!route.meta.customHeader"
@@ -281,7 +279,7 @@ const activeMenuKey = ref('StageOverview');
 const gatewayList = ref<GatewayItemType[]>([]);
 // 网关名称是否溢出（用于决定是否显示 tooltip）
 const nameOverflowMap = ref(new Map<number, boolean>());
-const gatewaySelectContainerRef = ref<HTMLElement>();
+const gatewaySelectContainerRef = useTemplateRef<HTMLElement>('gatewaySelectContainerRef');
 const openedKeys = ref<string[]>(['StageManagement', 'ResourceManagement']);
 const needMenu = ref(true);
 const pageName = ref('');
@@ -293,7 +291,7 @@ const gatewaySelectVersion = ref(0);
 const headerTitle = ref('');
 
 const isMenuCollapsed = ref(false);
-const version113UpdateNoticeRef = ref();
+const version113UpdateNoticeRef = useTemplateRef('version113UpdateNoticeRef');
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
@@ -1203,6 +1201,7 @@ onMounted(() => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的网关选择器弹层与导航布局样式 -->
 <style lang="scss">
 .bk-popover.bk-pop2-content.gateway-select-popover .bk-select-content-wrapper {
 

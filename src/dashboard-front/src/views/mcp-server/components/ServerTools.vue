@@ -207,7 +207,7 @@
                 ref="descriptionRef"
                 class="color-#4d4f56 break-all gap-4px"
                 :max-lines="5"
-                :line-height="'22px'"
+                line-height="22px"
               >
                 <template #description>
                   {{ selectedTool?.description }}
@@ -310,7 +310,7 @@ const md = new MarkdownIt({
   },
 });
 
-const descriptionRef = ref<InstanceType<typeof AgExpandableText> | null>(null);
+const descriptionRef = useTemplateRef<InstanceType<typeof AgExpandableText>>('descriptionRef');
 const toolList = ref<IMCPServerToolOutput[]>([]);
 const keyword = ref(''); // 筛选器输入框的搜索关键字
 const activeGroupPanelNames = ref<string[]>([]); // 分类 collapse 展开的 panel

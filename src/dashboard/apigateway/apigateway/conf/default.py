@@ -858,6 +858,8 @@ BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")
 # ==============================================================================
 PLUGIN_METADATA_CONFIG = get_plugin_metadata_config(env)
 
+GATEWAY_DEBUG_PLUGIN_ENABLED = env.bool("GATEWAY_DEBUG_PLUGIN_ENABLED", default=False)
+
 # 是否启用网关并发限制，默认启用；
 # 目前这个插件有缺陷，暂时支持关闭; https://github.com/apache/apisix/issues/11868
 GATEWAY_CONCURRENCY_LIMIT_ENABLED = env.bool("GATEWAY_CONCURRENCY_LIMIT_ENABLED", False)

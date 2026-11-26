@@ -49,7 +49,7 @@ import RequestRecord from '@/views/online-debugging/components/RequestRecord.vue
 const emit = defineEmits<{ retry: [data: any] }>();
 const { t } = useI18n();
 const stage = useStage();
-const requestRecordRef = ref<InstanceType<typeof RequestRecord> | null>(null);
+const requestRecordRef = useTemplateRef<InstanceType<typeof RequestRecord>>('requestRecordRef');
 
 const showHistory = () => {
   (requestRecordRef.value as any)?.show();
@@ -59,31 +59,37 @@ const showHistory = () => {
 <style lang="scss" scoped>
 .resource-top-bar {
   position: absolute;
+  display: flex;
   width: 100%;
   height: 52px;
-  box-sizing: border-box;
   padding: 0 24px;
-  background: #FFFFFF;
-  display: flex;
+  background: #FFF;
+  box-sizing: border-box;
   align-items: center;
   justify-content: space-between;
-  //min-width: 1280px;
+
+  // min-width: 1280px;
+
   .top-title-wrapper {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
+
     .title {
+      margin-right: 8px;
       font-size: 16px;
       color: #313238;
-      margin-right: 8px;
     }
+
     .history {
       color: #3A84FF;
       cursor: pointer;
+
       .history-icon {
         font-size: 16px;
       }
+
       span {
         font-size: 12px;
       }

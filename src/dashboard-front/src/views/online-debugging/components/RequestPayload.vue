@@ -37,7 +37,6 @@
       </template>
       <PayloadBody
         ref="payloadBodyRef"
-        :from-data-payload="schema.fromDataPayload"
         :raw-payload="schema.rawPayload"
         @change="handleBodyChange"
       />
@@ -112,9 +111,9 @@ const {
 const emit = defineEmits<{ 'active-change': [tab: string] }>();
 
 const active = ref<string>(tab);
-const payloadBodyRef = ref();
-const payloadParamsRef = ref();
-const payloadHeadersRef = ref();
+const payloadBodyRef = useTemplateRef('payloadBodyRef');
+const payloadParamsRef = useTemplateRef('payloadParamsRef');
+const payloadHeadersRef = useTemplateRef('payloadHeadersRef');
 
 watch(
   () => tab,
@@ -160,11 +159,6 @@ const queryChange = (list: any) => {
   queryList.value = list;
 };
 
-// const pathList = ref<any>([]);
-// const pathChange = (list: any) => {
-//   pathList.value = list;
-// };
-
 const bodyData = ref<any>({});
 const handleBodyChange = (data: any) => {
   bodyData.value = data;
@@ -180,26 +174,33 @@ defineExpose({
 <style lang="scss" scoped>
 .payload-tab {
   height: 100%;
+
   :deep(.bk-tab-content) {
-    padding: 12px 24px 12px 0px;
+    padding: 12px 24px 12px 0;
   }
+
   .tab-label {
+
     .title {
+      margin-right: 4px;
       font-size: 14px;
       color: #63656E;
-      margin-right: 4px;
     }
+
     .count {
-      padding: 0px 8px;
+      padding: 0 8px;
       font-size: 12px;
       color: #979BA5;
       background: #F0F1F5;
       border-radius: 8px;
     }
+
     &.active {
+
       .title {
         color: #3A84FF;
       }
+
       .count {
         color: #3A84FF;
         background: #E1ECFF;

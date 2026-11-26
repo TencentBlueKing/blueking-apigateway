@@ -67,8 +67,8 @@ const envStore = useEnv();
 const apigwId = computed(() => +route.params.id);
 const { getStagesStatus } = useGetStageList();
 
-const createResourceVersionRef = ref();
-const releaseStageRef = ref();
+const createResourceVersionRef = useTemplateRef('createResourceVersionRef');
+const releaseStageRef = useTemplateRef('releaseStageRef');
 const isShow = ref(false);
 const stageData = ref<any>({});
 

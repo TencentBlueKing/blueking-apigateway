@@ -22,6 +22,30 @@ type ResourceAuthInput = Partial<IAuthConfig> | string | null | undefined;
 type Translate = (key: string) => string;
 export type UserAuthMethod = 'personal' | 'public' | 'oauth';
 export type AuthKind = 'user' | 'app' | '';
+export type ResourceAuthFilterType = UserAuthMethod | 'app' | 'none';
+
+export interface IResourceAuthFilterOption {
+  id: ResourceAuthFilterType
+  name: string
+}
+
+export const RESOURCE_AUTH_FILTER_TYPES: readonly ResourceAuthFilterType[] = [
+  'app',
+  'personal',
+  'public',
+  'oauth',
+  'none',
+];
+
+const RESOURCE_AUTH_FILTER_TYPE_SET = new Set<string>(RESOURCE_AUTH_FILTER_TYPES);
+
+const RESOURCE_AUTH_FILTER_LABELS: Record<ResourceAuthFilterType, string> = {
+  app: '应用认证',
+  personal: '用户认证-个人令牌',
+  public: '用户认证-公开客户端',
+  oauth: '用户认证-OAuth 授权',
+  none: '不认证',
+};
 
 export const DEFAULT_AUTH_CONFIG: IResourceAuthFormConfig = {
   auth_verified_required: true,
@@ -142,4 +166,33 @@ export const getUserAuthMethodsLabel = (input: ResourceAuthInput, t: Translate, 
 export const canAllowApplyPermission = (isPublic: boolean, input: ResourceAuthInput): boolean => {
   const config = parseResourceAuthConfig(input);
   return Boolean(isPublic && config?.app_verified_required && config.resource_perm_required);
+};
+
+// 资源列表「认证方式」筛选选项（区分应用认证、用户认证子方式与不认证）
+export const getResourceAuthFilterOptions = (t: Translate): IResourceAuthFilterOption[] =>
+  RESOURCE_AUTH_FILTER_TYPES.map(id => ({
+    id,
+    name: t(RESOURCE_AUTH_FILTER_LABELS[id]),
+  }));
+
+// 解析 URL 或筛选器中的 auth_type 参数，过滤非法取值并保持原顺序去重
+export const parseAuthTypeQuery = (input: unknown): ResourceAuthFilterType[] => {
+  const rawValues = Array.isArray(input)
+    ? input.flatMap(item => (typeof item === 'string' ? item.split(',') : []))
+    : typeof input === 'string'
+      ? input.split(',')
+      : [];
+
+  const result: ResourceAuthFilterType[] = [];
+  const seen = new Set<ResourceAuthFilterType>();
+  rawValues.forEach((item) => {
+    const normalized = item.trim();
+    if (!RESOURCE_AUTH_FILTER_TYPE_SET.has(normalized)) return;
+    const authType = normalized as ResourceAuthFilterType;
+    if (!seen.has(authType)) {
+      seen.add(authType);
+      result.push(authType);
+    }
+  });
+  return result;
 };

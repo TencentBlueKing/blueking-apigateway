@@ -115,7 +115,7 @@ const rules = {
   ],
 };
 
-const approveFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const approveFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('approveFormRef');
 
 // 警告框主题
 const alertTheme = computed(() => {

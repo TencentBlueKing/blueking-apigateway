@@ -1,75 +1,53 @@
-<!-- BKUI-KNOWLEDGE-MANAGED -->
 ---
 id: bkui-builder
 name: bkui-builder
 category: engineering
-description: 蓝鲸 MagicBox 3.0 组件专家规则：设计稿还原规则。先输出布局分析报告，再按需加载模版
-tags: [vue3, bkui-vue, rules, template, expert]
-updated_at: 2026-01-19
+description: 蓝鲸 MagicBox 3.0 + 本仓基础组件（AgTable / AgSideslider / AgIcon / UnoCSS）页面搭建与设计稿还原规范
+tags: [vue3, bkui-vue, ag-table, rules, template]
 ---
 
-# 蓝鲸 MagicBox 3.0 组件专家规则
+# 蓝鲸 MagicBox 3.0 页面搭建与设计稿还原规则
 
-## ⚠️ 绝对禁令
+面向 `src/dashboard-front/` 的 UI 开发规则，已对齐本仓 [AGENTS.md](../../../AGENTS.md)、[vue-code-style.md](../../rules/vue-code-style.md)、[ts-style.md](../../rules/ts-style.md) 与 [AgTable 指南](../../../src/components/base/ag-table/README.md)。
 
-1. **禁止手写布局**: 严禁用 `div` 自创 sidebar/header/menu
-2. **强制组件化**: 页面骨架 **必须** 用 `<bk-navigation>`
-3. **禁止原生标签**: 如果没有说明可以使用原生标签，严禁 `<table>`, `<button>`，必须用 bk-table, bk-button
+## 核心约束
 
-## 🔥 还原流程
+1. **复用既有页面布局**：本仓顶级壳层由 `App.vue` 与 `src/layout/`（`my-gateway`、`platform-tools`、`docs`、`mcp-market`、`personal-workbench`）提供，新增业务页直接接入对应路由布局，不要在页面内自建 `<BkNavigation>` 外壳。仅在新增顶级布局时使用 `<BkNavigation>`。
+2. **组件选型优先级**：
+   - 常规交互组件（按钮、表单、弹窗、标签、开关等）：优先使用 `bkui-vue` 组件，禁用裸原生 `<table>` / `<button>` 替代业务控件；
+   - 数据表格：列表页与需分页/筛选/列设置/自适应高度的表格统一使用本仓泛型组件 `<AgTable>`（从 `@/components/base/ag-table` 导入）；仅极简静态展示表可使用 `<BkTable>`；
+   - 侧滑抽屉 / 人员选择 / 图标：优先使用 `<AgSideslider>`、`<UserSelector>`（`@/components/user/user-selector/Index.vue`）与全局注册的 `<AgIcon>` / `<AgIconButton>` / `<AgCopyButton>`。
+3. **严格遵循本仓 SFC 与 ESLint 规范**：
+   - 块顺序：`<template>` → `<script setup lang="ts">`（含 JSX 时 `lang="tsx"`）→ `<style lang="scss" scoped>`；
+   - 模板组件标签必须使用 **PascalCase**（如 `<BkButton>`、`<BkInput>`），布尔属性必须使用简写（如 `clearable`、`text`、`required`）；
+   - Vue / Vue Router / `useI18n` API 已通过 `unplugin-auto-import` 自动导入，无需手动引入；
+   - 所有 `interface` 必须以 `I` 开头；面向用户的文案必须使用 `t('...')` 国际化；
+   - 间距与 Flex 布局优先使用 **UnoCSS 工具类**（如 `flex items-center gap-16px mb-16px`），避免手写 `mb16`/`mt20` 类名和行内 `style`，克制使用 `:deep()`。
 
-**Step 1: 分析设计稿** - 判断：主题深/浅色？表格/表单页？菜单有图标？
+## 还原流程
 
-**Step 2: 加载模版** (FetchMcpResource, server: user-BKUI-Knowledge)
+1. **分析设计稿**：识别页面归属布局、是否为列表页（`<AgTable>`）/ 详情页 / 表单向导 / 图表页，以及涉及的筛选、抽屉、状态标签和图标。
+2. **按需加载本地参考资源**：
 
-| 判断结果 | URI |
-|---------|-----|
-| 深色侧边栏 | `./assets/layouts/admin-layout-dark.vue` |
-| 浅色侧边栏 | `./assets/layouts/admin-layout-left.vue` |
-| 表格页+Tab | `./assets/pages/table-page.vue` |
-| 有图标 | `./references/visual-mapping.md` |
+| 场景 | 本地路径 |
+| --- | --- |
+| 列表页（`<AgTable>` + 筛选工具栏 + 弹窗表单） | `./assets/pages/table-page.vue` |
+| 概览 / 仪表盘页（卡片 + 按需 ECharts） | `./assets/pages/dashboard-page.vue` |
+| 详情页（概览头 + 折叠分组） | `./assets/pages/detail-page.vue` |
+| 分步表单向导 | `./assets/pages/wizard-form.vue` |
+| 视觉特征与组件映射 | `./references/visual-mapping.md` |
+| 常用代码片段 | `./references/code-snippets.md` |
+| 交付前质量检查清单 | `./references/checklist.md` |
 
-**Step 3: 参考模版生成代码**
+3. **编码与自检**：对照 `./references/checklist.md` 检查交互细节、国际化、类型和样式，再执行本仓校验命令。
 
-## 基础结构
+## 图标使用
 
-```html
-<bk-navigation navigation-type="left-right" need-menu default-open>
-  <template #menu>
-    <bk-menu :active-key="activeMenu" :opened-keys="['group-1']">
-      <bk-menu-item key="home">首页</bk-menu-item>
-    </bk-menu>
-  </template>
-</bk-navigation>
-```
-> ⚠️ 属性名是 `opened-keys`，不是 `default-open-keys`
-
-## Icon 导入
+- 优先使用全局组件 `<AgIcon name="..." />`（首屏可见图标优先字体模式，避免依赖异步加载的 SVG 雪碧图）。
+- 需要使用 `bkui-vue` 内置图标时，必须从 `bkui-vue/lib/icon`（或别名 `bkui-lib/icon`）导入：
 
 ```typescript
-// ✅ 正确
-import { Search, Plus, Close } from 'bkui-vue/lib/icon';
-// ❌ 错误: import { Search } from '@bkui-vue/icon';
+// 正确
+import { Close, Plus, Search } from 'bkui-vue/lib/icon';
+// 错误：禁止 import { Search } from '@bkui-vue/icon';
 ```
-
-## 📦 更多资源
-
-- `./references/code-snippets.md` - 代码片段
-- `./references/checklist.md` - 质量检查
-
-
----
-## 📦 可用资源
-
-- `./references/checklist.md`
-- `./references/code-snippets.md`
-- `./references/visual-mapping.md`
-- `./assets/layouts/admin-layout-dark.vue`
-- `./assets/layouts/admin-layout-left.vue`
-- `./assets/layouts/admin-layout-top.vue`
-- `./assets/pages/dashboard-page.vue`
-- `./assets/pages/detail-page.vue`
-- `./assets/pages/table-page.vue`
-- `./assets/pages/wizard-form.vue`
-
-> 根据 SKILL.md 中的 IF-THEN 规则判断是否需要加载

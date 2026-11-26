@@ -68,7 +68,7 @@ const { t } = useI18n();
 // 与后端 schema 的 minLength 保持一致，最短的合法 IP 如 1.1.1.1
 const MIN_LENGTH = 7;
 
-const formRef = ref<InstanceType<typeof Form>>();
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 // 白名单和黑名单分别保留草稿，切换类型时不丢失已填写的内容
 const formData = ref<Record<ListType, string>>({
   whitelist: typeof data.whitelist === 'string' ? data.whitelist : '',

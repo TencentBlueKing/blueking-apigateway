@@ -48,7 +48,7 @@
         class="bg-white"
         :data="searchData"
         :placeholder="placeholder"
-        :value-split-code="'+'"
+        value-split-code="+"
         value-behavior="need-key"
         unique-select
       />

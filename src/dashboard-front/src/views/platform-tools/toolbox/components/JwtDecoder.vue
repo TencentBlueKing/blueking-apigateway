@@ -93,7 +93,7 @@ const decodedHeader = ref<JwtHeader>({});
 const decodedPayload = ref<JwtPayload>({});
 const decodeErrorMsg = ref('');
 
-const tokenInputRef = ref();
+const tokenInputRef = useTemplateRef('tokenInputRef');
 
 const handleInputClick = () => {
   tokenInputRef.value?.focus();

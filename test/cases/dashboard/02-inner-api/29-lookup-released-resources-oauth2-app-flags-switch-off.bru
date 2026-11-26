@@ -1,0 +1,38 @@
+meta {
+  name: v2-inner-lookup-released-resources-oauth2-app-flags-switch-off
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/oauth2-app-off/released-resources/-/lookup/?names=ua_p1,app_p1,ua_personal
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  // [oauth2_app_delegated_enabled, oauth2_app_only_enabled, oauth2_personal_client_enabled]
+  function flags(name) {
+    var item = res.getBody().data.find(function(r) { return r.name === name; });
+    expect(item, "resource " + name + " is returned").to.exist;
+    return [item.oauth2_app_delegated_enabled, item.oauth2_app_only_enabled, item.oauth2_personal_client_enabled];
+  }
+
+  test("the gateway switch turns off both app channel flags", function() {
+    expect(flags("ua_p1")).to.eql([false, false, false]);
+    expect(flags("app_p1")).to.eql([false, false, false]);
+  });
+
+  test("the personal client does not depend on the gateway switch", function() {
+    expect(flags("ua_personal")).to.eql([false, false, true]);
+  });
+}

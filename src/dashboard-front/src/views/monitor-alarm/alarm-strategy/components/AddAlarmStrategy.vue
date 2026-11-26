@@ -37,7 +37,7 @@
               <BkFormItem
                 class="mb-0!"
                 :label="t('告警策略名称')"
-                :property="'name'"
+                property="name"
                 :rules="rules.name"
                 error-display-type="normal"
                 label-position="left"
@@ -61,8 +61,8 @@
                   :label="t('告警规则')"
                   required
                   :rules="rules.alarm_subtype"
-                  :property="'alarm_subtype'"
-                  :error-display-type="'normal'"
+                  property="alarm_subtype"
+                  error-display-type="normal"
                 >
                   <BkSelect
                     ref="alarmTypeRef"
@@ -493,11 +493,11 @@ const formData = ref<any>({
 });
 const saveLoading = ref(false);
 
-const nameRef = ref<InstanceType<typeof Input> & { focus: () => void }>();
-const alarmTypeRef = ref<InstanceType<typeof Select>>();
-const effectiveRef = ref<InstanceType<typeof Select>>();
-const noticeWayRef = ref<InstanceType<typeof Checkbox.Group>>();
-const strategyFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const nameRef = useTemplateRef<InstanceType<typeof Input> & { focus: () => void }>('nameRef');
+const alarmTypeRef = useTemplateRef<InstanceType<typeof Select>>('alarmTypeRef');
+const effectiveRef = useTemplateRef<InstanceType<typeof Select>>('effectiveRef');
+const noticeWayRef = useTemplateRef<InstanceType<typeof Checkbox.Group>>('noticeWayRef');
+const strategyFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('strategyFormRef');
 const filterConfigFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('filter-config-form');
 const noticeConfigFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('notice-config-form');
 

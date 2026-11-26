@@ -299,11 +299,11 @@
 
                           <BkFormItem
                             :label="t('超时时间')"
-                            :property="'configs.timeout'"
+                            property="configs.timeout"
                             class="timeout-item"
                             required
                             :rules="configRules.timeout"
-                            :error-display-type="'normal'"
+                            error-display-type="normal"
                           >
                             <BkInput
                               v-model="stage.configs.timeout"
@@ -1122,6 +1122,7 @@ defineExpose({ show });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的侧滑抽屉滚动条样式 -->
 <style lang="scss">
 .backend-service-slider {
 

@@ -274,7 +274,7 @@
                           <BkInput
                             class="auth-value"
                             prefix="bk_app_secret"
-                            :value="'******'"
+                            value="******"
                             disabled
                           />
                         </template>
@@ -296,10 +296,6 @@
                           <InfoLine class="icon" />
                           <span class="tips">{{ t('默认测试应用，网关自动为其短期授权；自定义应用，需主动为应用授权资源访问权限') }}</span>
                         </div>
-                        <!-- <div class="edit-user-btns">
-                          <BkButton theme="primary" @click="saveAppAuthEdit">{{ t('保存') }}</BkButton>
-                          <BkButton class="ml8" @click="cancelAppAuthEdit">{{ t('取消') }}</BkButton>
-                          </div> -->
                       </div>
                     </template>
                   </BkPopConfirm>
@@ -438,12 +434,11 @@
         </div>
 
         <BkResizeLayout
-          style="height: 100%; overflow: hidden;"
           initial-divide="52px"
           :border="false"
           :min="52"
           placement="bottom"
-          class="request-resize"
+          class="request-resize h-full overflow-hidden"
         >
           <template #aside>
             <div class="request-response">
@@ -539,6 +534,7 @@ import ResponseContent from '@/views/online-debugging/components/ResponseContent
 import Doc from '@/views/online-debugging/components/Doc.vue';
 import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
+import { kvRowsToObject, objectToKvRows } from '@/views/online-debugging/utils';
 import { useEnv, useGateway, useResourceDebugging } from '@/stores';
 import { getReleasedResourceSchema, getReleasedStageResources } from '@/services/source/gateway/release';
 import { createApiTest } from '@/services/source/gateway/api-test';
@@ -610,8 +606,8 @@ const defaultValue = {
 };
 const formData = ref<any>({ ...defaultValue.formData });
 const isShowDoc = ref(false);
-const requestPayloadRef = ref();
-const responseContentRef = ref();
+const requestPayloadRef = useTemplateRef('requestPayloadRef');
+const responseContentRef = useTemplateRef('responseContentRef');
 const payloadType = reactive<any>({
   rawPayload: {},
   queryPayload: [],
@@ -621,7 +617,7 @@ const payloadType = reactive<any>({
   fromDataPayload: [],
 });
 const tab = ref('Params');
-const docContentRef = ref();
+const docContentRef = useTemplateRef('docContentRef');
 
 // 编辑应用认证
 const appAuthorization = reactive<any>({
@@ -657,7 +653,7 @@ const dropdownList = ref([
   },
 ]);
 const selectedResourceId = ref('');
-const tabContainerRef = ref<HTMLElement | null>(null);
+const tabContainerRef = useTemplateRef<HTMLElement>('tabContainerRef');
 const containerWidth = ref(0);
 const toolsWidth = ref(0);
 
@@ -905,15 +901,6 @@ const resourceGroupLength = computed(() => {
   return Object.keys(resourceGroup.value)?.length;
 });
 
-// watch(
-//   () => curGroup.value,
-//   () => {
-//     if (curGroup.value) {
-//       activeName.value = [curGroup.value?.labelName];
-//     }
-//   },
-// );
-
 watch(
   () => keyword.value,
   (val: any) => {
@@ -1062,11 +1049,6 @@ const handleStageChange = (payload: number) => {
   if (!['unreleased'].includes(hasData?.release?.status) && hasData?.resource_version?.version) {
     getApigwReleaseResources();
   }
-  else {
-    // formData.value = Object.assign(formData.value, { path: '', method: '' });
-    // methodList.value = [];
-    // resources.value = {};
-  }
 };
 
 const clearSchema = () => {
@@ -1210,35 +1192,31 @@ const handleResponseUnfold = () => {
   setAsideHeight(400);
 };
 
-const setUserToken = () => {
-  // formData.value.authorization[tokenName.value] = '';
-  // tokenInputRender.value += 1;
-};
-
 const handleDebuggingCacheData = (resource: any, save = true) => {
   // 将当前资源的调试数据保存
   if (save) {
     const payload = requestPayloadRef.value?.getData();
-    const { headers } = payload;
-    const { path, query } = payload.params;
-    const { raw } = payload.body;
-    const payloadCache = {
-      headersPayload: headers,
-      queryPayload: query,
-      pathPayload: path,
-      rawPayload: raw,
-      priorityPath: [],
-      fromDataPayload: [],
-    };
-    // formData: formDataList, urlencoded,
+    if (payload) {
+      const { headers } = payload;
+      const { path, query } = payload.params ?? {};
+      const { raw } = payload.body ?? {};
+      const payloadCache = {
+        headersPayload: headers,
+        queryPayload: query,
+        pathPayload: path,
+        rawPayload: raw,
+        priorityPath: [],
+        fromDataPayload: [],
+      };
 
-    resourceDebuggingStore.setResourceSettings(
-      curResource.value?.name,
-      {
-        payloadType: payloadCache,
-        response: response.value,
-      },
-    );
+      resourceDebuggingStore.setResourceSettings(
+        curResource.value?.name,
+        {
+          payloadType: payloadCache,
+          response: response.value,
+        },
+      );
+    }
   }
   // 将切换资源的调试数据读取到当前界面
   curResource.value = resource;
@@ -1409,38 +1387,15 @@ const cancelUserAuthEdit = () => {
   userAuth.isEdit = false;
 };
 
-const getKeyValue = (list: any[]) => {
-  if (!list?.length) return {};
-
-  const obj: Record<string, string> = {};
-  list.forEach((item: any) => {
-    if (item.name) {
-      obj[item.name] = item.value;
-    }
-  });
-
-  return obj;
-};
-
 const checkFormData = (data: IAPITestInputSLZ & { authorization: IAPITestAuthorization }) => {
   const pathValues = Object.values(data.path_params);
   const pathKeys = Object.keys(data.path_params);
-  // const reg = /^[\w{}/.-]*$/;
   const codeReg = /^[a-z][a-z0-9-_]+$/;
-  // if ((isShowSubpath.value) && !reg.test(data.subpath)) {
-  //   Message({
-  //     theme: 'error',
-  //     message: t('请输入合法的子路径'),
-  //   });
-  //   form.value.validate();
-  //   return false;
-  // }
   if (pathKeys?.length && pathValues.some(val => !val?.length)) {
     Message({
       theme: 'error',
       message: t('请输入完整的路径参数'),
     });
-    // form.value.validate();
     return false;
   }
   if (data.authorization.bk_app_code && !codeReg.test(data.authorization.bk_app_code)) {
@@ -1457,10 +1412,10 @@ const checkFormData = (data: IAPITestInputSLZ & { authorization: IAPITestAuthori
 
 const formatPayload = () => {
   const payload = requestPayloadRef.value?.getData();
-  const { headers } = payload;
-  const { path, query } = payload.params;
-  const { raw } = payload.body;
-  // formData: formDataList, urlencoded,
+  if (!payload) return false;
+  const { headers = [] } = payload;
+  const { path = [], query = [] } = payload.params ?? {};
+  const { raw = '' } = payload.body ?? {};
 
   const stageId = stage.value;
   const resourceId = curResource.value?.id;
@@ -1476,9 +1431,9 @@ const formatPayload = () => {
     stage_id: stageId,
     resource_id: resourceId,
     method,
-    query_params: getKeyValue(query),
-    path_params: getKeyValue(path),
-    headers: getKeyValue(headers),
+    query_params: kvRowsToObject(query),
+    path_params: kvRowsToObject(path),
+    headers: kvRowsToObject(headers),
     body: raw,
     // 资源未开启用户认证时，不携带 Cookie 认证信息
     use_user_from_cookies: Boolean(curResource.value?.verified_user_required) && useCookiesAuth,
@@ -1600,29 +1555,9 @@ const handleRetry = (row: Record<string, any>) => {
     headers,
     body,
   } = row.request;
-  const pathList: any[] = [];
-  Object.keys(path_params)?.forEach((key: string) => {
-    pathList.push({
-      name: key,
-      value: path_params[key],
-    });
-  });
-
-  const queryList: any[] = [];
-  Object.keys(query_params)?.forEach((key: string) => {
-    queryList.push({
-      name: key,
-      value: query_params[key],
-    });
-  });
-
-  const headersList: any[] = [];
-  Object.keys(headers)?.forEach((key: string) => {
-    headersList.push({
-      name: key,
-      value: headers[key],
-    });
-  });
+  const pathList = objectToKvRows(path_params);
+  const queryList = objectToKvRows(query_params);
+  const headersList = objectToKvRows(headers);
 
   payloadType.pathPayload = pathList;
   payloadType.queryPayload = queryList;
@@ -1639,7 +1574,6 @@ const handleRetry = (row: Record<string, any>) => {
 const init = async () => {
   await getApigwDetail();
   getApigwStages();
-  setUserToken();
 };
 
 init();

@@ -1,72 +1,41 @@
 # 设计稿还原检查清单 (Quality Checklist)
 
-> 💡 生成代码后，逐项核对设计稿
+> 编写或改造页面后，逐项核对视觉还原与本仓规范。
 
-## 0. 主题/配色 (最高优先级)
+## 1. 布局与组件选型
 
-- [ ] **导航栏背景色**: 深色(深蓝/深灰) vs 浅色(白色/浅灰)
-  - 深色 → 必须使用 `admin-layout-dark.vue` 模版
-  - 必须覆盖 CSS 变量: `--header-bg-color`, `--nav-bg-color`
-- [ ] **顶部导航栏颜色**: 是否与设计稿一致？
-- [ ] **侧边栏背景颜色**: 是否与设计稿一致？
+- [ ] **复用既有布局**：业务页接入 `src/layout/` 中对应布局，未重复嵌套 `<BkNavigation>`
+- [ ] **组件标签规范**：模板内全部使用 PascalCase（如 `<BkButton>`、`<AgTable>`），无 kebab-case 组件标签
+- [ ] **布尔属性简写**：使用 `clearable`、`text`、`required`、`show-settings`，未写 `:xxx="true"`
+- [ ] **列表表格选型**：带分页/筛选/列设置/自适应高度的表格使用 `@/components/base/ag-table` 的 `<AgTable>`，传入稳定的 `cache-identifier`
+- [ ] **抽屉与人员选择**：侧滑抽屉优先 `<AgSideslider>`，人员选择统一使用 `<UserSelector>`（不自行判断 `isTenantMode`）
 
-## 1. 顶部导航区
+## 2. 工具栏与筛选
 
-- [ ] **Logo + 产品名**: 使用 `side-title` 或 `#side-header` 插槽
-- [ ] **业务选择器**: 若有下拉选择业务，使用 `<bk-select>` 放在 side-header
-- [ ] **顶部水平菜单**: 检索/监控/管理等，使用 `<bk-menu mode="horizontal">`
-  - 深色背景下菜单文字颜色需覆盖为白色
-- [ ] **右侧工具图标**: 帮助/通知/设置图标用 `@bkui-vue/icon`
-- [ ] **用户下拉**: 使用 `<bk-dropdown>` 包裹用户名
+- [ ] **左侧操作区**：新建等主按钮在左侧，使用 `<BkButton theme="primary">`
+- [ ] **右侧筛选区**：胶囊切换（`<BkRadioGroup type="capsule">`）/ Tab + 搜索框在右侧，使用 UnoCSS（如 `flex items-center justify-between gap-16px mb-16px`）
+- [ ] **搜索框图标**：使用 `#suffix` 插槽放置 `bkui-vue/lib/icon` 的 `<Search />` 或 `<AgIcon>`（**禁止**从 `@bkui-vue/icon` 导入）
+- [ ] **日期范围筛选**：列表日期筛选复用 `useDatePicker`，查询前调用 `applySelectedRange()`；禁止使用 `new Date(文本)` 解析
 
-## 2. 侧边栏菜单
+## 3. 表格与操作列
 
-- [ ] **菜单图标**: 每个菜单项是否有图标？使用 `#icon` 插槽
-- [ ] **菜单分组**: 使用 `<bk-menu-group name="分组名">`，不是 div
-- [ ] **分组标题样式**: 深色主题下分组名需设置为浅色
-- [ ] **当前选中高亮**: 使用 `:active-key` 绑定当前路由
-- [ ] **默认展开**: 使用 `:opened-keys="['group-id']"` 控制
+- [ ] **泛型与类型**：列定义使用 `ITableColumn<IRow>[]` 或 `defineTableColumns<IRow>([...])`，表格引用使用 `useTemplateRef<IAgTableInstance<IRow>>('tableRef')`
+- [ ] **列筛选/排序/设置**：按 [AgTable 指南](../../../../src/components/base/ag-table/README.md) 配置 `filter`、`sorter`、`show-settings` 与 `cache-identifier`
+- [ ] **操作列按钮**：文字操作按钮使用 `<BkButton theme="primary" text>` / `<BkButton theme="danger" text>`
+- [ ] **状态切换**：表格内开关（`<BkSwitcher>`）优先使用受控 `:model-value` + `@change`（接口失败易回滚），避免直接双向修改行对象字段
+- [ ] **溢出省略**：长文本开启 `ellipsis: true`，自定义单元格溢出提示复用 `AgTable` 的 `handleCellEnter` / `handleCellLeave`
 
-## 3. 表格相关
+## 4. 状态、图表与安全
 
-- [ ] **列筛选图标** (漏斗) → `filter: { list: [...] }`
-- [ ] **列排序图标** (↑↓) → `sort: true`
-- [ ] **列设置按钮** (齿轮) → `:settings="true"`
-- [ ] **操作列** → `<bk-button text theme="primary">编辑</bk-button>`
-- [ ] **开关 vs 勾选** → `<bk-switcher>` vs `<bk-checkbox>`
-- [ ] **分页位置** → `showTotalCount: true, location: 'left'`
-- [ ] **溢出省略** → `showOverflowTooltip: true`
+- [ ] **状态标签**：按语义选用 `<BkTag theme="info | success | warning | danger">` 或 `<AgStatusDot>`
+- [ ] **空态与加载**：`<AgTable>` 内置空态/错误态；非表格区域使用 `<BkException>` 与 `<BkLoading>` / `v-bkloading`
+- [ ] **图表按需引入**：使用 `@/utils/echarts` 的 `createChart`，卸载时 `dispose()`，禁止 `import * as echarts from 'echarts'`
+- [ ] **XSS 安全**：不直接用 `v-html` 渲染不可信内容，必要时使用 `v-bk-xss-html` 指令或做清洗
+- [ ] **国际化**：所有可见文案使用 `t('...')`，并同步维护 `src/locales/cn.json` 与 `src/locales/en.json`（参考 `i18n-maintainer`）
 
-## 4. 工具栏布局
+## 5. 样式与代码质量
 
-- [ ] **左侧按钮**: 新建按钮通常在左侧，`<bk-button theme="primary">`
-- [ ] **右侧筛选**: Tab + 搜索框通常在右侧
-- [ ] **Tab 样式**:
-  - 普通下划线 → `type="border-card"` (默认)
-  - 无边框卡片 → `type="unborder-card"`
-  - 边框按钮组 → `type="card"` + 自定义样式
-- [ ] **Tab 筛选带数量**: 如"全部(24)"，使用动态 label `:label="\`全部(${count})\`"`
-- [ ] **搜索框 placeholder**: 与设计稿文案一致
-- [ ] **搜索框图标位置**: 使用 `#suffix` 插槽放 `<Search />`
-
-## 5. 表单/筛选
-- [ ] **搜索框图标**: 使用 `#suffix` 插槽放 `<Search />` 图标
-- [ ] **筛选条件**: 是 Select 下拉还是 Tab 切换？
-- [ ] **按钮样式**: 主按钮 `theme="primary"`，次按钮无 theme 或 `outline`
-
-## 6. 状态展示
-- [ ] **状态标签**: 使用 `<bk-tag>` 还是纯文字？颜色是否匹配？
-- [ ] **空状态**: 无数据时是否显示 `<bk-exception type="empty">`？
-- [ ] **加载状态**: 是否需要 `v-bkloading` 指令？
-
-## 7. 布局细节
-- [ ] **间距**: 卡片/区块间距是否使用 `mt16`, `mb16` 等原子类？
-- [ ] **对齐**: 标题左对齐？操作按钮右对齐？
-- [ ] **分隔线**: 是否需要 `<bk-divider>`？
-- [ ] **Alert 提示**: 页面顶部提示条使用 `<bk-alert>`
-
-## 8. 颜色/主题
-- [ ] **Switch 颜色**: 蓝色用 `theme="primary"`，绿色是默认色
-- [ ] **Tag 样式**: 是背景色 Tag 还是纯文字/链接？
-- [ ] **Tag 主题**: `theme="info"` (蓝), `success` (绿), `warning` (橙), `danger` (红)
-- [ ] **链接颜色**: 蓝色可点击文字用 `<bk-link theme="primary">`
+- [ ] **SFC 结构**：顺序为 `<template>` → `<script setup lang="ts|tsx">` → `<style lang="scss" scoped>`
+- [ ] **样式规范**：优先 UnoCSS 原子类；自定义类使用 kebab-case 且采用类选择器，克制 `:deep()`，避免 `!important`
+- [ ] **类型命名**：所有 `interface` 以 `I` 开头，新增代码避免 `any`
+- [ ] **校验通过**：执行 `pnpm type-check`、`pnpm lint:ci:oxlint`、`pnpm lint:ci`

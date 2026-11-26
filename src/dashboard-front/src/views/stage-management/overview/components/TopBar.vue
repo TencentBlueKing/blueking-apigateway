@@ -133,7 +133,7 @@ const prevDisabled = ref(false);
 const nextDisabled = ref(true);
 
 // 新建环境
-const stageSidesliderRef = ref();
+const stageSidesliderRef = useTemplateRef('stageSidesliderRef');
 
 // 当前环境
 const curStage = ref <IStageListItem | null>(null);

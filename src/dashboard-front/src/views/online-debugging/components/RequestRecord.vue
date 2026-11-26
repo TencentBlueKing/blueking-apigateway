@@ -40,7 +40,7 @@
             v-model="dateValue"
             class="search-date"
             :placeholder="t('选择日期时间范围')"
-            :type="'datetimerange'"
+            type="datetimerange"
             :shortcuts="shortcutsRange"
             use-shortcut-text
             :shortcut-selected-index="shortcutSelectedIndex"
@@ -204,6 +204,7 @@ import AgTable, {
 } from '@/components/base/ag-table';
 import { getApiTestHistoryDetail, getApiTestHistoryList } from '@/services/source/gateway/api-test';
 import type { IAPIDebugHistoriesListOutput } from '@/services/types/gateway/api-test';
+import { createNameValueColumns, objectToKvRows } from '@/views/online-debugging/utils';
 import { CopyShape } from 'bkui-vue/lib/icon';
 import { copy } from '@/utils';
 import { toTimeRangeQuery } from '@/utils/time-range';
@@ -251,11 +252,11 @@ const {
 } = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const dateKey = ref<string>('dateKey');
-const topDatePicker = ref();
+const topDatePicker = useTemplateRef('topDatePicker');
 const tableData = ref<IRequestRecordRow[]>([]);
 const expandedRowKeys = ref<Array<string | number>>([]);
 const tableRef = useTemplateRef<IAgTableInstance<IRequestRecordRow>>('tableRef');
-const resourceEditorRef: any = ref<InstanceType<typeof AgCodeEditor>>();
+const resourceEditorRef: any = useTemplateRef<InstanceType<typeof AgCodeEditor>>('resourceEditorRef');
 const tabList = ref([
   {
     name: t('请求代码'),
@@ -282,16 +283,7 @@ const tabList = ref([
     id: 'responseHeader',
   },
 ]);
-const requestHeaderCols: ITableColumn<IHeaderRow>[] = [
-  {
-    title: t('名称'),
-    colKey: 'name',
-  },
-  {
-    title: t('值'),
-    colKey: 'value',
-  },
-];
+const requestHeaderCols: ITableColumn<IHeaderRow>[] = createNameValueColumns(t);
 
 const columns = shallowRef<ITableColumn<IRequestRecordRow>[]>([
   {
@@ -384,14 +376,7 @@ const handleCopyDetails = (row: IRequestRecordRow) => {
   copy(copyValue);
 };
 
-const formatHeaders = (headers?: Record<string, any>): IHeaderRow[] => {
-  const keys = Object.keys(headers ?? {});
-
-  return keys.map(key => ({
-    name: key,
-    value: headers?.[key],
-  }));
-};
+const formatHeaders = (headers?: Record<string, any>): IHeaderRow[] => objectToKvRows(headers ?? {});
 
 const getRequestHeader = (row: IAPIDebugHistoriesListOutput): IHeaderRow[] => {
   if (!row) return [];
@@ -578,7 +563,7 @@ defineExpose({ show });
     .title {
       position: relative;
       padding: 8px 24px;
-      font-family: PingFangSC-Regular;
+      font-family: PingFangSC-Regular, sans-serif;
       font-size: 12px;
       font-weight: regular;
       color: #313238;
@@ -599,7 +584,7 @@ defineExpose({ show });
       }
 
       &.active {
-        font-family: PingFangSC-Semibold;
+        font-family: PingFangSC-Semibold, sans-serif;
         font-weight: bold;
         color: #313238;
 
@@ -682,6 +667,7 @@ defineExpose({ show });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖 Monaco Editor 与请求记录表格全局样式 -->
 <style lang="scss">
 /* .td-highlight-bg {
   background: #f5f7fa !important;

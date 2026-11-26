@@ -59,7 +59,7 @@ interface IProps {
 }
 
 interface IEmits {
-  oauthChange: [value: boolean]
+  'oauth-change': [value: boolean]
 }
 
 const formData = defineModel<IMCPFormData>('formData', {
@@ -72,7 +72,7 @@ defineProps<IProps>();
 const emit = defineEmits<IEmits>();
 
 const handleOAuthChange = (value: boolean) => {
-  emit('oauthChange', value);
+  emit('oauth-change', value);
 };
 </script>
 
