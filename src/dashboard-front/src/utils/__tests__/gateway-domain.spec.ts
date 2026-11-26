@@ -25,7 +25,7 @@ import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } fro
 import { canAccessByRole } from '@/utils/gateway-permission';
 
 describe('utils/gateway-name', () => {
-  it('按 display_name -> name -> -- 的优先级返回展示名，并在同名或无 ID 时避免重复展示', () => {
+  it('按 display_name -> name -> -- 的优先级返回展示名，并在展示名与 ID 均非空时展示 ID', () => {
     expect(getGatewayDisplayName({
       name: 'demo-gw',
       display_name: ' 示例网关 ',
@@ -36,7 +36,7 @@ describe('utils/gateway-name', () => {
     })).toBe('demo-gw');
     expect(getGatewayDisplayName(null)).toBe('--');
 
-    // 仅当 display_name 与 name 均非空且内容不同时，才存在独立展示名
+    // 只要 display_name 与 name 均非空就需要展示网关 ID，即使两者内容相同
     expect(hasDistinctDisplayName({
       name: 'demo-gw',
       display_name: '示例网关',
@@ -44,7 +44,7 @@ describe('utils/gateway-name', () => {
     expect(hasDistinctDisplayName({
       name: 'demo-gw',
       display_name: ' demo-gw ',
-    })).toBe(false);
+    })).toBe(true);
     expect(hasDistinctDisplayName({
       name: 'demo-gw',
       display_name: '   ',
