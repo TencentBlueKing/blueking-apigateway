@@ -160,6 +160,8 @@ operator 同步/加载探测事件 -> core-api -> MySQL PublishEvent
 | 公开可见 / Public Visibility | 各对象 `is_public` | 对象各自的公开范围，不能统一解释为匿名、免认证或免授权。 |
 
 权限由 dashboard 写入；core-api DAO/缓存是运行时表示，缓存可能滞后。
+网关和资源调用权限的永久有效期使用 `NeverExpiresTime.time`（2100-01-01 UTC）。
+Dashboard 写入这两种权限的 `expires` 时，空有效期保存为该日期。存量数据由原记录保留，直到对应有效期被重新写入。
 权限通常不以 Stage 为授权键，查询参数 Stage 用于选择快照。
 MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其 AppResourcePermission 由 dashboard MCP 权限流程同步。
 

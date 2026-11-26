@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from django.contrib.auth.models import AnonymousUser
+from django.db import connection
 from django_dynamic_fixture import G
 
 import apigateway.apis.v2.open.serializers as open_serializers
@@ -175,13 +176,21 @@ def app_permissions(fake_gateway):
     r3 = G(Resource, gateway=other_gateway, name="r3")
     expired = datetime(2020, 1, 1, tzinfo=ZoneInfo("UTC"))
 
-    G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+    legacy_gateway_permission = G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
     G(AppGatewayPermission, gateway=other_gateway, bk_app_code="test", expires=expired)
     G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="other", expires=None)
-    G(AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="test", expires=None)
+    legacy_resource_permission = G(
+        AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="test", expires=None
+    )
     G(AppResourcePermission, gateway=fake_gateway, resource_id=r2.id, bk_app_code="test", expires=None)
     G(AppResourcePermission, gateway=other_gateway, resource_id=r3.id, bk_app_code="test", expires=expired)
     G(AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="other", expires=None)
+
+    # Seed historical rows without going through the current expiration write rule.
+    with connection.cursor() as cursor:
+        for permission in (legacy_gateway_permission, legacy_resource_permission):
+            table = connection.ops.quote_name(permission._meta.db_table)
+            cursor.execute(f"UPDATE {table} SET expires = NULL WHERE id = %s", [permission.pk])
     return other_gateway
 
 
@@ -217,6 +226,7 @@ class TestCurrentAppPermissionListApi:
         results = {item["resource_name"]: item for item in result["data"]["results"]}
         assert set(results) == {"r1", "r2", "r3"}
         assert results["r1"]["expires"] is None
+        assert results["r2"]["expires"] is not None
         assert results["r3"]["expires"] is not None
 
     @pytest.mark.parametrize(
