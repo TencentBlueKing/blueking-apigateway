@@ -162,22 +162,27 @@ defineExpose({
   justify-content: space-between;
   margin-bottom: 8px;
   cursor: pointer;
+
   .params-header-title {
-    font-weight: 700;
-    font-size: 14px;
-    color: #313238;
     display: flex;
+    font-size: 14px;
+    font-weight: 700;
+    color: #313238;
     align-items: center;
+
     .params-header-fold {
       margin-right: 8px;
       transition: all .2s;
+
       &.fold {
         transform: rotate(-90deg);
       }
     }
   }
 }
+
 .params-collapse {
+
   :deep(.bk-collapse-content) {
     padding: 0;
   }

@@ -204,6 +204,7 @@ import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import AgTable, { type ITableColumn } from '@/components/base/ag-table';
 import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
 import AiChatSlider from '@/components/ai/ai-chat-slider/Index.vue';
+import { createNameValueColumns, objectToKvRows } from '@/views/online-debugging/utils';
 
 type TableDataItem = {
   name: string
@@ -258,16 +259,7 @@ const data = ref<any>({});
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
 
-const requestHeaderCols: ITableColumn<TableDataItem>[] = [
-  {
-    title: t('名称'),
-    colKey: 'name',
-  },
-  {
-    title: t('值'),
-    colKey: 'value',
-  },
-];
+const requestHeaderCols: ITableColumn<TableDataItem>[] = createNameValueColumns(t);
 
 const statusColor = computed(() => {
   let color = 'value';
@@ -349,15 +341,7 @@ const setEditorValue = (fold?: boolean) => {
 const setTableData = () => {
   const { headers } = data.value;
   if (headers && JSON.stringify(headers) !== '{}') {
-    const list: TableDataItem[] = [];
-    Object.keys(headers).forEach((key: string) => {
-      list.push({
-        name: key,
-        value: headers[key],
-      });
-    });
-
-    tableData.value = list;
+    tableData.value = objectToKvRows(headers);
   }
   else {
     tableData.value = [];
@@ -396,113 +380,139 @@ defineExpose({ setInit });
 
 <style lang="scss" scoped>
 .response-container {
-  padding-left: 24px;
   height: 100%;
+  padding-left: 24px;
+
   .response-title {
     position: relative;
+
     .response-type {
       flex: 1;
       cursor: pointer;
       transition: all .2s;
+
       &.fold-header {
         display: flex;
         align-items: center;
         line-height: 52px;
+
         .header-icon {
-          margin-top: 0px;
+          margin-top: 0;
         }
       }
+
       .header-icon {
         margin-top: -18px;
         margin-right: 8px;
-        transition: all .2s;
         cursor: pointer;
+        transition: all .2s;
+
         &.fold {
           transform: rotate(-90deg);
         }
       }
+
       .response-type-tab {
         flex: 1;
       }
+
       .fold-title {
-        font-weight: 700;
         font-size: 14px;
+        font-weight: 700;
         color: #313238;
       }
     }
+
     .response-status {
       position: absolute;
       top: 18px;
       right: 24px;
+
       .response-status-item {
-        font-size: 12px;
         margin-left: 12px;
+        font-size: 12px;
+
         .label {
           color: #63656E;
         }
+
         .value {
           color: #1CAB88;
         }
+
         .warning {
           color: #FF9C01;
         }
+
         .error {
           color: #EA3636;
         }
       }
     }
   }
+
   .response-main {
-    padding-bottom: 15px;
     height: 100%;
+    padding-bottom: 15px;
     overflow-y: auto;
     box-sizing: border-box;
+
     .response-content-type {
       margin-bottom: 12px;
+
       .payload-type {
         margin-right: 8px;
       }
     }
+
     .response-content {
       height: calc(100% - 44px);
       overflow: hidden;
-      background: #FFFFFF;
+      background: #FFF;
       border: 1px solid #DCDEE5;
       border-radius: 2px;
     }
   }
+
   .bk-collapse-response {
     height: 100%;
+
     :deep(.bk-collapse-item) {
       height: 100%;
     }
+
     :deep(.bk-collapse-content) {
-      padding: 0;
       height: calc(100% - 72px);
+      padding: 0;
     }
   }
 }
+
 .flex {
   display: flex;
   align-items: center;
 }
+
 .payload-type {
   display: flex;
-  align-items: center;
+  padding: 4px;
   background: #F0F1F5;
   border-radius: 2px;
-  padding: 4px;
+  align-items: center;
+
   .payload-type-item {
     display: flex;
-    align-items: center;
+    padding: 1px 10px;
     font-size: 12px;
     color: #63656E;
-    padding: 1px 10px;
     cursor: pointer;
+    align-items: center;
+
     .apigateway-icon {
       margin-right: 4px;
       font-size: 16px;
     }
+
     &.active  {
       color: #3A84FF;
       background-color: #fff;

@@ -1,0 +1,44 @@
+meta {
+  name: delegated-token-ok
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/ua_p1
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{oauth2_app_delegated_token}}
+}
+
+script:pre-request {
+  // needs a real bkauth token issued to the test_bk_app_code app;
+  // skipped when the env var is empty, unless oauth2_app_tokens_required is true
+  if (!bru.getEnvVar("oauth2_app_delegated_token")) {
+    if (String(bru.getEnvVar("oauth2_app_tokens_required")) === "true") {
+      throw new Error("oauth2_app_delegated_token is required");
+    }
+    bru.runner.skipRequest();
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  var atob = require('atob');
+  test("check the jwt payload", function() {
+    var payload = JSON.parse(atob(res.getBody().headers["X-Bkapi-Jwt"].split(".")[1]));
+    expect(payload.app.app_code).to.eql(bru.getEnvVar("test_bk_app_code"));
+    expect(payload.app.verified).to.eql(true);
+    expect(payload.user.verified).to.eql(true);
+  });
+
+  test("the bkauth bearer token is not passed to the backend", function() {
+    expect(res.getBody().headers["Authorization"]).to.be.undefined;
+  });
+}

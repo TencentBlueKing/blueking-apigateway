@@ -51,6 +51,7 @@ from apigateway.biz.audit import Auditor
 from apigateway.biz.permission import PermissionDimensionManager, ResourcePermissionHandler
 from apigateway.biz.resource import ResourceHandler
 from apigateway.core.models import Resource
+from apigateway.utils.csv import sanitize_csv_cell
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 
@@ -377,9 +378,9 @@ class AppPermissionExportApi(AppPermissionQuerySetMixin, generics.CreateAPIView)
         }
 
         content = StringIO()
-        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore", quoting=csv.QUOTE_NONNUMERIC)
         io_csv.writerow(header_row)
-        io_csv.writerows(data)
+        io_csv.writerows({key: sanitize_csv_cell(value) for key, value in row.items()} for row in data)
 
         return content.getvalue()
 

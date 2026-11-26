@@ -57,6 +57,7 @@ from apigateway.common.tenant.request import get_user_tenant_id
 from apigateway.common.tenant.user_credentials import get_user_credentials_from_request
 from apigateway.core.models import Stage
 from apigateway.service.resource_version import get_standard_resource_names_set
+from apigateway.utils.csv import sanitize_csv_cell
 from apigateway.utils.django import get_model_dict
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import now_datetime
@@ -1404,8 +1405,8 @@ class GatewayMCPServerAppPermissionExportApi(generics.CreateAPIView):
         ]
 
         content = StringIO()
-        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore", quoting=csv.QUOTE_NONNUMERIC)
         io_csv.writerow(header_row)
-        io_csv.writerows(rows)
+        io_csv.writerows({key: sanitize_csv_cell(value) for key, value in row.items()} for row in rows)
 
         return content.getvalue()
