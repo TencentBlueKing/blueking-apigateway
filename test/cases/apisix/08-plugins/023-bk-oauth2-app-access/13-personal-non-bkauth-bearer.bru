@@ -1,0 +1,27 @@
+meta {
+  name: personal-non-bkauth-bearer
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/oauth2-app/prod/u_personal
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer backend-owned-opaque-token
+}
+
+assert {
+  res.status: eq 401
+  res.headers['www-authenticate']: contains resource_metadata
+  res.body.code_name: eq UNAUTHORIZED
+}
+
+tests {
+  test("the discovery challenge carries no error code", function() {
+    expect(res.getHeader("www-authenticate")).to.not.contain("error=");
+  });
+}

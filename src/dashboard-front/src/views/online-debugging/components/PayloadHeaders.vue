@@ -194,8 +194,8 @@
 <script lang="ts" setup>
 import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { Message } from 'bkui-vue';
-import headersValues from '@/constants/headers-value';
 import EditTable from '@/views/online-debugging/components/EditTable.vue';
+import { loadPresetHeaders, savePresetHeaders } from '@/views/online-debugging/preset-headers';
 
 interface IProps { headersPayload?: any[] }
 
@@ -204,24 +204,6 @@ const { headersPayload = [] } = defineProps<IProps>();
 const emit = defineEmits<{ change: [data: any ] }>();
 
 const { t } = useI18n();
-
-let local = localStorage.getItem('presupposeHeaders');
-if (!local) {
-  local = JSON.stringify([{
-    name: 'Default JSON Header',
-    id: String(+new Date()),
-    list: [{
-      isEdit: false,
-      id: +new Date(),
-      name: 'Content-Type',
-      value: 'application/json',
-      instructions: '',
-      options: headersValues,
-    }],
-  }]);
-
-  localStorage.setItem('presupposeHeaders', local);
-}
 
 const activeIndex = ref<number[]>([1]);
 const editTableRef = ref();
@@ -232,7 +214,7 @@ const presuppose = ref('');
 const hoverIndex = ref<number | null>();
 const isIconClick = ref<boolean>(false); // 是否点击了icon
 const editInputRef = ref(null);
-const localHeaders = ref(JSON.parse(local) || []);
+const localHeaders = ref<any[]>(loadPresetHeaders());
 const dialogData = reactive({
   isShow: false,
   loading: false,
@@ -279,7 +261,7 @@ const stopEvent = (event: Event) => {
 };
 
 const setPresuppose = () => {
-  dialogData.table = newHeaders.value;
+  dialogData.table = newHeaders.value.map((item: any) => ({ ...item }));
   dialogData.isShow = true;
 };
 
@@ -292,13 +274,10 @@ const handleConfirm = async () => {
     const current = [{
       name: dialogData.name,
       id: String(+new Date()),
-      list: newHeaders.value,
+      list: newHeaders.value.map((item: any) => ({ ...item })),
     }];
     localHeaders.value = [...localHeaders.value, ...current];
-    localStorage.setItem(
-      'presupposeHeaders',
-      JSON.stringify(localHeaders.value),
-    );
+    savePresetHeaders(localHeaders.value);
     handleClosed();
 
     Message({
@@ -359,10 +338,7 @@ const handleDeleteOptionItemConfirm = async (option: any) => {
     const { value } = option;
 
     localHeaders.value = localHeaders.value.filter((item: any) => item.id !== value);
-    localStorage.setItem(
-      'presupposeHeaders',
-      JSON.stringify(localHeaders.value),
-    );
+    savePresetHeaders(localHeaders.value);
 
     if (presuppose.value === value) {
       presuppose.value = '';
@@ -395,10 +371,7 @@ const updateOption = async (option: any) => {
       if (found) {
         found.name = name;
       }
-      localStorage.setItem(
-        'presupposeHeaders',
-        JSON.stringify(localHeaders.value),
-      );
+      savePresetHeaders(localHeaders.value);
 
       Message({
         message: t('修改成功'),
@@ -430,9 +403,7 @@ const handleBlur = () => {
 const handleHeadersChange = () => {
   const found = localHeaders.value.find((item: any) => item.id === presuppose.value);
   if (found) {
-    const foundNames = found.list.map((item: any) => item.name);
-    const list = propsHeaders.value?.filter((item: any) => !foundNames?.includes(item.name));
-    propsHeaders.value = [...list, ...found.list];
+    propsHeaders.value = found.list.map((item: any) => ({ ...item }));
   }
 };
 

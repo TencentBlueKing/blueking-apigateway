@@ -39,6 +39,7 @@ from apigateway.service.prometheus import (
     MetricsRangeFactory,
     MetricsSummaryFactory,
 )
+from apigateway.utils.csv import sanitize_csv_cell
 from apigateway.utils.responses import DownloadableResponse, OKJsonResponse
 from apigateway.utils.time import MetricsSmartTimeRange
 
@@ -318,9 +319,9 @@ class QuerySummaryExportApi(generics.CreateAPIView):
         ]
 
         content = StringIO()
-        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore")
+        io_csv = csv.DictWriter(content, fieldnames=headers, extrasaction="ignore", quoting=csv.QUOTE_NONNUMERIC)
         io_csv.writerow(header_row)
-        io_csv.writerows(rows)
+        io_csv.writerows({key: sanitize_csv_cell(value) for key, value in row.items()} for row in rows)
 
         return content.getvalue()
 

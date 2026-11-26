@@ -91,9 +91,9 @@ class APITestApi(generics.CreateAPIView):
         sanitizer = DebugDataSanitizer()
         sanitizer.add_authorization(authorization)
         sanitizer.add_authorization(authorization_from_cookies)
-        sanitizer.add_authorization(data["query_params"])
         sanitizer.add_headers(data["headers"])
         sanitizer.add_headers(prepared_request_headers.headers)
+        sanitizer.add_authorization(data["query_params"])
 
         prepared_request_url = PreparedRequestURL(
             resource_path=released_resource.path,
@@ -109,6 +109,7 @@ class APITestApi(generics.CreateAPIView):
 
         # 入参检查
         body = data.get("body", "")
+        sanitizer.add_authorization(body)
         history_request = {
             "request_url": prepared_request_url.request_url,
             "request_method": data["method"],
@@ -142,8 +143,9 @@ class APITestApi(generics.CreateAPIView):
             response_data_dict = self._get_response_data(
                 response, prepared_request_headers.headers_without_sensitive, verify=False
             )
-            response_data_dict["curl"] = sanitizer.clean_curl(response_data_dict["curl"])
-            response_data_dict = sanitizer.clean(response_data_dict)
+            sanitizer.add_headers(response.headers)
+            sanitizer.add_authorization(response_data_dict["body"])
+            response_data_dict = sanitizer.clean_response_data(response_data_dict)
         except Exception as err:  # pylint: disable=broad-except
             error_message = sanitizer.clean(str(err))
             request_error_type = type(err).__name__

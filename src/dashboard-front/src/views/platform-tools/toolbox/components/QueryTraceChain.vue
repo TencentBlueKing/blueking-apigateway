@@ -24,7 +24,7 @@
         v-model.trim="searchKeyword"
         class="w-640px mr-8px"
         clearable
-        :placeholder="t('请输入 request_id 或 x_request_id 进行查询')"
+        :placeholder="t('请输入 X-Bkapi-Request-ID 进行查询')"
         @enter="handleQueryTrace"
         @clear="handleReset"
       />
@@ -188,8 +188,7 @@ const handleQueryTrace = async () => {
 
 // 从路由参数自动查询
 const initPage = () => {
-  const { request_id, x_request_id } = route.query;
-  const traceId = (request_id || x_request_id) as string;
+  const traceId = route.query.request_id as string;
 
   if (traceId) {
     searchKeyword.value = traceId;

@@ -59,7 +59,7 @@ from apigateway.common.constants import (
     CallSourceTypeEnum,
     GatewayAPIDocMaintainerTypeEnum,
 )
-from apigateway.common.django.validators import NameValidator
+from apigateway.common.django.validators import FileSizeValidator, NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
@@ -680,7 +680,9 @@ class SDKGenerateOutputSLZ(serializers.Serializer):
 
 
 class DocImportByArchiveInputSLZ(serializers.Serializer):
-    file = serializers.FileField(required=True, help_text="导入的归档文档文件")
+    file = serializers.FileField(
+        required=True, validators=[FileSizeValidator(max_size_mb=10)], help_text="导入的归档文档文件，最大 10MB"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.DocImportByArchiveInputSLZ"

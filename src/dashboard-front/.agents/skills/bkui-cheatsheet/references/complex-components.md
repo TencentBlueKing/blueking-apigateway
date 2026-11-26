@@ -1,242 +1,248 @@
 # 高级组件避坑指南
 
-> 详细的复杂组件使用说明
+> 本仓 `bkui-vue` 3.0 复杂组件高频坑点，示例已遵循本仓 PascalCase、`<script setup lang="ts">`、`useTemplateRef`、`I` 前缀与国际化规范。
 
 ## Select / SearchSelect
 
 ### 多选 Tag 模式
-- **Select**: 必须显式设置 `multiple-mode="tag"`，否则默认是文本拼接
-- **SearchSelect**: 使用 `display-tag` 属性
+
+- **`BkSelect`**：必须显式设置 `multiple-mode="tag"`，否则默认是文本拼接。
+- **`BkSearchSelect`**：使用布尔简写 `display-tag`。
 
 ```vue
-<!-- Select -->
-<bk-select v-model="value" multiple multiple-mode="tag">
-  <bk-option value="1" label="选项1" />
-</bk-select>
+<template>
+  <BkSelect
+    v-model="selectedValues"
+    multiple
+    multiple-mode="tag"
+  >
+    <BkOption
+      value="1"
+      :label="t('选项 1')"
+    />
+  </BkSelect>
 
-<!-- SearchSelect -->
-<bk-search-select v-model="value" :data="list" display-tag />
+  <BkSearchSelect
+    v-model="searchValues"
+    :data="searchOptions"
+    display-tag
+  />
+</template>
 ```
 
-### 键名配置差异
+### 默认键名差异
 
-**重要**：两者默认值不同！
-
-| 组件 | id-key 默认值 | display-key 默认值 |
-|------|--------------|-------------------|
-| Select | `value` | `label` |
-| SearchSelect | `id` | `name` |
-
-```typescript
-// Select 数据格式
-const selectOptions = [
-  { value: '1', label: '选项1' }
-];
-
-// SearchSelect 数据格式
-const searchOptions = [
-  { id: '1', name: '选项1' }
-];
-```
+| 组件 | `id-key` 默认值 | `display-key` 默认值 |
+| --- | --- | --- |
+| `BkSelect` | `value` | `label` |
+| `BkSearchSelect` | `id` | `name` |
 
 ### 远程搜索
 
-必须配合 `filterable` 和 `remote-method`：
+必须配合 `filterable` 与 `:remote-method`：
 
 ```vue
-<bk-select
-  v-model="value"
-  filterable
-  :remote-method="handleSearch"
-  :loading="loading"
->
-  <bk-option
-    v-for="item in filteredList"
-    :key="item.id"
-    :value="item.id"
-    :label="item.name"
-  />
-</bk-select>
+<template>
+  <BkSelect
+    v-model="selectedId"
+    filterable
+    :remote-method="handleSearch"
+    :loading="loading"
+  >
+    <BkOption
+      v-for="item in filteredList"
+      :key="item.id"
+      :value="item.id"
+      :label="item.name"
+    />
+  </BkSelect>
+</template>
 ```
+
+---
 
 ## DatePicker 日期选择
 
-### 快捷方式陷阱
+> 本仓列表页的日期范围筛选应优先使用 `useDatePicker(filter, { presets, defaultPreset })` 并配合 `@/utils/time-range` 转换秒级时间戳；网关仪表盘、统计报表使用 `@blueking/date-picker` + `@/utils/date-picker-range`。以下为直接使用 `<BkDatePicker>` 时的底层避坑点。
 
-`shortcuts` 的 `value` **必须是函数**，不能是静态值！
+### 快捷方式 `value` 必须是函数
 
-```javascript
-// ❌ 错误：静态值
-const shortcuts = [
+```typescript
+interface IDateShortcut {
+  text: string
+  value: () => [Date, Date]
+}
+
+// 正确：每次点击动态计算当前时间（静态数组只会计算一次）
+const shortcuts = computed<IDateShortcut[]>(() => [
   {
-    text: '今天',
-    value: [new Date(), new Date()] // 只会计算一次
-  }
-];
-
-// ✅ 正确：函数
-const shortcuts = [
-  {
-    text: '今天',
+    text: t('今天'),
     value: () => {
       const now = new Date();
       return [now, now];
-    }
+    },
   },
   {
-    text: '最近7天',
+    text: t('最近 7 天'),
     value: () => {
       const end = new Date();
       const start = new Date();
       start.setDate(start.getDate() - 7);
       return [start, end];
-    }
-  }
-];
+    },
+  },
+]);
 ```
 
-### 类型名称陷阱
-
-范围类型是**一个单词**，中间没有连字符：
+### 范围类型名称无连字符
 
 | 错误 | 正确 |
-|------|------|
+| --- | --- |
 | `datetime-range` | `datetimerange` |
 | `date-range` | `daterange` |
 
 ```vue
-<bk-date-picker
-  v-model="dateRange"
-  type="datetimerange"
-  :shortcuts="shortcuts"
-/>
+<template>
+  <BkDatePicker
+    v-model="dateRange"
+    type="datetimerange"
+    :shortcuts="shortcuts"
+  />
+</template>
 ```
+
+---
 
 ## Upload 文件上传
 
 ### 响应码判断
 
-默认只认 `res.code === 0`，如果后端返回 `result: true`，需要自定义：
+默认仅认 `res.code === 0`；若接口返回 `result: true`，需自定义 `:handle-res-code`：
 
 ```vue
-<bk-upload
-  :url="uploadUrl"
-  :handle-res-code="(res) => res.result === true"
-/>
+<template>
+  <BkUpload
+    :url="uploadUrl"
+    :size="10"
+    :handle-res-code="(res: { result?: boolean }) => res.result === true"
+  />
+</template>
 ```
 
-### 大小限制单位
+> `size` 属性单位为 **MB**。
 
-`size` 属性单位是 **MB**：
+### `files` 为单向绑定初始值，不要用 `v-model`
 
 ```vue
-<!-- 限制 10MB -->
-<bk-upload :size="10" />
+<template>
+  <!-- 正确 -->
+  <BkUpload
+    :files="fileList"
+    @change="handleFileChange"
+  />
+</template>
 ```
 
-### 文件数组绑定
-
-`files` 是**单向绑定**的初始值，不要用 v-model：
-
-```vue
-<!-- ❌ 错误 -->
-<bk-upload v-model:files="fileList" />
-
-<!-- ✅ 正确 -->
-<bk-upload
-  :files="fileList"
-  @change="handleFileChange"
-/>
-```
+---
 
 ## Tree 树形组件
 
-### 唯一标识
-
-推荐显式设置 `node-key`：
-
-```vue
-<bk-tree
-  :data="treeData"
-  node-key="id"
-/>
-```
-
-### 虚拟滚动高度
-
-默认开启虚拟滚动，必须设置高度：
+- 推荐显式设置 `node-key="id"`；
+- 默认开启虚拟滚动，需传 `:height="500"` 或确保父容器有明确高度；
+- 替换 `data` 后如需重置内部状态，通过 `useTemplateRef` 在 `nextTick` 后调用 `reset()`：
 
 ```vue
-<bk-tree
-  :data="treeData"
-  :height="500"
-/>
-```
+<template>
+  <BkTree
+    ref="treeRef"
+    :data="treeData"
+    node-key="id"
+    :height="500"
+  />
+</template>
 
-或者确保父容器有明确高度：
+<script setup lang="ts">
+import type { Tree } from 'bkui-vue';
 
-```css
-.tree-container {
-  height: 500px;
+interface ITreeNode {
+  id: string
+  name: string
+  children?: ITreeNode[]
 }
-```
 
-### 数据刷新
+const treeRef = useTemplateRef<InstanceType<typeof Tree>>('treeRef');
+const treeData = shallowRef<ITreeNode[]>([]);
 
-修改 `data` 数组后，建议手动重置：
-
-```typescript
-const treeRef = ref();
-
-const refreshTree = () => {
-  treeData.value = [...newData];
-  nextTick(() => {
-    treeRef.value?.reset();
-  });
+const refreshTree = async (nextData: ITreeNode[]) => {
+  treeData.value = [...nextData];
+  await nextTick();
+  treeRef.value?.reset();
 };
+</script>
 ```
+
+---
 
 ## Form 表单验证
 
-### 验证时机
-
-- `trigger: 'blur'` - 失焦时验证
-- `trigger: 'change'` - 值改变时验证
-- 手动验证：`formRef.value.validate()`
-
 ### 异步验证
 
-validator 可以返回 Promise：
+`validator` 支持返回 `Promise<boolean | string>`：
 
 ```typescript
-const rules = {
+const rules = computed(() => ({
   username: [
     {
-      validator: async (value) => {
+      validator: async (value: string) => {
         const exists = await checkUsernameExists(value);
-        if (exists) {
-          return '用户名已存在';
-        }
-        return true;
+        return exists ? t('用户名已存在') : true;
       },
-      trigger: 'blur'
-    }
-  ]
-};
+      trigger: 'blur',
+    },
+  ],
+}));
 ```
 
-### 动态表单项
+### 动态表单项（稳定 `:key` + 索引 `property`）
 
-使用 `v-for` 生成的表单项，`property` 必须用数组语法：
+动态增删的表单项中，**`:key` 必须使用稳定唯一标识（如 `item.uid`）而非 `index`**，避免删除中间项时输入框状态与校验信息错位；同时 `property` 仍按数组下标路径拼接，供 `BkForm` 定位字段：
 
 ```vue
-<bk-form-item
-  v-for="(item, index) in list"
-  :key="index"
-  :label="`项目${index + 1}`"
-  :property="`list.${index}.value`"
-  :rules="[{ required: true }]"
->
-  <bk-input v-model="list[index].value" />
-</bk-form-item>
+<template>
+  <BkFormItem
+    v-for="(item, index) in formData.list"
+    :key="item.uid"
+    :label="t('项目 {index}', { index: index + 1 })"
+    :property="`list.${index}.value`"
+    :rules="itemRules"
+  >
+    <BkInput v-model="item.value" />
+  </BkFormItem>
+</template>
+
+<script setup lang="ts">
+interface IDynamicItem {
+  uid: string
+  value: string
+}
+
+const { t } = useI18n();
+
+const formData = reactive<{ list: IDynamicItem[] }>({
+  list: [
+    {
+      uid: crypto.randomUUID(),
+      value: '',
+    },
+  ],
+});
+
+const itemRules = computed(() => [
+  {
+    required: true,
+    message: t('必填项'),
+    trigger: 'blur',
+  },
+]);
+</script>
 ```

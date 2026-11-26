@@ -29,6 +29,7 @@
   >
     <BkTableColumn
       :width="55"
+      :min-width="55"
       type="selection"
       align="center"
     />
@@ -520,12 +521,12 @@ defineExpose({
   &.is-focus {
 
     :deep(.bk-input) {
-    border: 1px solid #3A84FF;
+      border: 1px solid #3A84FF;
 
-    .angle-up {
-      display: inline-flex !important;
+      .angle-up {
+        display: inline-flex !important;
+      }
     }
-  }
   }
 }
 

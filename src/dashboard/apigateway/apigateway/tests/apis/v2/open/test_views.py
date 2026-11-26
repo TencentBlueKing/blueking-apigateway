@@ -22,6 +22,7 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
 from django_dynamic_fixture import G
 
 import apigateway.apis.v2.open.serializers as open_serializers
@@ -608,6 +609,36 @@ class TestMCPServerAppPermissionRecordLookupApi:
         assert resp.status_code == 400
 
 
+@pytest.mark.parametrize(
+    "view_name, method, data",
+    [
+        ("openapi.v2.open.tools.time.get_datetime", "GET", {}),
+        ("openapi.v2.open.tools.time.get_current_unix_timestamp", "GET", {}),
+        (
+            "openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
+            "POST",
+            {"datetime": "2025-01-07 15:30:45"},
+        ),
+        (
+            "openapi.v2.open.tools.log.query_by_request_id",
+            "GET",
+            {"request_id": "2ea4000d-5676-4ae7-a3b5-a07f3dc59a6e"},
+        ),
+    ],
+)
+@pytest.mark.parametrize("authenticated_user", [False, True], ids=["anonymous", "superuser"])
+def test_tools_require_app(request_view, mocker, view_name, method, data, authenticated_user):
+    search_logs = mocker.patch(
+        "apigateway.apis.v2.open.views.LogHandler.search_logs_by_request_id", return_value=(0, [])
+    )
+    user_kwargs = {} if authenticated_user else {"user": AnonymousUser()}
+
+    resp = request_view(method=method, view_name=view_name, data=data, **user_kwargs)
+
+    assert resp.status_code in (401, 403)
+    search_logs.assert_not_called()
+
+
 class TestGetDatetimeApi:
     def test_get_datetime_with_default_timezone(self, request_view, settings):
         """测试使用默认时区获取当前时间"""
@@ -624,6 +655,7 @@ class TestGetDatetimeApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_datetime",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
             )
 
             assert resp.status_code == 200
@@ -644,6 +676,7 @@ class TestGetDatetimeApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_datetime",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={"tz_name": "UTC"},
             )
 
@@ -659,6 +692,7 @@ class TestGetDatetimeApi:
             method="GET",
             view_name="openapi.v2.open.tools.time.get_datetime",
             app=mock.MagicMock(app_code="test"),
+            user=AnonymousUser(),
             data={"tz_name": "Invalid/Timezone"},
         )
 
@@ -677,6 +711,7 @@ class TestGetCurrentUnixTimestampApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_current_unix_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
             )
 
             assert resp.status_code == 200
@@ -694,6 +729,7 @@ class TestGetCurrentUnixTimestampApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_current_unix_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
             )
 
             assert resp.status_code == 200
@@ -712,6 +748,7 @@ class TestParseDatetimeStrToTimestampApi:
                 method="POST",
                 view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={
                     "datetime": "2025-01-07 15:30:45",
                 },
@@ -732,6 +769,7 @@ class TestParseDatetimeStrToTimestampApi:
                 method="POST",
                 view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={
                     "datetime": "2025/01/07 15:30:45",
                     "datetime_format": "%Y/%m/%d %H:%M:%S",
@@ -750,6 +788,7 @@ class TestParseDatetimeStrToTimestampApi:
             method="POST",
             view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
             app=mock.MagicMock(app_code="test"),
+            user=AnonymousUser(),
             data={
                 "datetime": "2025-01-07 15:30:45",
                 "datetime_format": "%Y/%m/%d",
@@ -766,6 +805,7 @@ class TestParseDatetimeStrToTimestampApi:
             method="POST",
             view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
             app=mock.MagicMock(app_code="test"),
+            user=AnonymousUser(),
             data={
                 "datetime": "invalid-datetime-string",
                 "datetime_format": "%Y-%m-%d %H:%M:%S",
@@ -823,6 +863,7 @@ class TestLogSearchByRequestIdApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.log.query_by_request_id",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={"request_id": "2ea4000d-5676-4ae7-a3b5-a07f3dc59a6e"},
             )
 
@@ -847,6 +888,7 @@ class TestLogSearchByRequestIdApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.log.query_by_request_id",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={"request_id": "00000000-0000-0000-0000-000000000000"},
             )
 

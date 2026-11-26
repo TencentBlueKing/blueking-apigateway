@@ -18,14 +18,32 @@
 import json
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apigateway.apis.web.resource_doc.serializers import (
+    DocArchiveParseInputSLZ,
     DocArchiveParseOutputSLZ,
     DocImportByArchiveInputSLZ,
 )
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.apps.support.models import ResourceDoc
 from apigateway.core.models import Resource
+
+
+@pytest.mark.parametrize("serializer_class", [DocArchiveParseInputSLZ, DocImportByArchiveInputSLZ])
+@pytest.mark.parametrize("size", [10 * 1024 * 1024 - 1, 10 * 1024 * 1024, 10 * 1024 * 1024 + 1])
+@pytest.mark.parametrize("filename", ["docs.zip", "docs.tgz"])
+def test_archive_upload_size_limit(serializer_class, size, filename):
+    upload = SimpleUploadedFile(filename, b"x" * size)
+    slz = serializer_class(data={"file": upload, "selected_resource_docs": "[]"})
+
+    if size > 10 * 1024 * 1024:
+        assert not slz.is_valid()
+        assert "10MB" in str(slz.errors["file"])
+    else:
+        slz.is_valid(raise_exception=True)
+        assert slz.validated_data["file"] is upload
+        assert upload.tell() == 0
 
 
 class TestDocArchiveParseOutputSLZ:
