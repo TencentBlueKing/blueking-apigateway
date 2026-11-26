@@ -19,6 +19,7 @@
 from django.core.management.base import BaseCommand
 
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
+from apigateway.utils.time import NeverExpiresTime
 
 
 class Command(BaseCommand):
@@ -29,45 +30,46 @@ class Command(BaseCommand):
 
     def _copy_api_permission(self, src_app, dst_app):
         for src_perm in AppGatewayPermission.objects.filter(bk_app_code=src_app):
+            src_expires = src_perm.expires or NeverExpiresTime.time
             dst_perm, created = AppGatewayPermission.objects.get_or_create(
                 bk_app_code=dst_app,
                 gateway_id=src_perm.gateway_id,
                 defaults={
-                    "expires": src_perm.expires,
+                    "expires": src_expires,
                 },
             )
-            if not created and src_perm.expires > dst_perm.expires:
-                dst_perm.expires = src_perm.expires
+            if not created and src_expires > (dst_perm.expires or NeverExpiresTime.time):
+                dst_perm.expires = src_expires
                 dst_perm.save(update_fields=["expires"])
 
     def _copy_resource_permission(self, src_app, dst_app):
         for src_perm in AppResourcePermission.objects.filter(bk_app_code=src_app):
+            src_expires = src_perm.expires or NeverExpiresTime.time
             dst_perm, created = AppResourcePermission.objects.get_or_create(
                 bk_app_code=dst_app,
                 gateway_id=src_perm.gateway_id,
                 resource_id=src_perm.resource_id,
                 defaults={
-                    "expires": src_perm.expires,
+                    "expires": src_expires,
                     "grant_type": src_perm.grant_type,
                 },
             )
-            if not created and src_perm.expires > dst_perm.expires:
-                dst_perm.expires = src_perm.expires
+            if not created and src_expires > (dst_perm.expires or NeverExpiresTime.time):
+                dst_perm.expires = src_expires
                 dst_perm.save(update_fields=["expires"])
 
     def _copy_api_permission_dry_run(self, src_app, dst_app):
         for src_perm in AppGatewayPermission.objects.filter(bk_app_code=src_app):
+            src_expires = src_perm.expires or NeverExpiresTime.time
             try:
                 dst_perm = AppGatewayPermission.objects.get(bk_app_code=dst_app, gateway_id=src_perm.gateway_id)
             except AppGatewayPermission.DoesNotExist:
-                print(
-                    f"add new perm: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, expires={src_perm.expires}"
-                )
+                print(f"add new perm: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, expires={src_expires}")
             else:
-                if dst_perm.expires < src_perm.expires:
+                if (dst_perm.expires or NeverExpiresTime.time) < src_expires:
                     print(
                         f"update perm expires: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
-                        f"expires={src_perm.expires}"
+                        f"expires={src_expires}"
                     )
                 else:
                     print(
@@ -77,6 +79,7 @@ class Command(BaseCommand):
 
     def _copy_resource_permission_dry_run(self, src_app, dst_app):
         for src_perm in AppResourcePermission.objects.filter(bk_app_code=src_app):
+            src_expires = src_perm.expires or NeverExpiresTime.time
             try:
                 dst_perm = AppResourcePermission.objects.get(
                     bk_app_code=dst_app,
@@ -86,13 +89,13 @@ class Command(BaseCommand):
             except AppResourcePermission.DoesNotExist:
                 print(
                     f"add new perm: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
-                    f"resource_id={src_perm.resource_id}, expires={src_perm.expires}"
+                    f"resource_id={src_perm.resource_id}, expires={src_expires}"
                 )
             else:
-                if dst_perm.expires < src_perm.expires:
+                if (dst_perm.expires or NeverExpiresTime.time) < src_expires:
                     print(
                         f"update perm expires: bk_app_code={dst_app}, gateway_id={src_perm.gateway_id}, "
-                        f"resource_id={src_perm.resource_id}, expires={src_perm.expires}"
+                        f"resource_id={src_perm.resource_id}, expires={src_expires}"
                     )
                 else:
                     print(
