@@ -19,11 +19,14 @@ from rest_framework import serializers
 
 from apigateway.apis.web.constants import ExportTypeEnum
 from apigateway.apps.support.constants import DocArchiveTypeEnum, DocLanguageEnum
+from apigateway.common.django.validators import FileSizeValidator
 from apigateway.core.constants import ResourceKindEnum
 
 
 class DocArchiveParseInputSLZ(serializers.Serializer):
-    file = serializers.FileField(required=True, help_text="导入的归档文档文件")
+    file = serializers.FileField(
+        required=True, validators=[FileSizeValidator(max_size_mb=10)], help_text="导入的归档文档文件，最大 10MB"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.web.resource_doc.serializers.DocArchiveParseInputSLZ"
@@ -72,7 +75,9 @@ class SelectedResourceDocSLZ(serializers.Serializer):
 
 class DocImportByArchiveInputSLZ(serializers.Serializer):
     selected_resource_docs = serializers.JSONField(binary=True, help_text="选中的资源文档")
-    file = serializers.FileField(required=True, help_text="导入的归档文档文件")
+    file = serializers.FileField(
+        required=True, validators=[FileSizeValidator(max_size_mb=10)], help_text="导入的归档文档文件，最大 10MB"
+    )
 
     def validate_selected_resource_docs(self, value):
         slz = SelectedResourceDocSLZ(data=value, many=True)
