@@ -2736,12 +2736,17 @@ msgstr ""
 #: apigateway/biz/openapi/validate.py:196
 #, python-brace-format
 msgid ""
-"网关下资源名称 {name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲"
-"突），请使用其他命名，建议使用统一的命名格式。"
+"网关下资源名称 {name} 已被占用，可能原因："
+"1. 名称与已有资源完全相同；"
+"2. 名称归一化后与已有资源相同（如 get_foo 与 getFoo）；"
+"3. 名称未变，但请求方法（method）或请求路径（path）已修改，导入时被识别为新增资源。"
+"请检查 operationId、method 和 path，确保资源名称及其归一化名称唯一。"
 msgstr ""
-"The resource name \"{name}\" or its camel-case name has already been "
-"occupied (e.g., get_foo conflicts with getFoo), please use another name, and "
-"use a consistent naming format."
+"The resource name {name} is already in use in this gateway. Possible causes: "
+"1. It is identical to an existing resource name; "
+"2. It matches an existing resource name after normalization (e.g., get_foo and getFoo); "
+"3. The name is unchanged, but the request method or path was changed, so it is treated as a new resource during import. "
+"Check operationId, method and path, and ensure that resource names and their normalized forms are unique."
 
 #: apigateway/biz/openapi/validate.py:214
 #, python-brace-format
