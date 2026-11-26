@@ -24,7 +24,7 @@
     <BkDropdown
       :popover-options="popoverOptions"
       :disabled="queryHistory.length === 0"
-      style="width: 100%;"
+      class="w-full"
     >
       <BkInput
         v-model="localValue"
@@ -85,7 +85,7 @@ const popoverOptions = {
   placement: 'bottom-start',
 };
 
-const searchInputRef = ref(null);
+const searchInputRef = useTemplateRef('searchInputRef');
 const localValue = ref('');
 const localPlaceholder = ref('');
 localPlaceholder.value = placeholder || t('请输入查询语句');

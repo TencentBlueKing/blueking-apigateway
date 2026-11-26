@@ -15,9 +15,12 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from __future__ import annotations
+
 import json
+import re
 from http import HTTPStatus
-from typing import Collection
+from typing import TYPE_CHECKING, Collection
 
 from django.conf import settings
 from opentelemetry.instrumentation import dbapi  # type: ignore
@@ -27,11 +30,42 @@ from opentelemetry.instrumentation.logging import LoggingInstrumentor  # type: i
 from opentelemetry.instrumentation.requests import RequestsInstrumentor  # type: ignore
 from opentelemetry.trace import Span, Status, StatusCode, format_trace_id  # type: ignore
 
+if TYPE_CHECKING:
+    from requests import PreparedRequest, Response
 
-def requests_callback(span: Span, response):
-    """
-    处理蓝鲸标准协议响应
-    """
+
+def _get_result_code(value) -> int | str:
+    # Only export numeric business codes within OpenTelemetry's signed int64 range.
+    if isinstance(value, str) and re.fullmatch(r"[+-]?[0-9]{1,19}", value):
+        value = int(value)
+    if type(value) is int and -(2**63) <= value < 2**63:
+        return value
+    return "[invalid]"
+
+
+def _set_request_id(span: Span, value) -> bool:
+    # Request IDs are opaque identifiers, never arbitrary response text or objects.
+    if isinstance(value, str) and re.fullmatch(r"[a-zA-Z0-9_.:-]{1,128}", value):
+        span.set_attribute("request_id", value)
+        return True
+    return False
+
+
+def requests_callback(span: Span, prepared_request: PreparedRequest, response: Response):
+    """处理蓝鲸标准协议响应，限制并脱敏业务元数据。"""
+    if not span.is_recording():
+        return
+
+    # New ESB and API Gateway use x-bkapi-request-id; IAM backend uses x-request-id.
+    has_request_id = _set_request_id(span, response.headers.get("x-bkapi-request-id")) or _set_request_id(
+        span, response.headers.get("x-request-id")
+    )
+
+    # Session.send has read non-streaming bodies before this hook. Never consume
+    # an unread stream solely for tracing; header request IDs are still available.
+    if not getattr(response, "_content_consumed", False):
+        return
+
     try:
         json_result = response.json()
     except Exception:  # pylint: disable=broad-except
@@ -44,7 +78,7 @@ def requests_callback(span: Span, response):
     # {
     #     "message": "",
     #     "code": "00",
-    #     "data": ,
+    #     "data": {},
     #     "result": true
     # }
     # iam backend
@@ -54,36 +88,25 @@ def requests_callback(span: Span, response):
     #     "data": {}
     # }
 
-    # NOTE: esb got a result, but apigateway  /iam backend / search-engine got not result
-    # only 200 will do those check and set
+    # NOTE: ESB responses include result; API Gateway, IAM backend and
+    # search-engine responses may omit it.
+    # Legacy ESB uses "00"; BK Monitor uses 200 with a true result.
+    # Leave HTTP error statuses set by the upstream instrumentation intact.
     if response.status_code == HTTPStatus.OK.value:
-        code = json_result.get("code", 0)
-        try:
-            code = int(code)
-        except Exception:  # pylint: disable=broad-except
-            pass
+        code = _get_result_code(json_result.get("code", 0))
         span.set_attribute("result_code", code)
-        if code in [0, "0", "00"]:
-            span.set_status(Status(StatusCode.OK))
-        else:
-            span.set_status(Status(StatusCode.ERROR))
+        success = code == 0 or (code == HTTPStatus.OK.value and bool(json_result.get("result")))
+        span.set_status(Status(StatusCode.OK if success else StatusCode.ERROR))
 
-    span.set_attribute("result_message", json_result.get("message", ""))
+    # Free-form messages and nested errors can contain credentials even without
+    # sensitive key names. Keep only their presence, with a fixed-size mask.
+    span.set_attribute("result_message", "[redacted]" if json_result.get("message") else "")
+    if json_result.get("errors"):
+        span.set_attribute("result_errors", "[redacted]")
 
-    errors = str(json_result.get("errors", ""))
-    if errors:
-        span.set_attribute("result_errors", errors)
-
-    request_id = (
-        # new esb and apigateway
-        response.headers.get("x-bkapi-request-id")
-        # iam backend
-        or response.headers.get("x-request-id")
-        # old esb
-        or json_result.get("request_id", "")
-    )
-    if request_id:
-        span.set_attribute("request_id", request_id)
+    if not has_request_id:
+        # Old ESB includes request_id in the JSON response body.
+        _set_request_id(span, json_result.get("request_id"))
 
 
 def django_request_hook(span, request):
@@ -142,7 +165,7 @@ class BKAppInstrumentor(BaseInstrumentor):
         LoggingInstrumentor().instrument()
         # print("otel instructment: logging")
 
-        RequestsInstrumentor().instrument(span_callback=requests_callback)
+        RequestsInstrumentor().instrument(response_hook=requests_callback)
         # print("otel instructment: requests")
 
         DjangoInstrumentor().instrument(request_hook=django_request_hook, response_hook=django_response_hook)

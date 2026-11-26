@@ -268,20 +268,17 @@
                 :ref="makeSetEnvContainerRef(item.id)"
                 class="env flex-1 of2"
               >
-                <div
-                  class="flex"
-                  :style="{ 'flex-wrap': 'nowrap' }"
-                >
+                <div class="flex flex-nowrap">
                   <span
                     v-for="(envItem, index) in item.stages"
                     :key="envItem.id"
                     :ref="makeSetEnvTagRef(item.id, index)"
+                    class="shrink-0"
                     :style="{
                       display:
                         index < (visibleTagCountMap[item.id] ?? DEFAULT_VISIBLE)
                           ? 'inline-block'
                           : 'none',
-                      'flex-shrink': '0',
                     }"
                   >
                     <BkTag
@@ -525,7 +522,7 @@ let resizeTimer: number | null = null;
 // 列表容器：观测其宽度变化。
 // 拖动窗口高度时滚动条出现/消失会改变可用宽度，window.resize 之后布局可能尚未稳定，
 // 用 ResizeObserver 直接观测容器宽度最可靠
-const tableListRef = ref<HTMLElement | null>(null);
+const tableListRef = useTemplateRef<HTMLElement>('tableListRef');
 let envResizeObserver: ResizeObserver | null = null;
 let lastObservedWidth = 0;
 

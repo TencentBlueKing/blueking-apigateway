@@ -46,6 +46,42 @@ class TestResourceHandler:
         ResourceHandler().save_resource_labels(fake_gateway, fake_resource, [label_2.id])
         assert ResourceLabel.objects.filter(resource=fake_resource).count() == 1
 
+    @pytest.mark.parametrize("label_kind", ["foreign", "mixed", "missing", "local", "empty"])
+    def test_batch_update_resource_labels_scopes_resources_and_labels(self, fake_resource, fake_resource1, label_kind):
+        gateway = fake_resource.gateway
+        old_label = G(APILabel, gateway=gateway)
+        local_label = G(APILabel, gateway=gateway)
+        foreign_resource = G(Resource)
+        foreign_label = G(APILabel, gateway=foreign_resource.gateway)
+        G(ResourceLabel, resource=foreign_resource, api_label=foreign_label)
+        foreign_labels_before = list(ResourceLabel.objects.filter(resource=foreign_resource).values())
+        invalid_label_id = foreign_label.id
+        if label_kind == "missing":
+            missing_label = G(APILabel, gateway=gateway)
+            invalid_label_id = missing_label.id
+            missing_label.delete()
+        for resource in [fake_resource, fake_resource1]:
+            G(ResourceLabel, resource=resource, api_label=old_label)
+        label_ids = {
+            "foreign": [invalid_label_id],
+            "mixed": [local_label.id, invalid_label_id],
+            "missing": [invalid_label_id],
+            "local": [local_label.id],
+            "empty": [],
+        }[label_kind]
+
+        ResourceHandler.batch_update_resource_labels(
+            gateway, [fake_resource.id, fake_resource1.id, foreign_resource.id], label_ids
+        )
+
+        expected_labels = {local_label.id} if label_kind in {"mixed", "local"} else set()
+        for resource in [fake_resource, fake_resource1]:
+            assert (
+                set(ResourceLabel.objects.filter(resource=resource).values_list("api_label_id", flat=True))
+                == expected_labels
+            )
+        assert list(ResourceLabel.objects.filter(resource=foreign_resource).values()) == foreign_labels_before
+
     def test_get_default_auth_config(self):
         assert ResourceHandler.get_default_auth_config() == {
             "skip_auth_verification": False,

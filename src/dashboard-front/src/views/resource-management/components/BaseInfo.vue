@@ -116,7 +116,7 @@ const gatewayStore = useGateway();
 const gatewayId = useRouteParams('id', 0, { transform: Number });
 const queryKind = useRouteQuery('kind');
 
-const formRef = ref(null);
+const formRef = useTemplateRef('formRef');
 const formData = ref({
   kind: queryKind.value,
   name: '',

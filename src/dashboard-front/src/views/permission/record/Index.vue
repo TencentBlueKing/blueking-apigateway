@@ -57,7 +57,7 @@
             v-model="dateValue"
             class="w-282px"
             :placeholder="t('选择日期时间范围')"
-            :type="'datetimerange'"
+            type="datetimerange"
             use-shortcut-text
             :shortcuts="shortcutsRange"
             :shortcut-selected-index="shortcutSelectedIndex"

@@ -360,9 +360,9 @@ const isShow = ref(false);
 const versionList = ref<VersionOption[]>([]);
 const versionListLoading = ref(false);
 const diffLoading = ref(false);
-const formRef = ref();
-const logDetailsRef = ref();
-const selectVersionRef = ref();
+const formRef = useTemplateRef('formRef');
+const logDetailsRef = useTemplateRef('logDetailsRef');
+const selectVersionRef = useTemplateRef('selectVersionRef');
 const isRollback = ref(false);
 const isConfirmDialogVisible = ref(false);
 // 提交数据
@@ -565,7 +565,7 @@ const handlePublish = async () => {
     publishId.value = res?.id;
     isShow.value = false;
     isConfirmDialogVisible.value = false;
-    logDetailsRef.value.showSideslider();
+    logDetailsRef.value?.showSideslider();
     emit('closed-on-publishing');
   }
   catch (e: any) {
@@ -837,6 +837,7 @@ defineExpose({ showReleaseSideslider });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的消息提示与下拉弹层样式 -->
 <style lang="scss">
 .customize-error-message-cls .bk-message-content .overview .tools {
 

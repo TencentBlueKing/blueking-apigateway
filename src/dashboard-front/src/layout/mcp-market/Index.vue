@@ -259,9 +259,9 @@ const CARD_HEIGHT = 238;
 const CARD_GAP = 16;
 const CARDS_PER_ROW = 3;
 
-const bannerRef = ref<HTMLImageElement | null>(null);
-const mcpCategorizeRef = ref<HTMLDivElement | null>(null);
-const mcpMarketListRef = ref<HTMLDivElement | null>(null);
+const bannerRef = useTemplateRef<HTMLImageElement>('bannerRef');
+const mcpCategorizeRef = useTemplateRef<HTMLDivElement>('mcpCategorizeRef');
+const mcpMarketListRef = useTemplateRef<HTMLDivElement>('mcpMarketListRef');
 const isLoading = ref(false);
 const bannerLoaded = ref(false);
 // banner 渲染高度（随图片加载/关闭/窗口缩放变化）
@@ -275,7 +275,7 @@ const isBannerLoadedInit = ref(false);
 // 标记是否正在切换分类（用于冻结计数显示）
 const isSwitchingCategory = ref(false);
 // 触底触发器元素，重置分页后需要按真实位置重新校准就绪状态
-const bottomTriggerRef = ref<HTMLDivElement | null>(null);
+const bottomTriggerRef = useTemplateRef<HTMLDivElement>('bottomTriggerRef');
 // 触底触发器是否已就绪：只有触发器离开过视口，再次进入视口才认为是用户滚动到底，
 // 用于忽略重置分页后因列表高度塌陷而补发的触底回调
 const isBottomTriggerArmed = ref(true);
@@ -709,7 +709,6 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   handleResize?.cancel();
-  bannerRef.value = null;
 });
 </script>
 

@@ -357,7 +357,13 @@ class PluginConfigRetrieveUpdateDestroyApi(
         return input_yaml != current_yaml or input_data["type_id"].id != instance.type.id
 
     def get_queryset(self):
-        return PluginConfig.objects.prefetch_related("type").filter(gateway=self.request.gateway)
+        return PluginConfig.objects.prefetch_related("type").filter(
+            gateway=self.request.gateway,
+            type__code=self.kwargs["code"],
+            pluginbinding__gateway=self.request.gateway,
+            pluginbinding__scope_type=self.kwargs["scope_type"],
+            pluginbinding__scope_id=self.kwargs["scope_id"],
+        )
 
     def retrieve(self, request, *args, **kwargs):
         self.validate_scope()

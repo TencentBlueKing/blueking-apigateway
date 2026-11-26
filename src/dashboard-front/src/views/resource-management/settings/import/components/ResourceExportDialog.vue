@@ -110,7 +110,7 @@ const config: IExportDialog = reactive({
   docType: 'resource',
 });
 
-const formRef = ref();
+const formRef = useTemplateRef('formRef');
 const rules = {
   file_type: [
     {

@@ -40,7 +40,7 @@
             :clearable="false"
             filterable
             :input-search="false"
-            style="width: 150px;"
+            class="w-150px"
             @change="handleSearchChange()"
           >
             <BkOption
@@ -57,7 +57,7 @@
             :list="resourceList"
             :need-prefix="false"
             :placeholder="t('请输入资源名称或资源URL链接')"
-            style="min-width: 300px;"
+            class="min-w-300px"
             @change="handleSearchChange()"
           />
         </BkFormItem>
@@ -65,7 +65,7 @@
           <BkSelect
             v-model="searchParams.bk_app_code"
             filterable
-            style="min-width: 300px;"
+            class="min-w-300px"
             @change="handleSearchChange()"
           >
             <BkOption
@@ -221,8 +221,8 @@ const callerOptions = ref<any>([]);
 const chartData = ref<Record<string, any>>({});
 const downloading = ref(false);
 const chartLoading = ref<Record<string, boolean>>({});
-const requestsTotalRef = ref();
-const requestsFailedTotalRef = ref();
+const requestsTotalRef = useTemplateRef('requestsTotalRef');
+const requestsFailedTotalRef = useTemplateRef('requestsFailedTotalRef');
 
 const metricsList = ref<SummaryMetrics[]>([
   'requests_total', // 请求总数

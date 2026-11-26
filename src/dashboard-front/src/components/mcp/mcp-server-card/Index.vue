@@ -41,7 +41,7 @@
               class="color-#313238 text-16px font-700 break-all mcp-card-title"
               :max-lines="2"
               :font-size="16"
-              :line-height="'24px'"
+              line-height="24px"
               :show-expand-icon="false"
             >
               <template #description>
@@ -199,7 +199,7 @@
         :show-expand-icon="false"
         :max-lines="1"
         :font-size="12"
-        :line-height="'20px'"
+        line-height="20px"
       >
         <template #description>
           {{ server.name }}
@@ -247,7 +247,7 @@
           v-if="server?.description"
           class="color-#4d4f56 text-12px lh-20px break-all"
           :show-expand-icon="false"
-          :line-height="'20px'"
+          line-height="20px"
           :font-size="12"
         >
           <template #description>

@@ -81,7 +81,7 @@ const compMap: Record<string, Component> = {
   modelProxy: ModelProxy,
 };
 
-const childCompRef = ref<ChildCompInstance | null>(null);
+const childCompRef = useTemplateRef<ChildCompInstance>('childCompRef');
 const submitLoading = ref(false);
 const hasNoRequestParams = ref(false);
 const resourceId = ref(0);
@@ -273,6 +273,7 @@ onMounted(async () => {
 });
 </script>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 引入外部表单页共享样式 Index.scss -->
 <style lang="scss">
 @use "./Index.scss" as *;
 </style>

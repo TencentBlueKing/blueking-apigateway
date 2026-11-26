@@ -96,7 +96,7 @@ const {
 
 const emit = defineEmits<IEmits>();
 
-const textareaRef = ref();
+const textareaRef = useTemplateRef('textareaRef');
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');

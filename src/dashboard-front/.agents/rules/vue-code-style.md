@@ -90,7 +90,7 @@ const loadingRef = shallowRef(false); // 非模板引用不需要 Ref 后缀
 - 仅对可选属性（`?`）赋默认值，不为必填属性提供默认值。
 - **关键避坑**：
   - 将解构出的 prop 传入 `watch()` 或 composable 时，**必须用 getter 包裹**（`watch(() => count, ...)`），直接传 `watch(count, ...)` 会丢失响应性；
-  - Vue 对可选 `boolean` prop 做布尔转换：父组件未传时运行时为 `false` 而非 `undefined`；如需区分“未设置 / 显式关闭”，显式声明默认值或使用 `boolean | null` / 联合类型。
+  - Vue 对可选 `boolean` prop 做布尔转换：只要运行时类型包含 `Boolean` 且未声明默认值，父组件未传时都会被转为 `false`（即便写成 `boolean | null` 等联合类型也一样）；如需区分“未设置 / 显式关闭”，必须显式声明默认值（如 `flag = undefined`，或 `flag?: boolean | null` 配合 `flag = null`），或改用非布尔的字面量联合类型（如 `'auto' | 'enabled' | 'disabled'`）。
 
 ### 3.2 双向绑定（`defineModel`）
 
@@ -152,26 +152,28 @@ watch(() => id, (nextId) => {
   - 需要同时接收事件载荷与额外参数时，使用箭头函数或 `$event`（如 `@change="(val) => handleToggle(row, val)"` 或 `@change="handleToggle(row, $event)"`）；
   - 原生 DOM 事件回调必须显式标注事件类型（如 `event: MouseEvent`、`event: Event`）。
 - **XSS 安全**：
-  - 禁止对不可信或用户输入的 HTML 直接使用 `v-html`，需使用本仓已注册的 `v-xss` 指令或经清洗后再渲染。
+  - 禁止对不可信或用户输入的 HTML 直接使用 `v-html`（`vue/no-v-html`），需使用本仓在 `src/main.ts` 注册的 `v-bk-xss-html` 指令（如 `<div v-bk-xss-html="content" />`）或经清洗后再渲染。
 
 ```vue
 <!-- 好的示例 -->
 <template>
-  <ul v-if="activeList.length">
-    <li
-      v-for="item in activeList"
-      :key="item.id"
-    >
-      <BkButton
-        theme="primary"
-        :disabled="isSubmitting"
-        text
-        @click="handleSelect(item.id)"
+  <div class="item-list">
+    <ul v-if="activeList.length">
+      <li
+        v-for="item in activeList"
+        :key="item.id"
       >
-        {{ item.name }}
-      </BkButton>
-    </li>
-  </ul>
+        <BkButton
+          theme="primary"
+          :disabled="isSubmitting"
+          text
+          @click="handleSelect(item.id)"
+        >
+          {{ item.name }}
+        </BkButton>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <!-- 错误示例 -->
@@ -216,12 +218,12 @@ watch(query, async (keyword) => {
 }, { immediate: true });
 ```
 
-## 6. 模板引用与命令式访问【推荐】
+## 6. 模板引用与命令式访问【必须/推荐】
 
 - 组件通信优先使用 Props / Emits，仅在聚焦、滚动、表单 `validate()`、表格 `fetchData()` 等命令式操作时使用模板引用，子组件通过 `defineExpose` 仅暴露必要 API。
-- Vue 3.5+ 优先使用 `useTemplateRef('refName')`：
+- Vue 3.5+ **必须**使用 `useTemplateRef('refName')`（由 ESLint `vue/prefer-use-template-ref` 强制检查）：
   - **泛型组件**（如 `AgTable`）必须显式传入实例接口：`useTemplateRef<IAgTableInstance<IRow>>('tableRef')`，不要用 `InstanceType<typeof GenericComp>`；
-  - **`v-for` 列表引用**不适用 `useTemplateRef`，仍使用 `ref<(HTMLElement | null)[]>([])`；
+  - **`v-for` 列表引用**不适用 `useTemplateRef`，保留 `ref<(HTMLElement | null)[]>([])` 并通过 `// eslint-disable-next-line vue/prefer-use-template-ref -- v-for 列表引用保留 ref` 显式豁免；
   - 模板引用在挂载前及 `v-if` 销毁后均为 `null`，访问必须使用可选链 `?.`。
 
 ## 7. `<script>` 代码组织与函数声明【必须/推荐】
@@ -267,6 +269,6 @@ function handleOpenDialog() {
 
 ## 9. 样式规范【推荐】
 
-- 优先使用 **UnoCSS 原子类**处理常规间距、排版与 Flex/Grid 布局（如 `flex items-center gap-16px mb-16px`）。
-- 组件局部样式写在 `<style lang="scss" scoped>` 中，选择器遵循 kebab-case（由 stylelint 检查）。
+- 优先使用 **UnoCSS 原子类**处理常规间距、排版与 Flex/Grid 布局（如 `flex items-center gap-16px mb-16px`），禁止在模板书写静态行内 `style`（`vue/no-static-inline-styles`）。
+- 组件局部样式**必须**写在 `<style lang="scss" scoped>` 中（`vue/block-lang`、`vue/enforce-style-attribute`）；确需覆盖挂载在 `body` 下的弹层/弹窗/消息全局样式时，须单独使用 `<style lang="scss">` 并加 `<!-- eslint-disable-next-line vue/enforce-style-attribute -- 原因说明 -->` 显式豁免。
 - scoped CSS 中优先使用**类选择器**而非元素选择器（减少属性选择器匹配开销）；克制使用 `:deep()`，避免滥用 `!important`。

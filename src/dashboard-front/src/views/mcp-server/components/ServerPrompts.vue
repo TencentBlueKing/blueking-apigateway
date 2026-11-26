@@ -155,7 +155,7 @@ const emit = defineEmits<{ 'update-count': [count: number] }>();
 const { t } = useI18n();
 const featureFlagStore = useFeatureFlag();
 
-const mcpPromptRef = ref<HTMLDivElement | null>(null);
+const mcpPromptRef = useTemplateRef<HTMLDivElement>('mcpPromptRef');
 const curPromptData = ref<IMCPServerPrompt>({} as IMCPServerPrompt);
 const promptCollapseMargin = ref('mt-16px');
 const promptDetailLoading = ref(false);

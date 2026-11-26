@@ -24,7 +24,7 @@
       :min="locale === 'en' ? 472 : 360"
       :border="false"
       collapsible
-      style="height: 100%;"
+      class="h-full"
     >
       <template #aside>
         <div class="resize-left-wrapper">
@@ -97,7 +97,7 @@ const toolList = shallowRef([
   {
     id: 2,
     name: t('MCP Server 调用链查询'),
-    desc: t('根据 request_id 或 x_request_id 查询请求调用链'),
+    desc: t('根据 X-Bkapi-Request-ID 查询请求调用链'),
     comp: 'queryTraceChain',
   },
   {

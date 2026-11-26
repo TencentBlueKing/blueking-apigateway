@@ -201,7 +201,7 @@ const getFormData = (config: Record<string, any>): IFormData => {
 };
 
 const formData = ref<IFormData>(getFormData(data));
-const formRef = ref<InstanceType<typeof Form>>();
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 // 已展示过应用 ID 校验结果的行，按行 id 记录，删除行导致下标变化后仍能对应
 const validatedRowIds = new Set<number>();
 

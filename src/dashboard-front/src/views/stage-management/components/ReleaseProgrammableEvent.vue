@@ -278,7 +278,7 @@ const historyVersion = ref('');
 // 操作类型
 const source = ref('');
 
-const editorRef = ref();
+const editorRef = useTemplateRef('editorRef');
 
 const apigwId = computed(() => +route.params?.id);
 

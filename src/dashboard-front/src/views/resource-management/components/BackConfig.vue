@@ -340,7 +340,7 @@ const gatewayStore = useGateway();
 const router = useRouter();
 
 const timeOutInputRef = ref<InstanceType<typeof Input> & { focus?: () => void }>();
-const backRef = ref();
+const backRef = useTemplateRef('backRef');
 const frontPath = ref('');
 const backConfigData = ref<any>({
   id: '',
@@ -376,7 +376,7 @@ const timeOutValue = ref('');
 const isShowPopConfirm = ref(false);
 const isTimeEmpty = ref(false);
 // const timeInputRef = ref(null);
-const addBackendServiceRef = ref<InstanceType <typeof AddBackendService>>();
+const addBackendServiceRef = useTemplateRef<InstanceType <typeof AddBackendService>>('addBackendServiceRef');
 const isServiceInit = ref(false);
 
 const rules = {
@@ -946,6 +946,7 @@ defineExpose({
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的超时配置与下拉扩展弹层样式 -->
 <style lang="scss">
 .back-config-timeout-wrapper {
   margin-bottom: 16px;

@@ -45,7 +45,7 @@ interface IProps { data: IFormModel }
 
 const { data } = defineProps<IProps>();
 
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 
 const form = ref<IFormModel>({
   uri: '',

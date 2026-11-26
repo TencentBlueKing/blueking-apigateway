@@ -129,7 +129,6 @@ import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { Message } from 'bkui-vue';
 
 interface IProps {
-  latest?: boolean
   currentSource?: any
   isDetail?: boolean
   showNewTips?: boolean
@@ -274,6 +273,7 @@ const handleCancelClick = () => {
 
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 供气泡提示与全局标题复用的渐变文字样式 -->
 <style lang="scss">
 .gradient-text-color {
   background-image: linear-gradient(#235DFA, #B881F0);

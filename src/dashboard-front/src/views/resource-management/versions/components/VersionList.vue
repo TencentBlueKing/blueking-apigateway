@@ -203,15 +203,15 @@ const exportParams = ref<IExportParams & { id?: number }>({
 
 // 当前操作的行
 const resourceVersionId = ref();
-const createSdkRef = ref();
-const resourceDetailRef = ref();
+const createSdkRef = useTemplateRef('createSdkRef');
+const resourceDetailRef = useTemplateRef('resourceDetailRef');
 
 // 该网关下的环境列表
 const stageList = ref<any>([]);
 // 选择发布的环境
 const stageData = ref();
 const versionData = ref();
-const releaseSidesliderRef = ref();
+const releaseSidesliderRef = useTemplateRef('releaseSidesliderRef');
 
 // 版本对比抽屉
 const diffSliderConf = reactive({
@@ -683,6 +683,7 @@ const refresh = () => {
 
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的导出与删除弹窗样式 -->
 <style lang="scss">
 .resource-version-export-dialog {
 

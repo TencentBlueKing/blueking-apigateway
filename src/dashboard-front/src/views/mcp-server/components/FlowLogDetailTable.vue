@@ -191,7 +191,7 @@ const { apiGatewayId } = defineProps<IProps>();
 const emit = defineEmits<IEmits>();
 
 const tableRef = useTemplateRef<IAgTableInstance<IFlowLogTableUIState>>('tableRef');
-const traceChainSliderRef = ref<InstanceType<typeof AgTraceChainSlider>>();
+const traceChainSliderRef = useTemplateRef<InstanceType<typeof AgTraceChainSlider>>('traceChainSliderRef');
 const tableData = ref<IFlowLogTableUIState[]>([]);
 const expandableConfig = ref({
   expandColumn: false,

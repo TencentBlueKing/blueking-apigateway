@@ -23,7 +23,7 @@
         v-model.trim="requestId"
         class="header-input"
         clearable
-        :placeholder="t('请输入 request_id 进行查询')"
+        :placeholder="t('请输入 X-Bkapi-Request-ID 进行查询')"
         @enter="getDetailData"
         @clear="handleClear"
       />

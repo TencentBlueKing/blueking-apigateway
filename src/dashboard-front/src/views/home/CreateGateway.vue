@@ -498,7 +498,7 @@ const featureFlagStore = useFeatureFlag();
 const envStore = useEnv();
 const gatewayStore = useGateway();
 
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 const formData = ref({
   ...toGatewayFormData(),
   maintainers: userStore.info.username ? [userStore.info.username] : [],

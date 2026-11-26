@@ -45,7 +45,7 @@
             <span class="m-l-4px m-r-4px">
               <AgIcon
                 name="arrows--right--line"
-                style="color: #699df4"
+                class="color-#699df4"
               />
             </span>
             <span>

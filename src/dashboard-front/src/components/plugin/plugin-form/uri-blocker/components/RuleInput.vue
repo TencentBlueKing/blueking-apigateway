@@ -60,6 +60,7 @@ const { blockRules = [] } = defineProps<IProps>();
 
 const { t } = useI18n();
 
+// eslint-disable-next-line vue/prefer-use-template-ref -- v-for 列表引用保留 ref
 const formRefs = ref();
 
 const localBlockRules = ref<{ key: string }[]>([]);
