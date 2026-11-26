@@ -111,10 +111,18 @@ class TestCheckSkillPackage:
             f"包里的 name {NAME} 与要更新的 Skill release-check 不一致"
         ]
 
-    def test_declaration_alias(self, gateway, data):
-        result = _check(gateway, build_skill_zip(data, declaration_text="a: &x 1\nb: *x\n"))
+    @pytest.mark.parametrize(
+        "text, message",
+        [
+            ("a: &x 1\nb: *x\n", "锚点和别名"),
+            ("changelog:\n  date: 2026-99-99\n", "YAML 解析失败"),
+            ("extra: " + "[" * 600 + "]" * 600 + "\n", "YAML 解析失败"),
+        ],
+    )
+    def test_declaration_yaml_error(self, gateway, data, text, message):
+        result = _check(gateway, build_skill_zip(data, declaration_text=text))
         assert result.errors[0].file == DECLARATION_FILE
-        assert "锚点和别名" in result.errors[0].message
+        assert message in result.errors[0].message
 
     def test_declaration_field_error(self, gateway, data):
         data["version"] = "1.0"

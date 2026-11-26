@@ -94,9 +94,11 @@ def delete_skill(metadata: SkillMetadata) -> None:
     """删除已归档的 Skill，config、版本、relation、标签中间表级联删除，标签本身保留；未归档时抛 FAILED_PRECONDITION
 
     current_version 是 PROTECT 外键，先清空再删 metadata，否则级联删除版本时被拦住。
+    状态以加锁后从数据库读到的为准，传入的实例可能已被并发恢复。
 
     例如：已归档、有 2 个版本 -> metadata 和 2 个版本都删除；使用中 -> FAILED_PRECONDITION「请先归档」
     """
+    metadata = SkillMetadata.objects.select_for_update().get(id=metadata.id)
     if metadata.status != SkillStatusEnum.ARCHIVED.value:
         raise error_codes.FAILED_PRECONDITION.format(
             _("Skill {name} 未归档，请先归档再删除").format(name=metadata.name), replace=True

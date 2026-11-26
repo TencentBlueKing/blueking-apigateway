@@ -62,7 +62,15 @@ class TestParseDeclaration:
 
     @pytest.mark.parametrize(
         "text, message",
-        [("a: &x [1, 2]\nb: *x\n", "锚点和别名"), ("- 1\n", "声明应为键值对"), ("name: [\n", "YAML 解析失败")],
+        [
+            ("a: &x [1, 2]\nb: *x\n", "锚点和别名"),
+            ("- 1\n", "声明应为键值对"),
+            ("name: [\n", "YAML 解析失败"),
+            ("date: 2026-99-99\n", "YAML 解析失败"),
+            ("date: 2026-02-30 10:00:00\n", "YAML 解析失败"),
+            ("a: " + "1" * 5000 + "\n", "YAML 解析失败"),
+            ("extra: " + "[" * 600 + "]" * 600 + "\n", "YAML 解析失败"),
+        ],
     )
     def test_load_yaml_errors_have_no_field(self, text, message):
         with pytest.raises(SkillDeclarationError) as exc_info:

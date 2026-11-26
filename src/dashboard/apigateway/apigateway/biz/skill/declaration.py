@@ -578,11 +578,12 @@ def normalize_tag_name(name: str) -> str:
 def load_declaration_yaml(text: str) -> Dict[str, Any]:
     """声明 YAML 文本 -> dict；不是合法 YAML、用了锚点或别名、顶层不是对象时抛 SkillDeclarationError，错误不对应字段
 
-    例如："name: demo" -> {"name": "demo"}；"a: &x 1\\nb: *x"、"- 1" -> SkillDeclarationError
+    例如："name: demo" -> {"name": "demo"}；"a: &x 1\\nb: *x"、"- 1"、"d: 2026-99-99"、嵌套过深 -> SkillDeclarationError
     """
     try:
         data = yaml.load(text, Loader=_NoAliasSafeLoader)  # noqa: S506
-    except yaml.YAMLError as err:
+    # 非法日期、超长整数在构造值时抛 ValueError，嵌套过深抛 RecursionError，都不是 YAMLError
+    except (yaml.YAMLError, ValueError, RecursionError) as err:
         message = _("YAML 解析失败：{error}").format(error=" ".join(str(err).split()))
         raise SkillDeclarationError([DeclarationFieldError((), message)]) from None
     if not isinstance(data, dict):

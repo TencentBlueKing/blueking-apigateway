@@ -64,6 +64,15 @@ class TestReadSkillPackage:
     def test_not_zip(self):
         assert _errors(io.BytesIO(b"not a zip")) == [(None, "不是合法的 zip 文件")]
 
+    def test_utf8_flag_with_invalid_file_name(self):
+        """中央目录设置 UTF-8 标志 0x800，文件名首字节为 0xFF"""
+        data = bytearray(_zip(_package()).getvalue())
+        offset = data.find(b"PK\x01\x02")
+        flags = struct.unpack_from("<H", data, offset + 8)[0]
+        struct.pack_into("<H", data, offset + 8, flags | 0x800)
+        data[offset + 46] = 0xFF
+        assert _errors(io.BytesIO(bytes(data))) == [(None, "不是合法的 zip 文件")]
+
     def test_empty(self):
         assert _errors(_zip({})) == [(None, "压缩包是空的")]
 

@@ -82,7 +82,8 @@ def read_skill_package(fileobj: IO[bytes]) -> SkillPackage:
     """
     try:
         archive = zipfile.ZipFile(fileobj)
-    except zipfile.BadZipFile, OSError, EOFError:
+    # 设置了 UTF-8 标志但文件名不是 UTF-8 时，读中央目录抛 UnicodeDecodeError
+    except zipfile.BadZipFile, OSError, EOFError, UnicodeDecodeError:
         raise SkillArchiveError([ValidationMessage(None, None, _("不是合法的 zip 文件"))]) from None
 
     with archive:

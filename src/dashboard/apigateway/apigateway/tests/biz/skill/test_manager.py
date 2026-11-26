@@ -113,6 +113,16 @@ class TestDeleteSkill:
         with pytest.raises(APIError, match="FAILED_PRECONDITION"):
             delete_skill(metadata)
 
+    def test_restored_after_read(self, metadata):
+        set_skill_status(metadata, SkillStatusEnum.ARCHIVED.value, operator="bob")
+        SkillMetadata.objects.filter(id=metadata.id).update(status=SkillStatusEnum.PUBLISHED.value)
+
+        with pytest.raises(APIError, match="FAILED_PRECONDITION"):
+            delete_skill(metadata)
+
+        assert _reload(metadata).current_version_id is not None
+        assert SkillVersion.objects.filter(metadata_id=metadata.id).count() == 2
+
     def test_delete(self, metadata):
         metadata_id = metadata.id
         tag_ids = list(metadata.tags.values_list("id", flat=True))
