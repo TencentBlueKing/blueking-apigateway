@@ -281,7 +281,6 @@ class ServiceConvertor(GatewayResourceConvertor):
             "bk-request-id": Plugin(),
             "bk-response-check": Plugin(),
             "bk-permission": Plugin(),
-            "bk-debug": Plugin(),
             "file-logger": Plugin(path="logs/access.log"),
             "bk-stage-context": Plugin(
                 bk_gateway_name=self.gateway_name,
@@ -291,6 +290,9 @@ class ServiceConvertor(GatewayResourceConvertor):
                 bk_api_auth=self._release_data.gateway_auth_config,
             ),
         }
+
+        if settings.GATEWAY_DEBUG_PLUGIN_ENABLED:
+            default_plugins["bk-debug"] = Plugin()
 
         if settings.GATEWAY_CONCURRENCY_LIMIT_ENABLED:
             default_plugins["bk-concurrency-limit"] = Plugin()
