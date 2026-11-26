@@ -16,9 +16,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import io
 import json
-import zipfile
 from datetime import datetime
 from unittest import mock
 from zoneinfo import ZoneInfo
@@ -40,13 +38,9 @@ from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionA
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
-from apigateway.apps.skill.constants import SkillStatusEnum
-from apigateway.apps.skill.models import SkillMetadata
 from apigateway.biz.released_resource import ReleasedResourceData
-from apigateway.common.tenant.constants import TenantModeEnum
 from apigateway.core.constants import GatewayKindEnum, GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, Stage
-from apigateway.tests.biz.skill.conftest import create_skill
 from apigateway.tests.utils.testing import get_response_json
 
 
@@ -2177,59 +2171,3 @@ def test_v2_open_does_not_import_shared_api_mcp_module():
     assert not any(
         getattr(obj, "__module__", "") == shared_api_mcp_module for obj in open_serializers.__dict__.values()
     )
-
-
-class TestSkillDownloadApi:
-    @pytest.fixture
-    def skill(self):
-        gateway = G(
-            Gateway,
-            name="demo",
-            status=GatewayStatusEnum.ACTIVE.value,
-            tenant_mode=TenantModeEnum.SINGLE.value,
-            tenant_id="other",
-        )
-        create_skill("release-check", gateway=gateway, version="1.0.0")
-        return create_skill("release-check", gateway=gateway, version="1.1.0")
-
-    def _download(self, request_view, view_name="openapi.v2.open.skill.download", **path_params):
-        return request_view(
-            method="GET", view_name=view_name, path_params={"skill_id": "g_demo_release-check", **path_params}
-        )
-
-    def test_download_current_version_of_other_tenant(self, request_view, skill):
-        resp = self._download(request_view)
-
-        assert resp.status_code == 200
-        assert resp["Content-Disposition"].endswith('filename="g_demo_release-check-1.1.0.zip"')
-        with zipfile.ZipFile(io.BytesIO(b"".join(resp.streaming_content))) as archive:
-            names = archive.namelist()
-        assert "release-check/SKILL.md" in names
-        assert "release-check/declaration.yaml" not in names
-        skill.refresh_from_db()
-        assert skill.download_count == 1
-
-    def test_download_version(self, request_view, skill):
-        resp = self._download(request_view, "openapi.v2.open.skill.version.download", version="1.0.0")
-
-        assert resp.status_code == 200
-        assert "g_demo_release-check-1.0.0.zip" in resp["Content-Disposition"]
-
-    def test_download_version_not_found(self, request_view, skill):
-        resp = self._download(request_view, "openapi.v2.open.skill.version.download", version="9.9.9")
-
-        assert resp.status_code == 404
-
-    def test_download_archived(self, request_view, skill):
-        SkillMetadata.objects.filter(id=skill.id).update(status=SkillStatusEnum.ARCHIVED.value)
-
-        resp = self._download(request_view)
-
-        assert resp.status_code == 404
-        skill.refresh_from_db()
-        assert skill.download_count == 0
-
-    def test_download_inactive_gateway(self, request_view, skill):
-        Gateway.objects.filter(id=skill.gateway_id).update(status=GatewayStatusEnum.INACTIVE.value)
-
-        assert self._download(request_view).status_code == 404

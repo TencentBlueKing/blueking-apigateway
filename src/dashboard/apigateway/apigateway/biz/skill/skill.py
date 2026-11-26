@@ -15,7 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-"""Skill 读侧：Skill 市场、网关 Skill 和免登录下载的查询、统计和下载计数"""
+"""Skill 读侧：Skill 市场、网关 Skill 和免登录下载（web 接口，给 npx 临时使用）的查询、统计和下载计数"""
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -280,8 +280,8 @@ class SkillHandler:
         return metadata, SkillHandler.get_version(metadata, version)
 
     @staticmethod
-    def get_open_skill(skill_id: str) -> SkillMetadata:
-        """免登录下载按对外 ID 取 Skill：可见范围同 Skill 市场，但没有登录用户、不按租户过滤
+    def get_public_skill(skill_id: str) -> SkillMetadata:
+        """免登录下载（web 接口，给 npx 临时使用）按对外 ID 取 Skill：可见范围同 Skill 市场，但没有登录用户、不按租户过滤
 
         例如：其他租户网关下使用中的网关 Skill 也能取到；已归档的抛 NOT_FOUND
         """
@@ -381,12 +381,11 @@ class SkillHandler:
 
     @staticmethod
     def build_detail_context(metadata: SkillMetadata) -> Dict[str, Any]:
-        """详情序列化需要的上下文：线上版本调用的接口、环境、版本数、免登录下载地址
+        """详情序列化需要的上下文：线上版本调用的接口、环境、版本数
 
         例如：网关 Skill 线上版本调用 demo 的 prod 环境两个接口 ->
-            {"apis": [{"gateway_name": "demo", "resource_name": "a"}, ...], "stage": "prod", "version_count": 2,
-             "download_url": "https://.../api/v2/open/skills/g_demo_x/download/"}
-        内置 Skill 的 stage 为 None；已归档时 download_url 为 None
+            {"apis": [{"gateway_name": "demo", "resource_name": "a"}, ...], "stage": "prod", "version_count": 2}
+        内置 Skill 的 stage 为 None
         """
         version = metadata.current_version
         apis = []
@@ -404,20 +403,24 @@ class SkillHandler:
             "apis": apis,
             "stage": stage,
             "version_count": SkillVersion.objects.filter(metadata=metadata).count(),
-            "download_url": SkillHandler.build_download_url(metadata),
         }
 
     @staticmethod
-    def build_download_url(metadata: SkillMetadata) -> Optional[str]:
-        """线上版本的免登录下载地址（bk-apigateway 网关 prod 环境的开放接口）；不是使用中、BK_API_URL_TMPL 没配时为 None
+    def build_gateway_download_url(metadata: SkillMetadata) -> str:
+        """网关 Skill 管理页的下载地址（需登录，包内含 declaration.yaml）"""
+        return f"{settings.DASHBOARD_URL}/gateways/{metadata.gateway_id}/skills/{metadata.code}/download/"
 
-        例如：BK_API_URL_TMPL 为 "https://bkapi.example.com/api/{api_name}" ->
-            "https://bkapi.example.com/api/bk-apigateway/prod/api/v2/open/skills/g_demo_release-check/download/"
-        """
-        if metadata.status != SkillStatusEnum.PUBLISHED.value or not settings.BK_API_URL_TMPL:
+    @staticmethod
+    def build_market_download_url(metadata: SkillMetadata) -> str:
+        """Skill 市场的下载地址（需登录）"""
+        return f"{settings.DASHBOARD_URL}/skill-marketplace/skills/{metadata.code}/download/"
+
+    @staticmethod
+    def build_public_download_url(metadata: SkillMetadata) -> Optional[str]:
+        """免登录下载地址（给 npx 临时使用）；不是使用中时为 None"""
+        if metadata.status != SkillStatusEnum.PUBLISHED.value:
             return None
-        bk_apigateway_url = settings.BK_API_URL_TMPL.format(api_name="bk-apigateway")
-        return f"{bk_apigateway_url}/prod/api/v2/open/skills/{metadata.code}/download/"
+        return f"{settings.DASHBOARD_URL}/skill-marketplace/skills/{metadata.code}/public-download/"
 
     @staticmethod
     def increase_download_count(metadata_id: int) -> None:

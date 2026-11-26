@@ -186,3 +186,23 @@ class SkillMarketplaceSkillDownloadApi(generics.RetrieveAPIView):
         content = build_skill_package_zip(metadata, version)
         SkillHandler.increase_download_count(metadata.id)
         return DownloadableResponse(io.BytesIO(content), filename=get_skill_package_filename(metadata, version))
+
+
+@method_decorator(
+    name="get",
+    decorator=extend_schema(
+        description="免登录下载 Skill 线上版本（给 npx 临时使用）",
+        responses={status.HTTP_200_OK: OpenApiResponse(description="zip 文件")},
+        tags=["WebAPI.SkillMarketplace"],
+    ),
+)
+class SkillMarketplaceSkillPublicDownloadApi(generics.RetrieveAPIView):
+    authentication_classes = []  # type: ignore
+    permission_classes = []  # type: ignore
+
+    def retrieve(self, request, *args, **kwargs):
+        metadata = SkillHandler.get_public_skill(kwargs["skill_id"])
+        version = SkillHandler.get_version(metadata)
+        content = build_skill_package_zip(metadata, version)
+        SkillHandler.increase_download_count(metadata.id)
+        return DownloadableResponse(io.BytesIO(content), filename=get_skill_package_filename(metadata, version))

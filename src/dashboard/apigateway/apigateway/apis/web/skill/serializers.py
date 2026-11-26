@@ -27,6 +27,7 @@ from apigateway.apps.skill.constants import (
 )
 from apigateway.biz.skill import (
     SKILL_PACKAGE_MAX_SIZE,
+    SkillHandler,
     check_skill_description,
     check_skill_display_name,
     check_skill_tags,
@@ -272,7 +273,10 @@ class SkillRetrieveOutputSLZ(SkillBaseOutputSLZ):
     stage = serializers.SerializerMethodField(help_text="调用的环境")
     apis = serializers.SerializerMethodField(help_text="线上版本调用的接口")
     version_count = serializers.SerializerMethodField(help_text="版本数")
-    download_url = serializers.SerializerMethodField(help_text="免登录下载地址；已归档时为 null")
+    download_url = serializers.SerializerMethodField(help_text="页面下载地址，需登录")
+    public_download_url = serializers.SerializerMethodField(
+        help_text="免登录下载地址，给 npx 临时使用；已归档时为 null"
+    )
     created_by = serializers.CharField(read_only=True, help_text="第一次上传的人")
     created_time = serializers.DateTimeField(read_only=True, help_text="第一次上传的时间")
 
@@ -288,8 +292,11 @@ class SkillRetrieveOutputSLZ(SkillBaseOutputSLZ):
     def get_version_count(self, obj) -> int:
         return self.context["version_count"]
 
-    def get_download_url(self, obj) -> Optional[str]:
-        return self.context["download_url"]
+    def get_download_url(self, obj) -> str:
+        return SkillHandler.build_gateway_download_url(obj)
+
+    def get_public_download_url(self, obj) -> Optional[str]:
+        return SkillHandler.build_public_download_url(obj)
 
 
 class SkillCurrentVersionUpdateInputSLZ(serializers.Serializer):

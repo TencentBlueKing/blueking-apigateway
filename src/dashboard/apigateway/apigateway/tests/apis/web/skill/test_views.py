@@ -311,7 +311,7 @@ class TestSkillPackageCheckApi:
 
 class TestSkillRetrieveUpdateDestroyApi:
     def test_retrieve(self, settings, request_view, gateway, skill):
-        settings.BK_API_URL_TMPL = "https://bkapi.example.com/api/{api_name}"
+        settings.DASHBOARD_URL = "https://apigw.example.com/backend"
 
         resp = request_view("GET", "skill.retrieve_update_destroy", path_params=_path(gateway), gateway=gateway)
 
@@ -322,8 +322,23 @@ class TestSkillRetrieveUpdateDestroyApi:
         assert result["stage"] == "prod"
         assert result["version_count"] == 1
         assert result["download_url"] == (
-            f"https://bkapi.example.com/api/bk-apigateway/prod/api/v2/open/skills/{SKILL_ID}/download/"
+            f"https://apigw.example.com/backend/gateways/{gateway.id}/skills/{SKILL_ID}/download/"
         )
+        assert result["public_download_url"] == (
+            f"https://apigw.example.com/backend/skill-marketplace/skills/{SKILL_ID}/public-download/"
+        )
+
+    def test_retrieve_archived(self, settings, request_view, gateway, skill):
+        settings.DASHBOARD_URL = "https://apigw.example.com/backend"
+        SkillMetadata.objects.filter(id=skill.id).update(status=SkillStatusEnum.ARCHIVED.value)
+
+        resp = request_view("GET", "skill.retrieve_update_destroy", path_params=_path(gateway), gateway=gateway)
+
+        result = resp.json()["data"]
+        assert result["download_url"] == (
+            f"https://apigw.example.com/backend/gateways/{gateway.id}/skills/{SKILL_ID}/download/"
+        )
+        assert result["public_download_url"] is None
 
     def test_retrieve_other_gateway(self, request_view, gateway):
         other = G(Gateway, name="other", status=GatewayStatusEnum.ACTIVE.value)

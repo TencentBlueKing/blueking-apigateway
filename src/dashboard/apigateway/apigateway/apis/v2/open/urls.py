@@ -158,22 +158,6 @@ urlpatterns = [
             ]
         ),
     ),
-    # 免登录下载 Skill，不做应用认证、用户认证和资源权限校验
-    path(
-        "skills/<str:skill_id>/",
-        include(
-            [
-                # GET /api/v2/open/skills/{skill_id}/download/
-                path("download/", views.SkillDownloadApi.as_view(), name="openapi.v2.open.skill.download"),
-                # GET /api/v2/open/skills/{skill_id}/versions/{version}/download/
-                path(
-                    "versions/<str:version>/download/",
-                    views.SkillDownloadApi.as_view(),
-                    name="openapi.v2.open.skill.version.download",
-                ),
-            ]
-        ),
-    ),
     # GET /api/v2/open/app/permissions/
     path(
         "app/permissions/",

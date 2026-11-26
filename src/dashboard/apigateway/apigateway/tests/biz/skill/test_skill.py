@@ -200,11 +200,11 @@ class TestGetSkill:
                 SkillHandler.get_market_skill(skill_id, "a")
             assert err.value.code.code_name == "NOT_FOUND"
 
-    def test_open_ignores_tenant(self):
+    def test_public_ignores_tenant(self):
         demo = _gateway("demo", tenant_id="a")
         gateway_skill = create_skill("release-check", gateway=demo)
 
-        assert SkillHandler.get_open_skill("g_demo_release-check") == gateway_skill
+        assert SkillHandler.get_public_skill("g_demo_release-check") == gateway_skill
 
     def test_gateway(self):
         demo = _gateway("demo")
@@ -282,8 +282,7 @@ class TestContext:
             for value in context["related_gateways"].values()
         )
 
-    def test_build_detail_context(self, settings):
-        settings.BK_API_URL_TMPL = "https://bkapi.example.com/api/{api_name}"
+    def test_build_detail_context(self):
         metadata = create_skill("release-check", gateway=_gateway("demo"))
 
         context = SkillHandler.build_detail_context(metadata)
@@ -291,18 +290,24 @@ class TestContext:
         assert context["stage"] == "prod"
         assert context["version_count"] == 1
         assert {"gateway_name": "jobv3-cloud", "resource_name": "execute_job_plan"} in context["apis"]
-        assert context["download_url"] == (
-            "https://bkapi.example.com/api/bk-apigateway/prod/api/v2/open/skills/g_demo_release-check/download/"
+
+    def test_build_download_urls(self, settings):
+        settings.DASHBOARD_URL = "https://apigw.example.com/backend"
+        gateway = _gateway("demo")
+        metadata = create_skill("release-check", gateway=gateway)
+
+        assert SkillHandler.build_gateway_download_url(metadata) == (
+            f"https://apigw.example.com/backend/gateways/{gateway.id}/skills/g_demo_release-check/download/"
+        )
+        assert SkillHandler.build_market_download_url(metadata) == (
+            "https://apigw.example.com/backend/skill-marketplace/skills/g_demo_release-check/download/"
+        )
+        assert SkillHandler.build_public_download_url(metadata) == (
+            "https://apigw.example.com/backend/skill-marketplace/skills/g_demo_release-check/public-download/"
         )
 
         metadata.status = SkillStatusEnum.ARCHIVED.value
-        assert SkillHandler.build_detail_context(metadata)["download_url"] is None
-
-    def test_download_url_without_url_tmpl(self, settings):
-        settings.BK_API_URL_TMPL = ""
-        metadata = create_skill("release-check", gateway=_gateway("demo"))
-
-        assert SkillHandler.build_download_url(metadata) is None
+        assert SkillHandler.build_public_download_url(metadata) is None
 
     def test_platform_stage_is_none(self):
         assert SkillHandler.build_detail_context(create_skill("platform-skill"))["stage"] is None

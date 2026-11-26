@@ -22,6 +22,7 @@ from .views import (
     SkillMarketplaceSkillDownloadApi,
     SkillMarketplaceSkillFileListApi,
     SkillMarketplaceSkillListApi,
+    SkillMarketplaceSkillPublicDownloadApi,
     SkillMarketplaceSkillRetrieveApi,
     SkillMarketplaceSkillVersionListApi,
     SkillMarketplaceTagListApi,
@@ -68,6 +69,12 @@ urlpatterns = [
                                 "versions/<str:version>/download/",
                                 SkillMarketplaceSkillDownloadApi.as_view(),
                                 name="skill_marketplace.skill.version.download",
+                            ),
+                            # 免登录下载，给 npx 临时适配；npx 下载切走后删除
+                            path(
+                                "public-download/",
+                                SkillMarketplaceSkillPublicDownloadApi.as_view(),
+                                name="skill_marketplace.skill.public_download",
                             ),
                         ]
                     ),

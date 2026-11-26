@@ -20,6 +20,7 @@ import zipfile
 
 import pytest
 from ddf import G
+from django.contrib.auth.models import AnonymousUser
 from django.utils import translation
 
 from apigateway.apps.skill.constants import SkillStatusEnum
@@ -56,8 +57,7 @@ def other_tenant_gateway():
 
 
 @pytest.fixture
-def skills(settings, demo_gateway, other_tenant_gateway):
-    settings.BK_API_URL_TMPL = "https://bkapi.example.com/api/{api_name}"
+def skills(demo_gateway, other_tenant_gateway):
     create_skill("platform-skill", tags=["日志"])
     create_skill("release-check", gateway=demo_gateway, version="1.1.0")
     gateway_skill = create_skill(
@@ -127,7 +127,8 @@ class TestSkillMarketplaceTagListApi:
 
 
 class TestSkillMarketplaceSkillRetrieveApi:
-    def test_retrieve(self, request_view, skills):
+    def test_retrieve(self, settings, request_view, skills):
+        settings.DASHBOARD_URL = "https://apigw.example.com/backend"
         resp = request_view("GET", "skill_marketplace.skill.retrieve", path_params=_skill_path())
         data = resp.json()["data"]
 
@@ -139,7 +140,10 @@ class TestSkillMarketplaceSkillRetrieveApi:
         assert data["stage"] == "prod"
         assert data["version_count"] == 2
         assert data["download_url"] == (
-            "https://bkapi.example.com/api/bk-apigateway/prod/api/v2/open/skills/g_demo_release-check/download/"
+            "https://apigw.example.com/backend/skill-marketplace/skills/g_demo_release-check/download/"
+        )
+        assert data["public_download_url"] == (
+            "https://apigw.example.com/backend/skill-marketplace/skills/g_demo_release-check/public-download/"
         )
         assert "created_by" not in data
         assert "updated_time" not in data
@@ -221,4 +225,37 @@ class TestSkillMarketplaceSkillDownloadApi:
             "GET", "skill_marketplace.skill.version.download", path_params=_skill_path(version="9.9.9")
         )
         assert resp.status_code == 404
+        assert SkillMetadata.objects.get(id=skills.id).download_count == 0
+
+
+class TestSkillMarketplaceSkillPublicDownloadApi:
+    def _download(self, request_view, skill_id="g_demo_release-check"):
+        return request_view(
+            "GET",
+            "skill_marketplace.skill.public_download",
+            path_params=_skill_path(skill_id),
+            user=AnonymousUser(),
+        )
+
+    def test_download_without_login(self, request_view, skills):
+        resp = self._download(request_view)
+
+        assert resp.status_code == 200
+        assert resp["Content-Disposition"] == 'attachment;filename="g_demo_release-check-1.2.0.zip"'
+        with zipfile.ZipFile(io.BytesIO(b"".join(resp.streaming_content))) as archive:
+            names = archive.namelist()
+        assert "release-check/SKILL.md" in names
+        assert "release-check/declaration.yaml" not in names
+        assert SkillMetadata.objects.get(id=skills.id).download_count == 1
+
+    def test_ignores_tenant(self, request_view, skills):
+        assert self._download(request_view, "g_other_hidden").status_code == 200
+
+    def test_archived(self, request_view, skills):
+        assert self._download(request_view, "g_demo_archived").status_code == 404
+
+    def test_inactive_gateway(self, request_view, skills, demo_gateway):
+        Gateway.objects.filter(id=demo_gateway.id).update(status=GatewayStatusEnum.INACTIVE.value)
+
+        assert self._download(request_view).status_code == 404
         assert SkillMetadata.objects.get(id=skills.id).download_count == 0

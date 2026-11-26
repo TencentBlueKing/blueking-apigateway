@@ -27,7 +27,7 @@ previews rebuild the package from the stored version (`package`).
 | `archive.py` | in-memory zip reading: path, symlink, layout, declaration size and UTF-8 checks; lists ignored files |
 | `uploader.py` | gateway Skill precheck and publish: package checks, ignored-file warning, form overlay, gateway-only `uses` |
 | `manager.py` | basic info, current version, archive/restore and delete of an existing Skill |
-| `skill.py` | `SkillHandler`: one complete query per use case (market list/count/tags/get/versions, gateway list/get, open get) sharing only private `Q`/lookup fragments; versions, detail context, download count |
+| `skill.py` | `SkillHandler`: one complete query per use case (market list/count/tags/get/versions, gateway list/get, public get) sharing only private `Q`/lookup fragments; versions, detail context, download URLs, download count |
 
 ## Where to change what
 
@@ -190,7 +190,7 @@ together with the code.
   extension JSON into `SKILL.md`. Only the gateway Skill management download
   and file list (`with_declaration=True`, file name suffix
   `constants.SKILL_DECLARATION_PACKAGE_SUFFIX`) include `declaration.yaml`;
-  market and open downloads do not. The declaration is not stored: it is
+  market and public downloads do not. The declaration is not stored: it is
   regenerated from current basic info plus the version's `version`,
   `changelog` and `orchestration`, without YAML anchors or aliases, so the
   package can be uploaded again as is.

@@ -21,6 +21,7 @@ from rest_framework import serializers
 
 from apigateway.apis.web.skill.serializers import SkillApiRefOutputSLZ, SkillVersionOutputSLZ
 from apigateway.apps.skill.constants import SkillTypeEnum
+from apigateway.biz.skill import SkillHandler
 from apigateway.common.i18n.field import SerializerTranslatedField
 
 
@@ -111,7 +112,8 @@ class SkillMarketplaceRetrieveOutputSLZ(SkillMarketplaceBaseOutputSLZ):
     stage = serializers.SerializerMethodField(help_text="网关 Skill 调用的环境，内置 Skill 为 null")
     apis = serializers.SerializerMethodField(help_text="线上版本调用的接口")
     version_count = serializers.SerializerMethodField(help_text="版本数")
-    download_url = serializers.SerializerMethodField(help_text="免登录下载地址")
+    download_url = serializers.SerializerMethodField(help_text="页面下载地址，需登录")
+    public_download_url = serializers.SerializerMethodField(help_text="免登录下载地址，给 npx 临时使用")
 
     class Meta:
         ref_name = "apigateway.apis.web.skill_marketplace.serializers.SkillMarketplaceRetrieveOutputSLZ"
@@ -125,5 +127,8 @@ class SkillMarketplaceRetrieveOutputSLZ(SkillMarketplaceBaseOutputSLZ):
     def get_version_count(self, obj) -> int:
         return self.context["version_count"]
 
-    def get_download_url(self, obj) -> Optional[str]:
-        return self.context["download_url"]
+    def get_download_url(self, obj) -> str:
+        return SkillHandler.build_market_download_url(obj)
+
+    def get_public_download_url(self, obj) -> Optional[str]:
+        return SkillHandler.build_public_download_url(obj)

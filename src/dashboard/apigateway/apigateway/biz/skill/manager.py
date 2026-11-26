@@ -82,7 +82,7 @@ def set_current_version(metadata: SkillMetadata, version: SkillVersion, operator
 def set_skill_status(metadata: SkillMetadata, status: str, operator: str) -> None:
     """归档（archived）或恢复（published）：只改 status
 
-    例如：归档后 Skill 市场和免登录下载都看不到它，网关页仍能查看、下载；恢复后重新可见
+    例如：归档后 Skill 市场和免登录下载（web 接口，给 npx 临时使用）都看不到它，网关页仍能查看、下载；恢复后重新可见
     """
     metadata.status = status
     metadata.updated_by = operator
