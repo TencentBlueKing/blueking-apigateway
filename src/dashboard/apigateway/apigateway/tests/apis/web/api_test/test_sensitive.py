@@ -17,7 +17,7 @@
 #
 import json
 import shlex
-from urllib.parse import quote
+from urllib.parse import quote, quote_plus, urlencode
 
 import pytest
 
@@ -116,6 +116,77 @@ def test_history_removes_credentials_without_mutating_source(headers):
     assert clean_request["query_params"] == {"page": "2"}
     assert "old-token" not in json.dumps([clean_request, clean_response])
     assert "old-app-secret" not in json.dumps([clean_request, clean_response])
+    assert before == json.dumps([request, response])
+
+
+@pytest.mark.parametrize(
+    "secret_key", ["access_token", "BK_APP_SECRET", "app_secret", "bk_token", "bk_ticket", "skey"]
+)
+@pytest.mark.parametrize("secret", ["query-only-token", "query+token/with space="])
+def test_history_removes_query_credentials_without_mutating_source(secret_key, secret):
+    query_params = {secret_key: secret, "page": "2"}
+    url = f"http://example.com/?{urlencode(query_params)}"
+    request = {"headers": {}, "query_params": query_params, "body": secret}
+    response = {"error": f"request failed for {url}", "data": {"body": secret, "curl": shlex.join(["curl", url])}}
+    before = json.dumps([request, response])
+    clean_request, clean_response = sanitize_history(request, response)
+    assert clean_request["query_params"] == {secret_key: "***", "page": "2"}
+    assert clean_request["body"] == "***"
+    assert clean_response["error"] == f"request failed for http://example.com/?{secret_key}=***&page=2"
+    assert clean_response["data"]["body"] == "***"
+    assert f"{secret_key}=***&page=2" in clean_response["data"]["curl"]
+    for value in (secret, quote(secret, safe=""), quote_plus(secret)):
+        assert value not in json.dumps([clean_request, clean_response])
+    assert before == json.dumps([request, response])
+
+
+@pytest.mark.parametrize(
+    "secret_key", ["access_token", "BK_APP_SECRET", "app_secret", "bk_token", "bk_ticket", "skey"]
+)
+@pytest.mark.parametrize("secret", ["legacy-query-token", "legacy+token/with space="])
+@pytest.mark.parametrize("successful", [False, True])
+def test_history_with_masked_query_fields_removes_url_credentials(secret_key, secret, successful):
+    url = f"http://example.com/?{urlencode({secret_key: secret, 'page': '2'})}"
+    request = {"headers": {}, "query_params": {secret_key: "***", "page": "2"}}
+    response = (
+        {"error": None, "data": {"curl": shlex.join(["curl", url]), "body": secret}}
+        if successful
+        else {"error": f"request failed for {url} (connection refused)", "data": None}
+    )
+    before = json.dumps([request, response])
+    cleaned_request, cleaned_response = sanitize_history(request, response)
+    assert cleaned_request == request
+    if successful:
+        assert cleaned_response["data"]["body"] == "***"
+        assert f"{secret_key}=***&page=2" in cleaned_response["data"]["curl"]
+    else:
+        assert cleaned_response["error"] == (
+            f"request failed for http://example.com/?{secret_key}=***&page=2 (connection refused)"
+        )
+    for value in (secret, quote(secret, safe=""), quote_plus(secret)):
+        assert value not in json.dumps([cleaned_request, cleaned_response])
+    assert before == json.dumps([request, response])
+
+
+def test_history_recovers_repeated_encoded_query_keys_and_preserves_ordinary_values():
+    url = (
+        "http://example.com/?page=2&ACCESS%5fTOKEN=first%2btoken&access_token=second-token"
+        "&bk_ticket=***&skey=&label=visible#section"
+    )
+    request = {"headers": {}, "query_params": {"access_token": "***", "page": "2"}}
+    response = {
+        "data": {"curl": shlex.join(["curl", url]), "body": ' {"echo": ["first+token", "second-token"]}'},
+        "error": f"request failed for {url}",
+    }
+    before = json.dumps([request, response])
+    cleaned_request, cleaned_response = sanitize_history(request, response)
+    expected_url = (
+        "http://example.com/?page=2&ACCESS%5fTOKEN=***&access_token=***&bk_ticket=***&skey=&label=visible#section"
+    )
+    assert cleaned_request == request
+    assert shlex.split(cleaned_response["data"]["curl"]) == ["curl", expected_url]
+    assert json.loads(cleaned_response["data"]["body"]) == {"echo": ["***", "***"]}
+    assert cleaned_response["error"] == f"request failed for {expected_url}"
     assert before == json.dumps([request, response])
 
 

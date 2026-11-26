@@ -20,13 +20,18 @@
 
 import datetime
 import json
+import logging
 import shlex
+from html import unescape
+from urllib.parse import quote, quote_plus, urlencode
 
 import pytest
 import requests
 import responses
 from ddf import G
+from django.db import DatabaseError
 
+from apigateway.apis.web.api_test import views
 from apigateway.apis.web.api_test.data_models import ApiDebugHistoryRequest
 from apigateway.apps.api_debug.models import APIDebugHistory
 from apigateway.service.utils import get_resource_url
@@ -34,6 +39,304 @@ from apigateway.tests.utils.testing import dummy_time
 
 
 class TestAPITestAPIView:
+    @pytest.mark.parametrize("history_failure", [None, "database", "history_model"])
+    @pytest.mark.parametrize("query_token", ["query-only-token", "query+token/with space="])
+    def test_request_failure_does_not_expose_query_credentials(
+        self,
+        history_failure,
+        query_token,
+        settings,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource1,
+        fake_released_resource,
+        mocker,
+        caplog,
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        history_secret = "history-only-secret"
+        query_params = {"access_token": query_token, "page": "2"}
+        send_request = mocker.patch(
+            "apigateway.apis.web.api_test.views.requests.request",
+            side_effect=requests.ConnectionError(f"request failed for http://example.com/?{urlencode(query_params)}"),
+        )
+        history_response = mocker.spy(views, "ApiDebugHistoryResponse")
+        if history_failure == "database":
+            create_history = mocker.patch.object(
+                APIDebugHistory.objects, "create", side_effect=DatabaseError(f"storage failed with {history_secret}")
+            )
+        elif history_failure == "history_model":
+            history_response = mocker.patch(
+                "apigateway.apis.web.api_test.views.ApiDebugHistoryResponse",
+                side_effect=ValueError(f"history model failed with {history_secret}"),
+            )
+            create_history = mocker.spy(APIDebugHistory.objects, "create")
+        else:
+            create_history = mocker.spy(APIDebugHistory.objects, "create")
+
+        with caplog.at_level(logging.ERROR, logger="apigateway.apis.web.api_test.views"):
+            response = request_view(
+                "POST",
+                "api_test.tests",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data={
+                    "stage_id": fake_stage.id,
+                    "resource_id": fake_resource1.id,
+                    "method": "GET",
+                    "headers": {},
+                    "authorization": {},
+                    "path_params": {},
+                    "query_params": query_params,
+                    "body": "",
+                    "use_test_app": False,
+                },
+            )
+
+        assert response.status_code == 500
+        assert response.json()["error"]["code"] == "UNKNOWN"
+        expected_error = "request failed for http://example.com/?access_token=***&page=2"
+        assert expected_error in unescape(response.json()["error"]["message"])
+        assert history_response.call_args.kwargs["error"] == expected_error
+        send_request.assert_called_once()
+        assert send_request.call_args.kwargs["params"] == query_params
+        if history_failure == "history_model":
+            create_history.assert_not_called()
+        else:
+            create_history.assert_called_once()
+            assert create_history.call_args.kwargs["request"]["query_params"] == {"access_token": "***", "page": "2"}
+            assert create_history.call_args.kwargs["response"]["error"] == expected_error
+        if history_failure is None:
+            history = APIDebugHistory.objects.get()
+            assert history.response["error"] == expected_error
+            assert history.request["query_params"] == {"access_token": "***", "page": "2"}
+        else:
+            assert not APIDebugHistory.objects.exists()
+        for secret in (query_token, quote(query_token, safe=""), quote_plus(query_token), history_secret):
+            assert secret not in response.content.decode()
+            assert secret not in caplog.text
+        if history_failure is None:
+            return
+        assert ("DatabaseError" if history_failure == "database" else "ValueError") in caplog.text
+        assert "Failed to save API debug history" in caplog.text
+        assert f"gateway_id={fake_gateway.id}" in caplog.text
+        assert f"stage_id={fake_stage.id}" in caplog.text
+        assert f"resource_id={fake_resource1.id}" in caplog.text
+        assert query_token not in caplog.text
+        assert history_secret not in caplog.text
+        assert "ConnectionError" in caplog.text
+        assert all(record.exc_info is None for record in caplog.records)
+
+    @pytest.mark.parametrize("history_failure", [None, "database", "history_model"])
+    @pytest.mark.parametrize("query_token", ["query-only-token", "query+token/with space="])
+    @responses.activate
+    def test_success_does_not_expose_query_credentials(
+        self,
+        history_failure,
+        query_token,
+        settings,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource1,
+        fake_released_resource,
+        mocker,
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        responses.add("GET", url, json={"echo": query_token, "page": "2"})
+        history_response = mocker.spy(views, "ApiDebugHistoryResponse")
+        if history_failure == "database":
+            create_history = mocker.patch.object(
+                APIDebugHistory.objects, "create", side_effect=DatabaseError("storage failed")
+            )
+        elif history_failure == "history_model":
+            history_response = mocker.patch(
+                "apigateway.apis.web.api_test.views.ApiDebugHistoryResponse",
+                side_effect=ValueError("history model failed"),
+            )
+            create_history = mocker.spy(APIDebugHistory.objects, "create")
+        else:
+            create_history = mocker.spy(APIDebugHistory.objects, "create")
+        query_params = {"access_token": query_token, "page": "2"}
+        response = request_view(
+            "POST",
+            "api_test.tests",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={
+                "stage_id": fake_stage.id,
+                "resource_id": fake_resource1.id,
+                "method": "GET",
+                "headers": {},
+                "authorization": {},
+                "path_params": {},
+                "query_params": query_params,
+                "body": "",
+                "use_test_app": False,
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["status_code"] == 200
+        assert json.loads(data["body"]) == {"echo": "***", "page": "2"}
+        assert "access_token=***&page=2" in data["curl"]
+        assert len(responses.calls) == 1
+        assert responses.calls[0].request.url == f"{url}?{urlencode(query_params)}"
+        assert history_response.call_args.kwargs["data"] == data
+        assert history_response.call_args.kwargs["error"] is None
+        if history_failure == "history_model":
+            create_history.assert_not_called()
+        else:
+            create_history.assert_called_once()
+            assert create_history.call_args.kwargs["response"]["data"] == data
+        if history_failure is None:
+            history = APIDebugHistory.objects.get()
+            assert history.response["data"] == data
+            assert history.request["query_params"] == {"access_token": "***", "page": "2"}
+        else:
+            assert not APIDebugHistory.objects.exists()
+        for secret in (query_token, quote(query_token, safe=""), quote_plus(query_token)):
+            assert secret not in response.content.decode()
+
+    @pytest.mark.parametrize("failure", ["timeout", "connection", "invalid_json", "bad_response"])
+    @pytest.mark.parametrize("history_unavailable", [False, True])
+    def test_debug_failure_preserves_error(
+        self,
+        failure,
+        history_unavailable,
+        settings,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource1,
+        fake_released_resource,
+        mocker,
+        caplog,
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        send_request = mocker.patch("apigateway.apis.web.api_test.views.requests.request")
+        body = ""
+        if failure == "invalid_json":
+            body = "{invalid-json"
+            expected_error = str(json.JSONDecodeError("Expecting property name enclosed in double quotes", body, 1))
+        elif failure == "bad_response":
+            send_request.return_value = object()
+            expected_error = "'object' object has no attribute 'request'"
+        else:
+            exception = requests.Timeout if failure == "timeout" else requests.ConnectionError
+            send_request.side_effect = exception("request failed <upstream> with personal-token")
+            expected_error = "request failed <upstream> with ***"
+        create_history = mocker.spy(APIDebugHistory.objects, "create")
+        if history_unavailable:
+            create_history = mocker.patch.object(
+                APIDebugHistory.objects, "create", side_effect=DatabaseError("storage failed with personal-token")
+            )
+        with caplog.at_level(logging.ERROR, logger="apigateway.apis.web.api_test.views"):
+            response = request_view(
+                "POST",
+                "api_test.tests",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data={
+                    "stage_id": fake_stage.id,
+                    "resource_id": fake_resource1.id,
+                    "method": "GET",
+                    "headers": {"Authorization": "Bearer personal-token"},
+                    "path_params": {},
+                    "query_params": {},
+                    "body": body,
+                    "use_test_app": False,
+                },
+            )
+        assert response.status_code == 500
+        assert response.json()["error"]["code"] == "UNKNOWN"
+        message = response.json()["error"]["message"]
+        assert "请求网关资源失败" in message
+        assert expected_error in unescape(message)
+        assert "<upstream>" not in message
+        assert "storage failed" not in message
+        assert "personal-token" not in response.content.decode()
+        create_history.assert_called_once()
+        recorded_response = create_history.call_args.kwargs["response"]
+        assert recorded_response == {"data": None, "spec_version": 1, "error": expected_error}
+        assert create_history.call_args.kwargs["request"]["headers"] == {}
+        if failure == "invalid_json":
+            send_request.assert_not_called()
+        else:
+            send_request.assert_called_once()
+        if history_unavailable:
+            assert not APIDebugHistory.objects.exists()
+            assert expected_error not in caplog.text
+            assert "DatabaseError" in caplog.text
+            assert "personal-token" not in caplog.text
+            assert all(record.exc_info is None for record in caplog.records)
+        else:
+            assert APIDebugHistory.objects.get().response == recorded_response
+
+    @pytest.mark.parametrize("failure", ["database", "history_model"])
+    @responses.activate
+    def test_success_is_preserved_when_history_fails(
+        self,
+        failure,
+        settings,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource1,
+        fake_released_resource,
+        mocker,
+        caplog,
+    ):
+        settings.API_RESOURCE_URL_TMPL = "http://example.com/{stage_name}/{resource_path}"
+        url = get_resource_url(settings.API_RESOURCE_URL_TMPL, fake_gateway.name, fake_stage.name, fake_resource1.path)
+        responses.add("GET", url, json={"message": "gateway responded"})
+        if failure == "database":
+            create_history = mocker.patch.object(
+                APIDebugHistory.objects, "create", side_effect=DatabaseError("storage failed with personal-token")
+            )
+        else:
+            # Pydantic validation failures may include the input data in their message.
+            mocker.patch(
+                "apigateway.apis.web.api_test.views.ApiDebugHistoryResponse",
+                side_effect=ValueError("history model failed with personal-token"),
+            )
+            create_history = mocker.spy(APIDebugHistory.objects, "create")
+        with caplog.at_level(logging.ERROR, logger="apigateway.apis.web.api_test.views"):
+            response = request_view(
+                "POST",
+                "api_test.tests",
+                path_params={"gateway_id": fake_gateway.id},
+                gateway=fake_gateway,
+                data={
+                    "stage_id": fake_stage.id,
+                    "resource_id": fake_resource1.id,
+                    "method": "GET",
+                    "headers": {"Authorization": "Bearer personal-token"},
+                    "path_params": {},
+                    "query_params": {},
+                    "body": "",
+                    "use_test_app": False,
+                },
+            )
+        assert response.status_code == 200
+        assert response.json()["data"]["status_code"] == 200
+        assert json.loads(response.json()["data"]["body"]) == {"message": "gateway responded"}
+        assert "personal-token" not in response.content.decode()
+        assert len(responses.calls) == 1
+        assert not APIDebugHistory.objects.exists()
+        if failure == "database":
+            create_history.assert_called_once()
+            assert create_history.call_args.kwargs["response"]["error"] is None
+            assert create_history.call_args.kwargs["response"]["data"] == response.json()["data"]
+            assert "DatabaseError" in caplog.text
+        else:
+            create_history.assert_not_called()
+            assert "ValueError" in caplog.text
+        assert "personal-token" not in caplog.text
+        assert all(record.exc_info is None for record in caplog.records)
+
     @pytest.mark.parametrize("source", ["body", "cookie"])
     @responses.activate
     def test_response_only_credentials_are_hidden_in_all_debug_representations(
@@ -481,6 +784,73 @@ class TestAPITestAPIView:
 
 
 class TestAPIDebugHistoryApi:
+    @pytest.mark.parametrize("detail", [False, True])
+    @pytest.mark.parametrize("successful", [False, True])
+    @pytest.mark.parametrize("query_token", ["legacy-query-token", "legacy+token/with space="])
+    def test_masked_old_history_query_credentials_are_hidden(
+        self, detail, successful, query_token, request_view, fake_gateway, fake_resource
+    ):
+        query_params = {"access_token": "***", "page": "2"}
+        url = f"http://example.com/?{urlencode({'access_token': query_token, 'page': '2'})}"
+        stored_response = (
+            {"error": None, "data": {"curl": shlex.join(["curl", url]), "body": query_token}}
+            if successful
+            else {"error": f"request failed for {url}", "data": None}
+        )
+        history = G(
+            APIDebugHistory,
+            resource_name=fake_resource.name,
+            gateway=fake_gateway,
+            request={"headers": {}, "query_params": query_params},
+            response=stored_response,
+        )
+        params = {"gateway_id": fake_gateway.id}
+        if detail:
+            params["id"] = history.id
+        response = request_view(
+            "GET", "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list", path_params=params
+        )
+        assert response.status_code == 200
+        item = response.json()["data"] if detail else response.json()["data"][0]
+        assert item["request"]["query_params"] == query_params
+        if successful:
+            assert "access_token=***&page=2" in item["response"]["data"]["curl"]
+            assert item["response"]["data"]["body"] == "***"
+        else:
+            assert item["response"]["error"] == "request failed for http://example.com/?access_token=***&page=2"
+        for value in (query_token, quote(query_token, safe=""), quote_plus(query_token)):
+            assert value not in response.content.decode()
+        history.refresh_from_db()
+        assert history.request["query_params"] == query_params
+        assert history.response == stored_response
+
+    @pytest.mark.parametrize("detail", [False, True])
+    def test_old_history_query_credentials_are_hidden(self, detail, request_view, fake_gateway, fake_resource):
+        query_params = {"access_token": "old-query-token", "page": "2"}
+        url = f"http://example.com/?{urlencode(query_params)}"
+        history = G(
+            APIDebugHistory,
+            resource_name=fake_resource.name,
+            gateway=fake_gateway,
+            request={"headers": {}, "query_params": query_params},
+            response={"error": f"request failed for {url}", "data": {"curl": shlex.join(["curl", url])}},
+        )
+        params = {"gateway_id": fake_gateway.id}
+        if detail:
+            params["id"] = history.id
+        response = request_view(
+            "GET", "api_debug.histories.retrieve-destroy" if detail else "api_debug.histories.list", path_params=params
+        )
+        assert response.status_code == 200
+        assert "old-query-token" not in response.content.decode()
+        item = response.json()["data"] if detail else response.json()["data"][0]
+        assert item["request"]["query_params"] == {"access_token": "***", "page": "2"}
+        assert item["response"]["error"] == "request failed for http://example.com/?access_token=***&page=2"
+        assert "access_token=***&page=2" in item["response"]["data"]["curl"]
+        history.refresh_from_db()
+        assert history.request["query_params"] == query_params
+        assert history.response["error"] == f"request failed for {url}"
+
     @pytest.mark.parametrize("detail", [False, True])
     @pytest.mark.parametrize("request_url", [None, ""])
     def test_histories_preserve_empty_request_url(
