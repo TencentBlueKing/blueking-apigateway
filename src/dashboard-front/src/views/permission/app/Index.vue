@@ -67,7 +67,7 @@
             :data="filterConditions"
             :validate-values="validateSearchSelect"
             :placeholder="t('搜索')"
-            :value-split-code="'+'"
+            value-split-code="+"
             clearable
             unique-select
             value-behavior="need-key"

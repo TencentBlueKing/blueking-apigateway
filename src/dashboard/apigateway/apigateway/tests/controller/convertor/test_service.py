@@ -496,7 +496,9 @@ class TestServiceConvertor:
             "logging": {"summaries": True, "payloads": False},
         }
 
-    def test_standard_and_ai_services_use_explicit_plugin_profiles(self, mock_release_data):
+    @pytest.mark.parametrize("debug_enabled", [False, True])
+    def test_standard_and_ai_services_use_explicit_plugin_profiles(self, mock_release_data, settings, debug_enabled):
+        settings.GATEWAY_DEBUG_PLUGIN_ENABLED = debug_enabled
         mock_release_data.stage_backend_configs = {
             1: _standard_backend_config(
                 1,
@@ -521,6 +523,9 @@ class TestServiceConvertor:
         for plugin_name in ("bk-jwt", "bk-break-recursive-call", "bk-log-context", "bk-error-wrapper"):
             assert plugin_name in standard_service.plugins
             assert plugin_name in ai_service.plugins
+
+        assert ("bk-debug" in standard_service.plugins) is debug_enabled
+        assert ("bk-debug" in ai_service.plugins) is debug_enabled
 
         assert standard_service.upstream is not None
         assert "ai-proxy" not in standard_service.plugins
@@ -673,7 +678,6 @@ class TestServiceConvertor:
             "bk-request-id",
             "bk-response-check",
             "bk-permission",
-            "bk-debug",
             "file-logger",
             "bk-stage-context",
             "bk-default-tenant",

@@ -27,7 +27,7 @@
         >
           <Spinner
             v-if="status === 'doing'"
-            style="font-size: 16px;color:#3a84f6;"
+            class="text-16px color-#3a84f6"
           />
           <div
             v-else

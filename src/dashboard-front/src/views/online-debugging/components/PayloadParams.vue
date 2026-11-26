@@ -23,7 +23,7 @@
   >
     <BkCollapsePanel
       :name="1"
-      style="margin-bottom: 20px"
+      class="mb-20px"
     >
       <template #header>
         <div class="params-header">
@@ -90,15 +90,15 @@ const {
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
-  queryChange: [data: any ]
-  pathChange: [data: any ]
+  'query-change': [data: any]
+  'path-change': [data: any]
 }>();
 
 const { t } = useI18n();
 
-const queryRef = ref();
+const queryRef = useTemplateRef('queryRef');
 const queryList = ref<any[]>([]);
-const pathRef = ref();
+const pathRef = useTemplateRef('pathRef');
 const pathList = ref<any[]>([]);
 const activeIndex = ref<number[]>([1]);
 
@@ -141,11 +141,11 @@ const getData = () => {
 };
 
 const handleQueryChange = (list: any) => {
-  emit('queryChange', list);
+  emit('query-change', list);
 };
 
 const handlePathChange = (list: any) => {
-  emit('pathChange', list);
+  emit('path-change', list);
 };
 
 defineExpose({

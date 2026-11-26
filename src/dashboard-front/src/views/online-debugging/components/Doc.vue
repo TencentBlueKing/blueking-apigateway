@@ -55,7 +55,7 @@
         class="bk-special-tab"
       >
         <BkTabPanel
-          :name="'doc'"
+          name="doc"
           :label="t('文档')"
         >
           <div class="ag-kv-box mb-30px">
@@ -217,7 +217,7 @@ const curApigw = ref<Partial<IGatewayDocsDetail>>({
 const curDocUpdated = ref('');
 const sdkMarkdownHtml = ref('');
 const renderHtmlIndex = ref(0);
-const componentContentRef = ref<HTMLElement | null>(null);
+const componentContentRef = useTemplateRef<HTMLElement>('componentContentRef');
 
 // 请求方法统一大写，用于调用地址徽标展示
 const curMethod = computed(() => (curComponent.value.method || '').toUpperCase());

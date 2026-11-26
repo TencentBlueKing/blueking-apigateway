@@ -42,7 +42,7 @@ const tabItem: Record<ITabKey, (
   mcp: getMcpHandledList,
 };
 
-const tableCom = ref<InstanceType<typeof ApplyTable> | null>(null);
+const tableCom = useTemplateRef<InstanceType<typeof ApplyTable>>('tableCom');
 
 const { personalWorkbenchTab } = usePersonalWorkbench();
 

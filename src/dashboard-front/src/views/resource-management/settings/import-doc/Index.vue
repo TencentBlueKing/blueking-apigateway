@@ -367,7 +367,7 @@ const isDataLoading = ref(false);
 const isImportLoading = ref(false);
 const editorText = ref<string>(RESOURCE_IMPORT_EXAMPLE.content);
 const zipFile = ref<File>();
-const resourceEditorRef = ref<InstanceType<typeof AgCodeEditor>>(); // 实例化
+const resourceEditorRef = useTemplateRef<InstanceType<typeof AgCodeEditor>>('resourceEditorRef'); // 实例化
 
 // 上传文件大小限制，单位 mb
 const uploadMaxSize = 10;

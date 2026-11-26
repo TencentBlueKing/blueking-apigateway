@@ -59,7 +59,7 @@ const { data } = defineProps<IProps>();
 
 const { t } = useI18n();
 
-const formRef = ref();
+const formRef = useTemplateRef('formRef');
 
 const form = ref<IFormModel>({
   cache_method: ['GET'],

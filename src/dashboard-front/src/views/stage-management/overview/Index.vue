@@ -46,7 +46,7 @@ import DetailMode from './detail-mode/Index.vue';
 
 const mode = ref('card-mode');
 const stageId = ref(0);
-const topBarRef = ref();
+const topBarRef = useTemplateRef('topBarRef');
 
 const handleSwitchMode = (id: number) => {
   stageId.value = id;
@@ -58,7 +58,7 @@ const handleStageIdChange = (id: number) => {
 };
 
 const handleStageUpdated = () => {
-  topBarRef.value.reload();
+  topBarRef.value?.reload();
 };
 
 const handleStageDeleted = () => {

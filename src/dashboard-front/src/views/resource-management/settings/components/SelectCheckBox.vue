@@ -178,8 +178,9 @@ const curLabelIds = ref([...curSelectLabelIds]);
 const curLabelIdsbackUp = ref([...curLabelIds.value]);
 const showEdit = ref(false);
 const optionName = ref('');
-const inputRef = ref();
-const selectRef = ref();
+const inputRef = useTemplateRef('inputRef');
+const selectRef = useTemplateRef('selectRef');
+// eslint-disable-next-line vue/prefer-use-template-ref -- v-for 列表引用保留 ref
 const editInputRef = ref();
 const hoverIndex = ref<number | null>(null);
 const isIconClick = ref(false); // 是否点击了icon

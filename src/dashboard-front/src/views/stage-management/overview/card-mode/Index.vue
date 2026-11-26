@@ -135,16 +135,16 @@ const historyId = ref<number>();
 const deployId = ref<string>();
 const currentStage = ref<IStageListItem>();
 
-const releaseStageRef = ref();
-const releaseProgrammableRef = ref();
-const logDetailsRef = ref();
-const programmableEventSliderRef = ref();
+const releaseStageRef = useTemplateRef('releaseStageRef');
+const releaseProgrammableRef = useTemplateRef('releaseProgrammableRef');
+const logDetailsRef = useTemplateRef('logDetailsRef');
+const programmableEventSliderRef = useTemplateRef('programmableEventSliderRef');
 
 // 当前网关基本信息
 const basicInfoData = ref<IExtractApiReturn<typeof getGatewayDetail>>();
 
 const stageList = ref<ILocalStageItem[]>([]);
-const stageSidesliderRef = ref();
+const stageSidesliderRef = useTemplateRef('stageSidesliderRef');
 const isLoading = ref(false);
 const loadingProgrammableStageIds = ref<number[]>([]);
 

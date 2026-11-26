@@ -71,7 +71,7 @@
                     >
                       <AgIcon
                         name="edit-line"
-                        style="margin-right: 3px;"
+                        class="mr-3px"
                         @click.stop="() => handleEditOptionItem(option)"
                       />
                       <BkPopConfirm
@@ -89,7 +89,7 @@
                   </div>
                   <div
                     v-else
-                    style="width: 100%;"
+                    class="w-full"
                   >
                     <BkInput
                       ref="editInputRef"
@@ -206,13 +206,14 @@ const emit = defineEmits<{ change: [data: any ] }>();
 const { t } = useI18n();
 
 const activeIndex = ref<number[]>([1]);
-const editTableRef = ref();
-const formRef = ref();
+const editTableRef = useTemplateRef('editTableRef');
+const formRef = useTemplateRef('formRef');
 const propsHeaders = ref<any[]>([]);
 const newHeaders = ref<any[]>([]);
 const presuppose = ref('');
 const hoverIndex = ref<number | null>();
 const isIconClick = ref<boolean>(false); // 是否点击了icon
+// eslint-disable-next-line vue/prefer-use-template-ref -- v-for 列表引用保留 ref
 const editInputRef = ref(null);
 const localHeaders = ref<any[]>(loadPresetHeaders());
 const dialogData = reactive({

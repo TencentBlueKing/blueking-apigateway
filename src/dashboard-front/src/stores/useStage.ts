@@ -18,7 +18,7 @@
 
 import { defineStore } from 'pinia';
 
-import { type getStageDetail, getStageList } from '@/services/source/gateway/stage';
+import type { getStageDetail, getStageList } from '@/services/source/gateway/stage';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
 type IStageListItem = IExtractApiReturn<typeof getStageList>[number];

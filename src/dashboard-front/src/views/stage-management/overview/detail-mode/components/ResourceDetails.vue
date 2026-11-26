@@ -504,6 +504,7 @@ defineExpose({ showSideslider });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖侧滑抽屉内折叠面板样式 -->
 <style lang="scss">
 .sideslider-rg-version-collapse .bk-collapse-source {
 

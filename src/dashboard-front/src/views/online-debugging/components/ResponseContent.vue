@@ -216,8 +216,8 @@ interface IProps { res?: object }
 const { res = {} } = defineProps<IProps>();
 
 const emit = defineEmits<{
-  ResponseFold: [data?: any ]
-  ResponseUnfold: [data?: any ]
+  'response-fold': [data?: any]
+  'response-unfold': [data?: any]
 }>();
 
 const { t } = useI18n();
@@ -254,7 +254,7 @@ const detailsTypeList = ref([
   },
 ]);
 const editorText = ref<any>('');
-const resourceEditorRef: any = ref<InstanceType<typeof AgCodeEditor>>();
+const resourceEditorRef: any = useTemplateRef<InstanceType<typeof AgCodeEditor>>('resourceEditorRef');
 const data = ref<any>({});
 const isAISliderShow = ref(false);
 const aiRequestMessage = ref('');
@@ -350,10 +350,10 @@ const setTableData = () => {
 
 const handleCollapse = () => {
   if (!activeIndex.value?.includes(1)) {
-    emit('ResponseFold');
+    emit('response-fold');
   }
   else {
-    emit('ResponseUnfold');
+    emit('response-unfold');
   }
 };
 
@@ -361,7 +361,7 @@ const setInit = () => {
   activeIndex.value = [];
   tabActive.value = 'body';
   bodyType.value = 'pretty';
-  emit('ResponseFold');
+  emit('response-fold');
 };
 
 const handleAIClick = () => {

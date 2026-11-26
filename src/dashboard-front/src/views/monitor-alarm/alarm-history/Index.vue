@@ -572,6 +572,7 @@ const handleClearFilter = () => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的 tooltip 弹层样式 -->
 <style lang="scss">
 .bk-popper.monitor-tooltips {
   width: 520px;

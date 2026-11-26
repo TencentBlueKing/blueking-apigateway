@@ -16,20 +16,39 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import json
+import re
 import shlex
-from urllib.parse import quote, quote_plus
+from http.cookies import CookieError, SimpleCookie
+from urllib.parse import quote, quote_plus, unquote_plus, urlsplit, urlunsplit
 
 from django.conf import settings
 
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
 
-SENSITIVE_KEYS = {"bk_app_secret", "app_secret", "bk_token", "bk_ticket", "skey", "access_token"}
+SENSITIVE_KEYS = {
+    "bk_app_secret",
+    "app_secret",
+    "bk_token",
+    "bk_ticket",
+    "skey",
+    "access_token",
+    "token",
+    "refresh_token",
+    "id_token",
+    "password",
+    "client_secret",
+    "api_key",
+}
 SENSITIVE_HEADER_NAMES = {
     HEADER_BKAPI_AUTHORIZATION.lower(),
     "authorization",
     "proxy-authorization",
     "cookie",
     "set-cookie",
+    "x-api-key",
+    "x-auth-token",
+    "x-token",
+    "x-access-token",
 }
 
 
@@ -44,9 +63,38 @@ class DebugDataSanitizer:
         self._secrets: set[str] = set()
 
     def add_authorization(self, authorization):
-        for key, value in authorization.items():
-            if key.lower() in SENSITIVE_KEYS:
-                self._add_secret(value)
+        if isinstance(authorization, dict):
+            for key, value in authorization.items():
+                if key.lower() in SENSITIVE_KEYS:
+                    self._add_secret(value)
+                else:
+                    self.add_authorization(value)
+        elif isinstance(authorization, list):
+            for value in authorization:
+                self.add_authorization(value)
+        elif isinstance(authorization, str):
+            try:
+                decoded = json.loads(authorization)
+            except ValueError:
+                return
+            if isinstance(decoded, (dict, list)):
+                self.add_authorization(decoded)
+
+    def add_query_credentials(self, data):
+        # Old histories already masked query_params before saving, but their
+        # error URLs/curls could retain the values. Recover those values before
+        # cleaning any output so their echoes are also removed from the copy.
+        if isinstance(data, dict):
+            for value in data.values():
+                self.add_query_credentials(value)
+        elif isinstance(data, list):
+            for value in data:
+                self.add_query_credentials(value)
+        elif isinstance(data, str):
+            for key, value in re.findall(r"[?&]([^=&\s'\"<>#]+)=([^&\s'\"<>#)]*)", data):
+                if unquote_plus(key).lower() in SENSITIVE_KEYS:
+                    self._add_secret(value)
+                    self._add_secret(unquote_plus(value))
 
     def add_headers(self, headers):
         login_cookie_names = SENSITIVE_KEYS | {
@@ -62,12 +110,28 @@ class DebugDataSanitizer:
                     if cookie_name.strip().lower() in login_cookie_names:
                         self._add_secret(cookie_value.strip())
                 continue
+            if name == "set-cookie":
+                self._add_set_cookie(value, login_cookie_names)
+                continue
             if name == HEADER_BKAPI_AUTHORIZATION.lower():
                 self._add_bkapi_authorization(value)
                 continue
             self._add_secret(value)
             if name in {"authorization", "proxy-authorization"}:
                 self._add_secret(value.partition(" ")[2])
+
+    def _add_set_cookie(self, value, login_cookie_names):
+        # Requests can join several Set-Cookie fields. Split at the next cookie
+        # assignment, preserving the comma inside an Expires date.
+        for header in re.split(r",\s*(?=[^\s;,=]+=)", value):
+            cookies = SimpleCookie()
+            try:
+                cookies.load(header)
+            except CookieError:
+                continue
+            for name, cookie in cookies.items():
+                if name.lower() in login_cookie_names:
+                    self._add_secret(cookie.value)
 
     def _add_bkapi_authorization(self, value):
         try:
@@ -79,14 +143,17 @@ class DebugDataSanitizer:
             self.add_authorization(authorization)
             # Do not register already-masked headers or application metadata as
             # secrets: later output/history cleanup must keep those fields visible.
-            if any(
-                key.lower() in SENSITIVE_KEYS and isinstance(secret, str) and secret and secret != "***"
-                for key, secret in authorization.items()
-            ):
+            if self.clean(authorization) != authorization:
                 self._add_secret(value)
 
     def _add_secret(self, value):
-        if isinstance(value, str) and value and value != "***":
+        if isinstance(value, dict):
+            for item in value.values():
+                self._add_secret(item)
+        elif isinstance(value, list):
+            for item in value:
+                self._add_secret(item)
+        elif isinstance(value, str) and value and value != "***":
             self._secrets.update({value, json.dumps(value)[1:-1], quote(value, safe=""), quote_plus(value)})
 
     def clean(self, data):
@@ -108,18 +175,52 @@ class DebugDataSanitizer:
                 if isinstance(decoded, (dict, list)):
                     cleaned = self.clean(decoded)
                     return json.dumps(cleaned, ensure_ascii=False) if cleaned != decoded else data
-            for secret in sorted(self._secrets, key=len, reverse=True):
-                data = data.replace(secret, "***")
+            if self._secrets:
+                # Match complete values or delimited echoes, even for a one-character
+                # credential. A substring inside an ordinary word is not an echo.
+                values = "|".join(re.escape(secret) for secret in sorted(self._secrets, key=len, reverse=True))
+                data = re.sub(r"(?<!\w)(?:" + values + r")(?!\w)", "***", data)
         return data
+
+    def clean_url(self, url):
+        if url is None:
+            return None
+        try:
+            parsed = urlsplit(url)
+        except ValueError:
+            return ""
+        path = "/".join(self.clean(segment) for segment in parsed.path.split("/"))
+        query = []
+        for item in parsed.query.split("&"):
+            key, separator, value = item.partition("=")
+            query.append(key + separator + self.clean(value))
+        return urlunsplit(parsed._replace(path=path, query="&".join(query), fragment=self.clean(parsed.fragment)))
 
     def clean_request(self, request):
         request = dict(request, headers=self.clean(remove_sensitive_headers(request.get("headers", {}))))
         # Only user-provided payload fields may contain echoed credentials. Fixed
         # metadata (method/type/version/flags) must keep its schema-defined values.
-        for key in ("request_url", "path_params", "query_params", "body", "subpath"):
+        if "request_url" in request:
+            request["request_url"] = self.clean_url(request["request_url"])
+        for key in ("path_params", "query_params", "body", "subpath"):
             if key in request:
                 request[key] = self.clean(request[key])
         return request
+
+    def _clean_curl_header(self, header):
+        name, _, value = header.partition(":")
+        cleaned_value = self.clean(value.strip())
+        if name.lower() in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS:
+            cleaned_value = "***"
+            if name.lower() == HEADER_BKAPI_AUTHORIZATION.lower():
+                try:
+                    authorization = json.loads(value)
+                except ValueError:
+                    pass
+                else:
+                    if isinstance(authorization, dict):
+                        cleaned_value = json.dumps(self.clean(authorization), ensure_ascii=False)
+        return f"{name}: {cleaned_value}"
 
     def clean_curl(self, curl):
         # Historical curls were generated by curlify with separate '-H' arguments.
@@ -130,27 +231,58 @@ class DebugDataSanitizer:
         for index, arg in enumerate(args[:-1]):
             if arg in {"-H", "--header"}:
                 name, _, value = args[index + 1].partition(":")
-                if name.lower() in SENSITIVE_HEADER_NAMES | SENSITIVE_KEYS:
-                    self.add_headers({name: value.strip()})
-                    cleaned_value = "***"
-                    if name.lower() == HEADER_BKAPI_AUTHORIZATION.lower():
-                        try:
-                            authorization = json.loads(value)
-                        except ValueError:
-                            pass
-                        else:
-                            if isinstance(authorization, dict):
-                                cleaned_value = json.dumps(self.clean(authorization), ensure_ascii=False)
-                    args[index + 1] = f"{name}: {cleaned_value}"
-        return shlex.join(self.clean(args))
+                self.add_headers({name: value.strip()})
+        index = 1  # Preserve the executable and option names as curl syntax.
+        while index < len(args):
+            arg = args[index]
+            if arg in {"-H", "--header"}:
+                if index + 1 >= len(args):
+                    return ""
+                args[index + 1] = self._clean_curl_header(args[index + 1])
+                index += 2
+            elif arg in {"-d", "--data", "--data-raw", "--data-binary", "--data-ascii", "--data-urlencode"}:
+                if index + 1 >= len(args):
+                    return ""
+                args[index + 1] = self.clean(args[index + 1])
+                index += 2
+            elif arg in {"-X", "--request"}:
+                index += 2
+            else:
+                if not arg.startswith("-"):
+                    args[index] = self.clean_url(arg)
+                index += 1
+        return shlex.join(args)
+
+    def clean_response_data(self, data):
+        data = dict(data)
+        # Size/status/timing describe the transport, not user-provided values.
+        for key in ("body", "headers"):
+            if key in data:
+                data[key] = self.clean(data[key])
+        if data.get("curl"):
+            data["curl"] = self.clean_curl(data["curl"])
+        return data
+
+    def clean_response(self, response):
+        response = dict(response)
+        if isinstance(response.get("data"), dict):
+            response["data"] = self.clean_response_data(response["data"])
+        if "error" in response:
+            response["error"] = self.clean(response["error"])
+        return response
 
 
 def sanitize_history(request, response):
     sanitizer = DebugDataSanitizer()
+    sanitizer.add_query_credentials([request, response])
     sanitizer.add_headers(request.get("headers", {}))
+    sanitizer.add_authorization(request.get("query_params", {}))
+    sanitizer.add_authorization(request.get("body", ""))
     response = dict(response)
     if isinstance(response.get("data"), dict):
         response["data"] = dict(response["data"])
+        sanitizer.add_headers(response["data"].get("headers", {}))
+        sanitizer.add_authorization(response["data"].get("body", ""))
         if response["data"].get("curl"):
             response["data"]["curl"] = sanitizer.clean_curl(response["data"]["curl"])
-    return sanitizer.clean_request(request), sanitizer.clean(response)
+    return sanitizer.clean_request(request), sanitizer.clean_response(response)

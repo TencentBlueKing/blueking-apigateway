@@ -154,8 +154,8 @@ const envStore = useEnv();
 const userStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 
-const memberSelectorRef = ref();
-const memberSelectorEditRef = ref();
+const memberSelectorRef = useTemplateRef<{ tagInputRef?: { focusInputTrigger?: () => void } }>('memberSelectorRef');
+const memberSelectorEditRef = useTemplateRef('memberSelectorEditRef');
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
@@ -192,7 +192,7 @@ watch(
 const handleEdit = () => {
   isEditable.value = true;
   nextTick(() => {
-    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger?.();
   });
 };
 
@@ -215,7 +215,7 @@ const handleChange = () => {
   }
   isEditable.value = true;
   nextTick(() => {
-    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger?.();
   });
   emit('on-change', { [field]: displayValue.value });
 };

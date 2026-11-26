@@ -81,7 +81,7 @@ const resourceVersionStore = useResourceVersion();
 
 const tableRef = useTemplateRef<IAgTableInstance<IGatewaySDKListOutput>>('tableRef');
 const keyword = ref('');
-const createSdkRef = ref();
+const createSdkRef = useTemplateRef('createSdkRef');
 const filterData = ref({
   keyword: '',
   resource_version_id: '',

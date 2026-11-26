@@ -42,12 +42,12 @@
             v-if="isShow"
             ref="markdownRef"
             v-model="formData.content"
-            :default-open="'preview'"
+            default-open="preview"
             toolbars-flag
             scroll-style
             :box-shadow="false"
             :tab-size="4"
-            :font-size="'14'"
+            font-size="14"
             :language="language"
             :subfield="isSubfield"
             :toolbars="customToolbars"
@@ -121,8 +121,8 @@ enum GuideType {
 const route = useRoute();
 const { t } = useI18n();
 
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const markdownRef = ref<InstanceType<typeof MavonEditor> | null>(null);
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
+const markdownRef = useTemplateRef<InstanceType<typeof MavonEditor>>('markdownRef');
 const submitLoading = ref(false);
 const isSubfield = ref(true);
 const isFullscreen = ref(false);

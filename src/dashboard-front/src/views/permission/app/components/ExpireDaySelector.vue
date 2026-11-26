@@ -30,7 +30,7 @@
           v-for="option in EXPIRE_DAYS_CONSTANTS"
           :key="option.value"
           :label="option.value"
-          style="width: 90px;"
+          class="w-90px"
         >
           {{ option.label }}
         </BkRadioButton>

@@ -111,9 +111,9 @@ const {
 const emit = defineEmits<{ 'active-change': [tab: string] }>();
 
 const active = ref<string>(tab);
-const payloadBodyRef = ref();
-const payloadParamsRef = ref();
-const payloadHeadersRef = ref();
+const payloadBodyRef = useTemplateRef('payloadBodyRef');
+const payloadParamsRef = useTemplateRef('payloadParamsRef');
+const payloadHeadersRef = useTemplateRef('payloadHeadersRef');
 
 watch(
   () => tab,

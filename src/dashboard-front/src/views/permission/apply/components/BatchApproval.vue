@@ -30,7 +30,7 @@
         v-model:table-data="tableData"
         local-page
         show-cell-empty-content
-        :size="'small'"
+        size="small"
         :max-height="300"
         :columns="approvalColumns"
       />
@@ -147,7 +147,7 @@ const emits = defineEmits<IEmits>();
 
 const featureFlagStore = useFeatureFlag();
 
-const batchApprovalFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const batchApprovalFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('batchApprovalFormRef');
 const approvalColumns = shallowRef<ITableColumn<IBatchApprovalRow>[]>([
   {
     title: t('蓝鲸应用 ID'),

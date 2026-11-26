@@ -30,7 +30,7 @@
 - [ ] **状态标签**：按语义选用 `<BkTag theme="info | success | warning | danger">` 或 `<AgStatusDot>`
 - [ ] **空态与加载**：`<AgTable>` 内置空态/错误态；非表格区域使用 `<BkException>` 与 `<BkLoading>` / `v-bkloading`
 - [ ] **图表按需引入**：使用 `@/utils/echarts` 的 `createChart`，卸载时 `dispose()`，禁止 `import * as echarts from 'echarts'`
-- [ ] **XSS 安全**：不直接用 `v-html` 渲染不可信内容，必要时使用 `v-xss` 指令或做清洗
+- [ ] **XSS 安全**：不直接用 `v-html` 渲染不可信内容，必要时使用 `v-bk-xss-html` 指令或做清洗
 - [ ] **国际化**：所有可见文案使用 `t('...')`，并同步维护 `src/locales/cn.json` 与 `src/locales/en.json`（参考 `i18n-maintainer`）
 
 ## 5. 样式与代码质量

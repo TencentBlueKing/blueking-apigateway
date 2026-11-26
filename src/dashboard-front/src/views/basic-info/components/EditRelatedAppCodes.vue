@@ -113,8 +113,8 @@ const {
 
 const emit = defineEmits<IEmits>();
 
-const tagInputRef = ref();
-const relatedAppCodesEditRef = ref();
+const tagInputRef = useTemplateRef('tagInputRef');
+const relatedAppCodesEditRef = useTemplateRef('relatedAppCodesEditRef');
 const isEditable = ref(false);
 const displayValue = ref<string[]>([]);
 

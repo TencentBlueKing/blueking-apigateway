@@ -146,7 +146,7 @@
     theme="primary"
     :width="600"
     :quick-close="false"
-    :header-position="'left'"
+    header-position="left"
     :title="applyActionDialogConf.title"
     :is-show="applyActionDialogConf.isShow"
     @closed="applyActionDialogConf.isShow = false"
@@ -161,7 +161,7 @@
       <BkFormItem
         :label="t('备注')"
         required
-        :property="'comment'"
+        property="comment"
       >
         <BkInput
           v-model="curAction.comment"
@@ -287,7 +287,7 @@ const statusMap = reactive({
 });
 const mcpList = ref<IMCPServerListOutput[]>([]);
 const applicantList = ref<string[]>([]);
-const approveForm = ref<InstanceType<typeof Form> & IFormMethod>();
+const approveForm = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('approveForm');
 const applyActionDialogConf = reactive({
   isShow: false,
   isLoading: false,

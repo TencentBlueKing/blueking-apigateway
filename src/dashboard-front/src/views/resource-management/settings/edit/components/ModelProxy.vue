@@ -139,10 +139,10 @@ const {
 
 const emits = defineEmits<IEmits>();
 
-const baseInfoRef = ref<InstanceType<typeof BaseInfo>>();
-const authConfigRef = ref<InstanceType<typeof AuthConfig>>();
-const backConfigRef = ref<InstanceType<typeof BackConfig>>();
-const frontConfigRef = ref<InstanceType<typeof FrontConfig>>();
+const baseInfoRef = useTemplateRef<InstanceType<typeof BaseInfo>>('baseInfoRef');
+const authConfigRef = useTemplateRef<InstanceType<typeof AuthConfig>>('authConfigRef');
+const backConfigRef = useTemplateRef<InstanceType<typeof BackConfig>>('backConfigRef');
+const frontConfigRef = useTemplateRef<InstanceType<typeof FrontConfig>>('frontConfigRef');
 
 const getIconClass = (activeCollapse: string) => {
   return activeIndex?.includes(activeCollapse) ? 'panel-header-show' : 'panel-header-hide';

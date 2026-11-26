@@ -18,10 +18,52 @@
 import json
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.translation import override
 
 from apigateway.apps.support.constants import DocLanguageEnum
 from apigateway.biz.resource_doc import NoResourceDocError, ResourceDocJinja2TemplateError
 from apigateway.biz.resource_doc.importer import ArchiveDoc
+
+
+@pytest.mark.parametrize(
+    "view_name, success_status",
+    [("resource_doc.archive.parse", 200), ("resource_doc.import.by_archive", 204)],
+)
+@pytest.mark.parametrize("size", [10 * 1024 * 1024 - 1, 10 * 1024 * 1024, 10 * 1024 * 1024 + 1])
+@pytest.mark.parametrize("filename", ["docs.zip", "docs.tgz"])
+@pytest.mark.parametrize(
+    "language, expected_message",
+    [("zh-hans", "文件大小不能超过 10MB。"), ("en", "File size cannot exceed 10MB.")],
+)
+def test_archive_upload_size_limit(
+    request_view, fake_gateway, mocker, view_name, success_status, size, filename, language, expected_message
+):
+    parser = mocker.patch("apigateway.apis.web.resource_doc.views.ArchiveParser.parse", return_value=[])
+    importer = mocker.patch("apigateway.apis.web.resource_doc.views.DocImporter.import_docs")
+
+    with override(language):
+        response = request_view(
+            method="POST",
+            view_name=view_name,
+            path_params={"gateway_id": fake_gateway.id},
+            format="multipart",
+            data={"file": SimpleUploadedFile(filename, b"x" * size), "selected_resource_docs": "[]"},
+        )
+
+    if size > 10 * 1024 * 1024:
+        assert response.status_code == 400
+        error = response.json()["error"]
+        assert error["code"] == "INVALID_ARGUMENT"
+        assert "file" in error["message"]
+        assert expected_message in error["message"]
+        parser.assert_not_called()
+        importer.assert_not_called()
+    else:
+        assert response.status_code == success_status
+        parser.assert_called_once()
+        if view_name == "resource_doc.import.by_archive":
+            importer.assert_called_once_with(docs=[])
 
 
 class TestDocArchiveParseApi:

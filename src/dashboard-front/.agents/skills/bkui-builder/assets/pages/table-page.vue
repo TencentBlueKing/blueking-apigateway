@@ -60,9 +60,11 @@
       show-settings
       resizable
       :filter-value="filterData"
+      :sort="sortData"
       :api-method="getTableData"
       :columns="columns"
       @filter-change="handleFilterChange"
+      @sort-change="handleSortChange"
       @clear-filter="handleClearFilter"
     />
 
@@ -114,6 +116,7 @@ import AgTable, {
   type IAgTableInstance,
   type ITableColumn,
   type ITableQuery,
+  type TableSort,
 } from '@/components/base/ag-table';
 import type { ICountAndResults } from '@/services/types/utils';
 
@@ -143,6 +146,7 @@ const activeStatus = shallowRef<'all' | 'enabled' | 'disabled'>('all');
 const keyword = shallowRef('');
 const tableData = ref<IExampleRow[]>([]);
 const filterData = ref<FilterValue>({});
+const sortData = shallowRef<TableSort | undefined>(undefined);
 
 const columns = shallowRef<ITableColumn<IExampleRow>[]>([
   {
@@ -257,10 +261,25 @@ const handleFilterChange = (filterItem: FilterValue) => {
   handleSearch();
 };
 
+const handleSortChange = (sort: TableSort | null | undefined) => {
+  const currentSort = Array.isArray(sort) ? sort[0] : sort;
+  sortData.value = currentSort ?? undefined;
+  if (currentSort) {
+    const { sortBy, descending } = currentSort;
+    // 按后端约定映射排序参数（本仓 Django 接口通常为 -field / field）
+    filterData.value.order_by = descending ? `-${sortBy}` : sortBy;
+  }
+  else {
+    delete filterData.value.order_by;
+  }
+  handleSearch();
+};
+
 const handleClearFilter = () => {
   activeStatus.value = 'all';
   keyword.value = '';
   filterData.value = {};
+  sortData.value = undefined;
   handleSearch();
 };
 

@@ -48,7 +48,7 @@ const handleChange = (key: string) => {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .resource-version-top {
   display: flex;
   padding: 0 24px;
@@ -60,16 +60,16 @@ const handleChange = (key: string) => {
   justify-content: flex-start;
   align-items: center;
 
-  .bk-tab--top .bk-tab-header-item {
+  :deep(.bk-tab--top .bk-tab-header-item) {
     padding: 0 10px;
     font-size: 14px;
   }
 
-  .bk-tab--unborder-card .bk-tab-header {
+  :deep(.bk-tab--unborder-card .bk-tab-header) {
     border-bottom: none;
   }
 
-  .bk-tab-content {
+  :deep(.bk-tab-content) {
     padding: 0;
   }
 }
