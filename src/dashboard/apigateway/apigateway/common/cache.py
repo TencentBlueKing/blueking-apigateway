@@ -33,12 +33,14 @@
     _xxx_cache.get_or_create(f"xxx:{obj.id}", lambda: get_xxx(obj, user_credentials))
 
 缓存 key：
-- 由模块名、函数名、namespace 和参数（忽略 self / cls）生成，参数应为 int、str 等简单类型，不要传入 ORM 对象、request 等
-- 同一模块中不同类的同名方法，需设置不同的 namespace
+- 格式为 "模块名:函数名[|namespace]|参数"，参数应为 int、str 等简单类型，不要传入 ORM 对象、request 等
+- 用于方法时，忽略第一个参数 self / cls，且不含类名：
+  - 所有实例 / 子类共用缓存，返回值不能依赖 self / cls 的状态
+  - 同一模块中不同类的同名方法，key 会冲突，需设置不同的 namespace
 
 缓存值：
 - 使用 pickle 序列化，建议只缓存内置类型；读取时会反序列化 redis 中的数据，redis 不要与不可信方共用
-- 处理逻辑或返回值结构调整时，需更新 namespace，使旧缓存失效
+- 处理逻辑或返回值结构调整时，需设置或更新 namespace，使旧缓存失效
 
 删除：
 - 删除指定缓存：使用被装饰函数的 invalidate，或 region.delete
@@ -155,7 +157,7 @@ def get_region(expiration_time: int) -> CacheRegion:
 
 
 def cache_on_arguments(expiration_time: int, **kwargs):
-    """按函数参数缓存返回值，kwargs 与 dogpile 的 CacheRegion.cache_on_arguments 一致"""
+    """按函数参数缓存返回值，kwargs 与 dogpile 的 CacheRegion.cache_on_arguments 一致；key 的规则见模块说明"""
     # dogpile 默认用 str 转换参数后以空格拼接，None 与 "None"、("a b", None) 与 ("a", "b None") 的 key 相同；
     # 使用 repr 转换，字符串带引号，不会冲突
     kwargs.setdefault("to_str", repr)

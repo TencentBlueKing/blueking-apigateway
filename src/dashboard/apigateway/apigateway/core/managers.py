@@ -59,8 +59,7 @@ class ResourceVersionManager(models.Manager):
         """
         return self.filter(gateway_id=gateway_id).last()
 
-    # 处理逻辑调整时，需更新 namespace 使旧缓存失效
-    @cache_on_arguments(expiration_time=CACHE_TIME_24_HOURS, namespace="v1")
+    @cache_on_arguments(expiration_time=CACHE_TIME_24_HOURS)
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:
         resource_version = self.filter(gateway_id=gateway_id, id=id).first()
         if not resource_version:

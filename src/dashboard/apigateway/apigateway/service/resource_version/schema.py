@@ -77,7 +77,7 @@ def get_resource_id_to_schema_by_resource_version(resource_version_id: int) -> d
     return {schema_info["resource_id"]: schema_info["schema"] for schema_info in resources_version_schema.schema}
 
 
-@cache_on_arguments(expiration_time=CACHE_TIME_5_MINUTES, namespace="v1")
+@cache_on_arguments(expiration_time=CACHE_TIME_5_MINUTES)
 def get_standard_resource_names_set(resource_version_id: int, raise_exception: bool = False) -> Set[str]:
     """获取资源版本中的普通资源名称集合，用于 MCP Server 等仅接受普通资源的场景。
 
@@ -101,8 +101,7 @@ def get_standard_resource_names_set(resource_version_id: int, raise_exception: b
     }
 
 
-# 版本中包含的配置不会变化，但是处理逻辑可能调整，调整时需更新 namespace 使旧缓存失效
-@cache_on_arguments(expiration_time=CACHE_TIME_5_MINUTES, namespace="v1")
+@cache_on_arguments(expiration_time=CACHE_TIME_5_MINUTES)
 def get_used_stage_vars(gateway_id: int, resource_version_id: int):
     """获取资源版本中被资源引用的环境变量，用于发布校验时检查环境变量引用。
 
