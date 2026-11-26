@@ -23,6 +23,8 @@ from typing import Dict
 
 import redis
 from django.conf import settings
+from redis.cluster import ClusterNode, RedisCluster
+from redis.sentinel import Sentinel
 
 from .exception import LockTimeout
 
@@ -73,6 +75,57 @@ def get_redis_pool(redis_conf):
     )
 
 
+def new_redis_client(redis_conf):
+    """
+    @param redis_conf: redis 配置，mode 支持 single / sentinel / cluster
+    @return: redis client
+    """
+    mode = redis_conf.get("mode", "single")
+    if mode == "single":
+        # client 持有连接池，close 时一并断开连接
+        return redis.Redis.from_pool(get_redis_pool(redis_conf))
+
+    kwargs = {
+        "password": redis_conf["password"],
+        "max_connections": redis_conf["max_connections"],
+        "socket_timeout": REDIS_TIMEOUT,
+        "socket_connect_timeout": REDIS_TIMEOUT,
+        # redis-py will send SETINFO command, not valid for older version redis
+        "lib_name": None,
+        "lib_version": None,
+    }
+    # support tls
+    tls_kwargs = {
+        "ssl": True,
+        "ssl_ca_certs": redis_conf.get("tls_cert_ca_file") or None,
+        "ssl_certfile": redis_conf.get("tls_cert_file") or None,
+        "ssl_keyfile": redis_conf.get("tls_cert_key_file") or None,
+        "ssl_check_hostname": redis_conf.get("tls_check_hostname", False),
+    }
+    redis_kwargs = {**kwargs, **tls_kwargs} if redis_conf.get("tls_enabled") else kwargs
+
+    addrs = [addr.rsplit(":", 1) for addr in redis_conf["addrs"]]
+    if mode == "sentinel":
+        sentinel = Sentinel(
+            [(host, int(port)) for host, port in addrs],
+            # sentinel 节点的密码和 tls 与 redis 节点分开配置
+            sentinel_kwargs={
+                **kwargs,
+                "password": redis_conf.get("sentinel_password"),
+                **(tls_kwargs if redis_conf.get("sentinel_tls_enabled") else {}),
+            },
+            db=redis_conf.get("db", 0),
+            **redis_kwargs,
+        )
+        return sentinel.master_for(redis_conf["sentinel_master_name"])
+
+    if mode == "cluster":
+        # redis cluster only support db 0
+        return RedisCluster(startup_nodes=[ClusterNode(host, int(port)) for host, port in addrs], **redis_kwargs)
+
+    raise ValueError(f"unsupported redis mode: {mode}")
+
+
 def get_redis_client(name: str, redis_conf):
     if not redis_conf:
         return None
@@ -82,7 +135,7 @@ def get_redis_client(name: str, redis_conf):
         return redis_client
 
     try:
-        redis_client = redis.Redis(connection_pool=get_redis_pool(redis_conf))
+        redis_client = new_redis_client(redis_conf)
         redis_client.ping()
         REDIS_CLIENTS[name] = redis_client
         return redis_client
@@ -94,6 +147,15 @@ def get_redis_client(name: str, redis_conf):
 def get_default_redis_client():
     """Returns a default redis client"""
     return get_redis_client("default", getattr(settings, "DEFAULT_REDIS_CONFIG", None))
+
+
+def get_redis_lock_name(name: str) -> str:
+    """python-redis-lock 的 lua 脚本会同时操作 lock:{name} 和 lock-signal:{name}，
+    redis cluster 下需要使用 hash tag 保证两个 key 在同一个 slot
+    """
+    if settings.DEFAULT_REDIS_CONFIG.get("mode") == "cluster":
+        return f"{{{name}}}"
+    return name
 
 
 class Lock(object):

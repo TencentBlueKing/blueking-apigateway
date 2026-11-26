@@ -90,6 +90,10 @@ class TestRelatedLogRecordsFetcher:
         assert result == [{"api_id": 1}]
 
     def test_filter_request_log_records(self, mocker):
+        get_filter_config = mocker.patch(
+            "apigateway.service.alert_flow.base.AlarmFilterConfig.objects.get_filter_config",
+            return_value=[],
+        )
         mocker.patch(
             "apigateway.service.alert_flow.base.RelatedLogRecordsFetcher._is_record_need_alert",
             side_effect=[True, False, True],
@@ -98,21 +102,18 @@ class TestRelatedLogRecordsFetcher:
         result = self.fetcher._filter_request_log_records(AlarmTypeEnum.APP_REQUEST, records)
 
         assert len(result) == 2
+        # 过滤条件只获取一次
+        get_filter_config.assert_called_once_with(AlarmTypeEnum.APP_REQUEST.value)
 
     def test_is_record_need_alert(self, mocker):
-        mocker.patch(
-            "apigateway.service.alert_flow.base.AlarmFilterConfig.objects.get_filter_config",
-            return_value={},
-        )
-
         mocker.patch(
             "apigateway.service.alert_flow.base.Matcher.is_match",
             side_effect=[True, False],
         )
-        result = self.fetcher._is_record_need_alert(AlarmTypeEnum.APP_REQUEST, {})
+        result = self.fetcher._is_record_need_alert([], {})
         assert result is False
 
-        result = self.fetcher._is_record_need_alert(AlarmTypeEnum.APP_REQUEST, {})
+        result = self.fetcher._is_record_need_alert([], {})
         assert result is True
 
     def test_do(self, mocker, faker, mock_event):

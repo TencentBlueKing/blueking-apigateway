@@ -17,9 +17,10 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from django.utils import translation
 
 from apigateway.biz.esb import BoardConfig
-from apigateway.biz.esb.sdk import PythonSDK, SimplePythonSDKManager
+from apigateway.biz.esb.sdk import ESBSDKFetcher, PythonSDK, SimplePythonSDKManager
 
 
 @pytest.fixture()
@@ -87,3 +88,19 @@ class TestSimplePythonSDKManager:
         assert sdk.sdk_version_number == package.version
         assert sdk.sdk_download_url == package.url
         assert sdk.sdk_install_command != ""
+
+
+class TestESBSDKFetcher:
+    def test_get_sdk_cached_by_locale(self, mocker):
+        get_manager = mocker.patch("apigateway.biz.esb.sdk.sdk_factory.PythonSDKManager.get_manager")
+        get_manager.return_value.get_sdk.return_value = None
+
+        for locale in ("zh-hans", "en", "en"):
+            with translation.override(locale):
+                ESBSDKFetcher.get_sdk("open", "python")
+
+        assert get_manager.call_count == 2
+
+    def test_get_sdk_unsupported_language(self):
+        with pytest.raises(ValueError, match="unsupported programming language"):
+            ESBSDKFetcher.get_sdk("open", "golang")

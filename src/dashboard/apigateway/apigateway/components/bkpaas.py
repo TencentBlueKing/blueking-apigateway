@@ -22,9 +22,9 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NoReturn, Optional
 from urllib.parse import urlparse
 
-from cachetools import TTLCache, cached
 from django.conf import settings
 
+from apigateway.common.cache import cache_on_arguments
 from apigateway.common.error_codes import error_codes
 from apigateway.common.tenant.constants import (
     TENANT_ID_OPERATION,
@@ -143,7 +143,7 @@ def _get_app_no_cache(tenant_id: str, app_code: str) -> Optional[Dict[str, Any]]
     return result.get(app_code)
 
 
-@cached(cache=TTLCache(maxsize=2000, ttl=300))
+@cache_on_arguments(expiration_time=300)
 def _get_app_with_cache(tenant_id: str, app_code: str) -> Optional[Dict[str, Any]]:
     """get app info from paasv3
 

@@ -17,9 +17,7 @@
 #
 import datetime
 
-import fakeredis
 import pytest
-import redis
 from ddf import G
 
 from apigateway.apps.programmable_gateway.models import ProgrammableGatewayDeployHistory
@@ -30,13 +28,6 @@ from apigateway.core.models import Gateway, Release, ReleaseHistory, ResourceVer
 from apigateway.tests.utils.testing import dummy_time
 
 pytestmark = pytest.mark.django_db
-
-
-@pytest.fixture(autouse=True)
-def fake_redis(mocker):
-    client = fakeredis.FakeRedis()
-    mocker.patch("apigateway.biz.programmable.releaser.get_default_redis_client", return_value=client)
-    return client
 
 
 class TestProgrammableGatewayReleaser:
@@ -211,7 +202,7 @@ class TestGetPaaSDeployStatusCache:
         )
 
     @pytest.mark.parametrize("paas_status", ["successful", "failed", "interrupted"])
-    def test_finished_status_is_cached(self, mocker, fake_redis, paas_status):
+    def test_finished_status_is_cached(self, mocker, paas_status):
         mock_result = mocker.patch(
             "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
             return_value={"status": paas_status},
@@ -220,7 +211,6 @@ class TestGetPaaSDeployStatusCache:
         assert self._get_status() == paas_status
         assert self._get_status() == paas_status
         mock_result.assert_called_once()
-        assert fake_redis.ttl("bk_apigw:programmable_paas_deploy_status:default:demo:version_publish:deploy-1") > 0
 
     @pytest.mark.parametrize("paas_result", [{"status": "pending"}, {}])
     def test_unfinished_status_is_not_cached(self, mocker, paas_result):
@@ -252,24 +242,4 @@ class TestGetPaaSDeployStatusCache:
         self._get_status()
         self._get_status(**other_scope)
 
-        assert mock_result.call_count == 2
-
-    @pytest.mark.parametrize(
-        "side_effect",
-        [None, redis.ConnectionError("redis error")],
-        ids=["redis-unavailable", "redis-error"],
-    )
-    def test_redis_failure_falls_back_to_paas(self, mocker, side_effect):
-        mocker.patch(
-            "apigateway.biz.programmable.releaser.get_default_redis_client",
-            return_value=None,
-            side_effect=side_effect,
-        )
-        mock_result = mocker.patch(
-            "apigateway.biz.programmable.releaser.ProgrammableGatewayReleaser._get_paas_deploy_result",
-            return_value={"status": "failed"},
-        )
-
-        assert self._get_status() == "failed"
-        assert self._get_status() == "failed"
         assert mock_result.call_count == 2

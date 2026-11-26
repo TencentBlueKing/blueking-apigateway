@@ -47,7 +47,6 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.error_codes import APIError
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
-from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -55,10 +54,7 @@ from apigateway.utils.time import NeverExpiresTime, now_datetime
 class TestMCPServerHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
-        get_standard_resource_names_set.cache_clear()
         self.gateway = create_gateway()
-        yield
-        get_standard_resource_names_set.cache_clear()
 
     @staticmethod
     def _release_resources(gateway, stage, resources):

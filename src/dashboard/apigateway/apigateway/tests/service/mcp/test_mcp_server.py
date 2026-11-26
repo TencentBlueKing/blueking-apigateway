@@ -29,14 +29,6 @@ from apigateway.service.mcp import (
     build_mcp_server_url,
     update_stage_mcp_server_related_resource_names,
 )
-from apigateway.service.resource_version import get_standard_resource_names_set
-
-
-@pytest.fixture(autouse=True)
-def clear_resource_names_cache():
-    get_standard_resource_names_set.cache_clear()
-    yield
-    get_standard_resource_names_set.cache_clear()
 
 
 class TestUpdateStageMcpServerRelatedResourceNames:

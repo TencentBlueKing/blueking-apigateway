@@ -17,9 +17,8 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import operator
-from typing import TYPE_CHECKING, Optional
+from typing import List, Optional
 
-from cachetools import TTLCache, cached
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
@@ -38,8 +37,8 @@ from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.audit import Auditor
 from apigateway.biz.data_plane import DataPlaneHandler
 from apigateway.biz.gateway import GatewayHandler, GatewayRelatedAppHandler, replace_gateway_administrators
+from apigateway.common.cache import cache_on_arguments
 from apigateway.common.constants import (
-    CACHE_MAXSIZE,
     CACHE_TIME_5_MINUTES,
     CallSourceTypeEnum,
 )
@@ -64,9 +63,6 @@ from .serializers import (
     GatewaySyncInputSLZ,
     GatewayUpdateStatusInputSLZ,
 )
-
-if TYPE_CHECKING:
-    from django.db.models.query import QuerySet
 
 
 @method_decorator(
@@ -99,7 +95,7 @@ class GatewayListApi(generics.ListAPIView):
                 raise serializers.ValidationError("tenant_id is required in multi-tenant mode")
             tenant_id = request.tenant_id
 
-        queryset = self._filter_list_queryset(
+        gateway_ids = self._filter_list_gateway_ids(
             name=data.get("name"),
             query=data.get("query"),
             user_auth_type=data.get("user_auth_type"),
@@ -107,8 +103,8 @@ class GatewayListApi(generics.ListAPIView):
             tenant_id=tenant_id,
             kind=data.get("kind"),
         )
-        gateways = list(queryset)
-        gateway_ids = [gateway.id for gateway in gateways]
+        # 缓存期间网关可能被停用或取消公开，查询时需重新过滤
+        gateways = list(GatewayHandler.list_public_released_gateways().filter(id__in=gateway_ids))
 
         slz = self.get_serializer(
             gateways,
@@ -120,8 +116,8 @@ class GatewayListApi(generics.ListAPIView):
         )
         return V1OKJsonResponse(data=sorted(slz.data, key=operator.itemgetter("name")))
 
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_5_MINUTES))
-    def _filter_list_queryset(
+    @cache_on_arguments(expiration_time=CACHE_TIME_5_MINUTES)
+    def _filter_list_gateway_ids(
         self,
         name: Optional[str] = None,
         query: Optional[str] = None,
@@ -129,9 +125,9 @@ class GatewayListApi(generics.ListAPIView):
         fuzzy: Optional[bool] = None,
         tenant_id: Optional[str] = None,
         kind: Optional[str] = None,
-    ) -> QuerySet:
+    ) -> List[int]:
         """
-        获取可用的网关列表
+        获取可用的网关 ID 列表
         - 1. 已启用
         - 2. 公开
         - 3. 已发布
@@ -172,7 +168,7 @@ class GatewayListApi(generics.ListAPIView):
                 if auth_config.user_auth_type == user_auth_type
             ]
 
-        return queryset.filter(id__in=gateway_ids)
+        return gateway_ids
 
 
 @method_decorator(

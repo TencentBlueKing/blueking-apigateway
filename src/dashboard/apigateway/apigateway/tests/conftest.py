@@ -44,6 +44,7 @@ from apigateway.biz.gateway import replace_gateway_administrators
 from apigateway.biz.resource import ResourceHandler
 from apigateway.biz.resource.models import ResourceAuthConfig, ResourceBackendConfig, ResourceData
 from apigateway.biz.resource_version import ResourceDocVersionHandler, ResourceVersionHandler
+from apigateway.common.cache import CACHE_REGIONS
 from apigateway.common.factories import SchemaFactory
 from apigateway.core.constants import (
     ContextScopeTypeEnum,
@@ -781,6 +782,16 @@ def request_view(request_factory):
 @pytest.fixture(autouse=True)
 def mock_rest_framework_settings(settings):
     settings.REST_FRAMEWORK.update({"DATETIME_FORMAT": "%Y-%m-%d %H:%M:%S"})
+
+
+@pytest.fixture(autouse=True)
+def memory_cache_regions():
+    """use memory backend instead of redis, and isolate cache between tests"""
+    for region in CACHE_REGIONS:
+        # memory_pickle 与 redis 一样会序列化缓存值，可以发现无法 pickle 的返回值
+        region.configure(
+            "dogpile.cache.memory_pickle", expiration_time=region.expiration_time, replace_existing_backend=True
+        )
 
 
 @pytest.fixture(autouse=True)

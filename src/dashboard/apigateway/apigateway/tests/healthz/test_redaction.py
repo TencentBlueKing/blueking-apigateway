@@ -47,10 +47,10 @@ class TestHealthzView:
         client.ping.side_effect = Exception("redis://user:password@example.com:6379")
         log_exception = mocker.patch("apigateway.healthz.views.logger.exception")
 
-        mocker.patch("apigateway.healthz.views.get_redis_pool", return_value=object())
-        mocker.patch("apigateway.healthz.views.redis.Redis", return_value=client)
+        mocker.patch("apigateway.healthz.views.new_redis_client", return_value=client)
 
         with pytest.raises(CheckError, match="check redis failed"):
             HealthzView()._check_redis()
 
         log_exception.assert_called_once_with("healthz redis check failed")
+        client.close.assert_called_once()

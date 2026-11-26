@@ -51,7 +51,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Gateway, PublishEvent, Release, ReleaseHistory, ResourceVersion, Stage
 from apigateway.utils.exception import LockTimeout
-from apigateway.utils.redis_utils import get_default_redis_client
+from apigateway.utils.redis_utils import get_default_redis_client, get_redis_lock_name
 from apigateway.utils.time import NeverExpiresTime
 
 BuiltinPermission: TypeAlias = tuple[str, int]
@@ -155,7 +155,7 @@ class OAuth2BuiltinPermissionReconciler:
     ) -> OAuth2BuiltinPermissionResult:
         lock = redis_lock.Lock(
             get_default_redis_client(),
-            f"bk_apigw:oauth2_builtin_permission:{gateway.id}",
+            get_redis_lock_name(f"bk_apigw:oauth2_builtin_permission:{gateway.id}"),
             expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
             auto_renewal=True,
             strict=False,
