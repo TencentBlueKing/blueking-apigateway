@@ -1,0 +1,32 @@
+src/dashboard/apigateway/apigateway/apis/web/skill_marketplace/views.py
+  s_06ba4b1d79858f::t_e0f876cee30a32 158-160
+  s_06ba4b1d79858f::t_c002e87905d8a2 180-182
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_skill.py
+  s_06ba4b1d79858f::t_d39a90363337a9 230,233-234,236,238-248
+  s_06ba4b1d79858f::t_0fdf1fa014aa68 228-229
+  s_06ba4b1d79858f::t_d6f27b79369858 231-232
+  s_06ba4b1d79858f::t_7b99058a95858b 235
+  s_06ba4b1d79858f::t_86dc54db5bf5a8 237
+src/dashboard/apigateway/apigateway/biz/skill/skill.py
+  s_06ba4b1d79858f::t_a45fe6fd3521ef 217,220,222-223,225-226
+  s_06ba4b1d79858f::t_854b3d778e1199 227-236
+  s_06ba4b1d79858f::t_e6e49b38a96c44 218-219
+  s_06ba4b1d79858f::t_3ef9820144ad4a 221
+  s_06ba4b1d79858f::t_3e48cdbcd8f8a4 224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61d7609293edfb8dd120e233bf6e9a8ab25e6c1e",
+  "prompts": {},
+  "sessions": {
+    "s_06ba4b1d79858f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "449006a5-b43d-41c4-a2b6-d489b82b0631",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
