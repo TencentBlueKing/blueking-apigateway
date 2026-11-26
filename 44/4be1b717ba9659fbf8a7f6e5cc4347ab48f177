@@ -1,0 +1,40 @@
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_declaration.py
+  s_c39ba1ebe3a91b::t_03dc389600cf94 65-73
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_archive.py
+  s_c39ba1ebe3a91b::t_d1a61eb46ec8af 67-75
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_manager.py
+  s_9b6540f451748c::t_aa7cdbc604edca 116-125
+src/dashboard/apigateway/apigateway/biz/skill/manager.py
+  s_9b6540f451748c::t_f4dfd66740520a 97,101
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_uploader.py
+  s_c39ba1ebe3a91b::t_bbbbe78a22410f 114-123,125
+src/dashboard/apigateway/apigateway/biz/skill/archive.py
+  s_c39ba1ebe3a91b::t_fb77958a29e9c7 85-86
+src/dashboard/apigateway/apigateway/biz/skill/declaration.py
+  s_c39ba1ebe3a91b::t_65b79b8b0b3cd4 586
+  s_c39ba1ebe3a91b::t_cef7946f103f3e 581,585
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "444be1b717ba9659fbf8a7f6e5cc4347ab48f177",
+  "prompts": {},
+  "sessions": {
+    "s_9b6540f451748c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9d975ead-039b-428a-bb9e-686ecfc15cb8",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    },
+    "s_c39ba1ebe3a91b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d0994a7d-42ad-4092-9f0a-0530ed6481a6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
