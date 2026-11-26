@@ -1,0 +1,63 @@
+src/dashboard/apigateway/apigateway/biz/skill/AGENTS.md
+  s_deaceb6f3c4123::t_e05091a3221f9a 30
+  s_deaceb6f3c4123::t_11e0965d85b62b 193
+src/dashboard/apigateway/apigateway/apis/web/skill/serializers.py
+  s_deaceb6f3c4123::t_c0b29bc63ef653 276-279
+  s_deaceb6f3c4123::t_dedf57fa85d84c 296,299
+  s_deaceb6f3c4123::t_acf9be0326c166 295,297-298
+  s_deaceb6f3c4123::t_41409a767e1530 30
+docs/ddd-ubiquitous-language.md
+  s_deaceb6f3c4123::t_2960c726307a73 188
+  s_deaceb6f3c4123::t_8d9fa326aaced1 202
+src/dashboard/apigateway/apigateway/apis/web/skill_marketplace/serializers.py
+  s_deaceb6f3c4123::t_d4e68b6e0a81d8 131,133-134
+  s_deaceb6f3c4123::t_528ead17fc2ee7 24
+  s_deaceb6f3c4123::t_eb467e0e8c8aee 115-116
+  s_deaceb6f3c4123::t_d02470970922f6 130,132
+src/dashboard/apigateway/apigateway/tests/apis/web/skill_marketplace/test_views.py
+  s_deaceb6f3c4123::t_3505e30c98d188 60
+  s_deaceb6f3c4123::t_d30d86d281ffbe 143-146
+  s_deaceb6f3c4123::t_f9f71882815c05 23
+  s_deaceb6f3c4123::t_08c5d0347fe8d9 130-131
+  s_deaceb6f3c4123::t_4a22dcc471ce47 229-261
+src/dashboard/apigateway/apigateway/apis/web/skill_marketplace/urls.py
+  s_deaceb6f3c4123::t_55df12b1ae44a7 25
+  s_deaceb6f3c4123::t_c727240392a6ef 73-78
+src/dashboard/apigateway/apigateway/apis/web/skill_marketplace/views.py
+  s_deaceb6f3c4123::t_c30c26753c9de2 189-208
+src/dashboard/apigateway/apigateway/tests/biz/skill/test_skill.py
+  s_deaceb6f3c4123::t_e646b0fddcad86 285
+  s_deaceb6f3c4123::t_f6fe8b7acc9f46 294-297,299-307,309-310
+  s_deaceb6f3c4123::t_156f54f0921839 203,207
+src/dashboard/apigateway/apigateway/biz/skill/skill.py
+  s_deaceb6f3c4123::t_c37b640fa6d9bd 384,387-388
+  s_deaceb6f3c4123::t_b5878c9828c885 283-284
+  s_deaceb6f3c4123::t_87d4d83793f0bc 409,411,413-414,416-419,421,423
+  s_deaceb6f3c4123::t_c8d64ca4e2e48e 410
+  s_deaceb6f3c4123::t_d51d17ade3a464 415
+  s_deaceb6f3c4123::t_653f05d99e8687 18
+  s_deaceb6f3c4123::t_e4183566f6be1d 420
+src/dashboard/apigateway/apigateway/apis/v2/open/views.py
+  s_deaceb6f3c4123::t_c355b5bfb774be 32
+  s_deaceb6f3c4123::t_753009174f4654 76
+src/dashboard/apigateway/apigateway/biz/skill/manager.py
+  s_deaceb6f3c4123::t_20d0b7ceb67fd6 85
+src/dashboard/apigateway/apigateway/tests/apis/web/skill/test_views.py
+  s_deaceb6f3c4123::t_dc9c2444c05395 314,325,327-341
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "556897ac50cd5ca061c044c9403e11c71c672d1e",
+  "prompts": {},
+  "sessions": {
+    "s_deaceb6f3c4123": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4e227122-bb08-4c46-9c08-43ac7f115672",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
