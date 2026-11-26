@@ -27,11 +27,13 @@ from apigateway.apis.web.resource.serializers import (
     BackendPathCheckInputSLZ,
     HttpBackendConfigSLZ,
     ResourceAuthConfigSLZ,
+    ResourceBatchUpdateInputSLZ,
     ResourceDataImportSLZ,
     ResourceExportOutputSLZ,
     ResourceInputSLZ,
     ResourceListOutputSLZ,
 )
+from apigateway.apps.label.models import APILabel
 from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import (
     Backend,
@@ -39,6 +41,41 @@ from apigateway.core.models import (
     Resource,
     Stage,
 )
+
+
+class TestResourceBatchUpdateInputSLZ:
+    @pytest.mark.parametrize("is_update_labels", [True, False])
+    @pytest.mark.parametrize("label_kind", ["foreign", "mixed", "missing", "local", "empty"])
+    def test_validate_label_ids(self, fake_resource, label_kind, is_update_labels):
+        local_label = G(APILabel, gateway=fake_resource.gateway)
+        foreign_label = G(APILabel)
+        missing_label_id = foreign_label.id
+        if label_kind == "missing":
+            foreign_label.delete()
+        label_ids = {
+            "foreign": [foreign_label.id],
+            "mixed": [local_label.id, foreign_label.id],
+            "missing": [missing_label_id],
+            "local": [local_label.id],
+            "empty": [],
+        }[label_kind]
+        slz = ResourceBatchUpdateInputSLZ(
+            data={
+                "ids": [fake_resource.id],
+                "is_public": True,
+                "allow_apply_permission": True,
+                "is_update_labels": is_update_labels,
+                "label_ids": label_ids,
+            },
+            context={"gateway_id": fake_resource.gateway.id},
+        )
+
+        if not is_update_labels or label_kind in {"local", "empty"}:
+            slz.is_valid(raise_exception=True)
+            assert slz.validated_data["label_ids"] == label_ids
+        else:
+            assert not slz.is_valid()
+            assert set(slz.errors) == {"label_ids"}
 
 
 class TestResourceAuthConfigSLZ:
