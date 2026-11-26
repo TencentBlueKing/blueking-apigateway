@@ -3124,6 +3124,11 @@ msgstr ""
 msgid "负载均衡类型为 Weighted-RR 时，Host 权重必填。"
 msgstr "When the loadbalance type is Weighted-RR, the Host weight is required."
 
+#: apigateway/common/django/validators.py:33
+#, python-brace-format
+msgid "文件大小不能超过 {max_size}MB。"
+msgstr "File size cannot exceed {max_size}MB."
+
 #: apigateway/common/django/validators.py:35
 msgid "名称不能以【-】结尾。"
 msgstr "Name should not endswith `-`"
