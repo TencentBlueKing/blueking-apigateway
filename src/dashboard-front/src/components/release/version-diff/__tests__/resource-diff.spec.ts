@@ -23,6 +23,8 @@ import {
   createDiffIndex,
   filterDiffData,
   getPluginDiffClass,
+  hasEffectiveAllowApplyDiff,
+  hasEffectiveResourcePermDiff,
   hasOnlyDocTimeDiff,
   hasProxyDisplayDiff,
   matchesResourceKeyword,
@@ -287,6 +289,152 @@ describe('components/release/version-diff/resource-diff', () => {
       expect(onlyDelete.add).toEqual([]);
       expect(onlyDelete.update).toEqual([]);
       expect(onlyDelete.delete).toEqual([delItem]);
+    });
+  });
+
+  describe('hasEffectiveAllowApplyDiff', () => {
+    const createAuthResource = (options: {
+      isPublic: boolean
+      allowApply: boolean
+      appRequired: boolean
+      permRequired: boolean
+    }) => createResource({
+      is_public: options.isPublic,
+      allow_apply_permission: options.allowApply,
+      contexts: {
+        resource_auth: {
+          config: JSON.stringify({
+            auth_verified_required: true,
+            app_verified_required: options.appRequired,
+            resource_perm_required: options.permRequired,
+          }),
+        },
+      },
+    } as any);
+
+    it('不公开资源修改校验应用权限，或无应用权限校验资源修改是否公开时，均不误报允许申请权限差异', () => {
+      // 场景 1：不公开资源的 resource_perm_required 从 true 变为 false（两侧有效值均为 false）
+      const sourcePrivate = createAuthResource({
+        isPublic: false,
+        allowApply: false,
+        appRequired: true,
+        permRequired: true,
+      });
+      const targetPrivate = createAuthResource({
+        isPublic: false,
+        allowApply: false,
+        appRequired: true,
+        permRequired: false,
+      });
+      expect(hasEffectiveAllowApplyDiff(sourcePrivate, {
+        contexts: { resource_auth: { config: { resource_perm_required: false } } },
+      } as any)).toBe(false);
+      expect(hasEffectiveAllowApplyDiff(targetPrivate, {
+        contexts: { resource_auth: { config: { resource_perm_required: true } } },
+      } as any)).toBe(false);
+
+      // 场景 2：未开启校验应用权限的资源修改 is_public（两侧有效值均为 false）
+      const sourceNoPerm = createAuthResource({
+        isPublic: true,
+        allowApply: false,
+        appRequired: true,
+        permRequired: false,
+      });
+      const targetNoPerm = createAuthResource({
+        isPublic: false,
+        allowApply: false,
+        appRequired: true,
+        permRequired: false,
+      });
+      expect(hasEffectiveAllowApplyDiff(sourceNoPerm, { is_public: false } as any)).toBe(false);
+      expect(hasEffectiveAllowApplyDiff(targetNoPerm, { is_public: true } as any)).toBe(false);
+    });
+
+    it('有效允许申请权限结果在两侧确实变化时，源侧与目标侧对称返回 true', () => {
+      // 场景 1：显式切换 allow_apply_permission
+      const sourceAllowed = createAuthResource({
+        isPublic: true,
+        allowApply: true,
+        appRequired: true,
+        permRequired: true,
+      });
+      const targetDisallowed = createAuthResource({
+        isPublic: true,
+        allowApply: false,
+        appRequired: true,
+        permRequired: true,
+      });
+      expect(hasEffectiveAllowApplyDiff(sourceAllowed, { allow_apply_permission: false } as any)).toBe(true);
+      expect(hasEffectiveAllowApplyDiff(targetDisallowed, { allow_apply_permission: true } as any)).toBe(true);
+
+      // 场景 2：历史脏快照中两侧 allow_apply_permission 都为 true，但目标侧关闭了 is_public，导致展示值从「是」变为「否」
+      const dirtyTarget = createAuthResource({
+        isPublic: false,
+        allowApply: true,
+        appRequired: true,
+        permRequired: true,
+      });
+      expect(hasEffectiveAllowApplyDiff(sourceAllowed, { is_public: false } as any)).toBe(true);
+      expect(hasEffectiveAllowApplyDiff(dirtyTarget, { is_public: true } as any)).toBe(true);
+    });
+  });
+
+  describe('hasEffectiveResourcePermDiff', () => {
+    const createAuthOnlyResource = (appRequired: boolean, permRequired: boolean) => createResource({
+      contexts: {
+        resource_auth: {
+          config: JSON.stringify({
+            auth_verified_required: true,
+            app_verified_required: appRequired,
+            resource_perm_required: permRequired,
+          }),
+        },
+      },
+    } as any);
+
+    it('双方均关闭应用认证时，历史快照残留的 resource_perm_required 从 true 变为 false 不误报差异', () => {
+      const legacySource = createAuthOnlyResource(false, true);
+      const normalizedTarget = createAuthOnlyResource(false, false);
+
+      expect(hasEffectiveResourcePermDiff(legacySource, {
+        contexts: { resource_auth: { config: { resource_perm_required: false } } },
+      })).toBe(false);
+      expect(hasEffectiveResourcePermDiff(normalizedTarget, {
+        contexts: { resource_auth: { config: { resource_perm_required: true } } },
+      })).toBe(false);
+    });
+
+    it('仅切换应用认证且两侧 resource_perm_required 均为 false 时，双方生效值同为 false 不误报差异', () => {
+      const sourceAppNoPerm = createAuthOnlyResource(true, false);
+      const targetNoAppNoPerm = createAuthOnlyResource(false, false);
+
+      expect(hasEffectiveResourcePermDiff(sourceAppNoPerm, {
+        contexts: { resource_auth: { config: { app_verified_required: false } } },
+      })).toBe(false);
+      expect(hasEffectiveResourcePermDiff(targetNoAppNoPerm, {
+        contexts: { resource_auth: { config: { app_verified_required: true } } },
+      })).toBe(false);
+    });
+
+    it('仅切换应用认证导致生效权限校验变化，或应用认证开启时切换权限校验，两侧对称返回 true', () => {
+      // 场景 1：源侧开启应用认证与权限校验，目标侧历史快照仅关闭 app_verified_required（原始 perm 仍为 true）
+      const sourceEffective = createAuthOnlyResource(true, true);
+      const targetDirty = createAuthOnlyResource(false, true);
+      expect(hasEffectiveResourcePermDiff(sourceEffective, {
+        contexts: { resource_auth: { config: { app_verified_required: false } } },
+      })).toBe(true);
+      expect(hasEffectiveResourcePermDiff(targetDirty, {
+        contexts: { resource_auth: { config: { app_verified_required: true } } },
+      })).toBe(true);
+
+      // 场景 2：双方均开启应用认证，显式切换 resource_perm_required
+      const targetPermOff = createAuthOnlyResource(true, false);
+      expect(hasEffectiveResourcePermDiff(sourceEffective, {
+        contexts: { resource_auth: { config: { resource_perm_required: false } } },
+      })).toBe(true);
+      expect(hasEffectiveResourcePermDiff(targetPermOff, {
+        contexts: { resource_auth: { config: { resource_perm_required: true } } },
+      })).toBe(true);
     });
   });
 });

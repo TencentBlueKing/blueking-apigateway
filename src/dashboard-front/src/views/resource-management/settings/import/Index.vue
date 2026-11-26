@@ -361,15 +361,24 @@ const handleRecoverAllRes = () => {
 
 const applyAuthConfig = (action: ActionType, config: IAuthConfig) => {
   const authConfig = normalizeAuthConfig(config);
+  const lockV1AppAuth = !gatewayStore.isResourceAuthV2 && !gatewayStore.currentGateway?.allow_update_gateway_auth;
   previewGroups.value[action].forEach((row) => {
-    // V1 批量表单没有公开客户端选项，保留各资源已有的设置。
-    row.auth_config = {
+    const existingAuth = normalizeAuthConfig(row.auth_config);
+    // V1 批量表单没有公开客户端选项；当网关禁止修改应用认证时，应用认证与权限校验同样处于锁定态，均保留各资源原值。
+    const nextAuth: IAuthConfig = {
       ...authConfig,
+      ...(lockV1AppAuth
+        ? {
+          app_verified_required: existingAuth.app_verified_required,
+          resource_perm_required: existingAuth.resource_perm_required,
+        }
+        : {}),
       oauth2_public_client_enabled: gatewayStore.isResourceAuthV2
         ? authConfig.oauth2_public_client_enabled
-        : authConfig.auth_verified_required && !!row.auth_config?.oauth2_public_client_enabled,
+        : authConfig.auth_verified_required && existingAuth.oauth2_public_client_enabled,
     };
-    if (!row.is_public || !authConfig.resource_perm_required) {
+    row.auth_config = nextAuth;
+    if (!canAllowApplyPermission(Boolean(row.is_public), nextAuth)) {
       row.allow_apply_permission = false;
     }
   });

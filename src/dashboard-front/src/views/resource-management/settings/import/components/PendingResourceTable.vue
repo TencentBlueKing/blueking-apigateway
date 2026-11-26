@@ -96,10 +96,14 @@ const { t } = useI18n();
 const gatewayStore = useGateway();
 const allowNoAuth = computed(() => !!gatewayStore.currentGateway?.allow_update_gateway_auth);
 
-const defaultBulkAuthConfig = () => gatewayStore.isResourceAuthV2
-  ? { ...DEFAULT_AUTH_CONFIG }
-  : applyAuthKind(DEFAULT_AUTH_CONFIG, '');
+const defaultBulkAuthConfig = () => {
+  if (gatewayStore.isResourceAuthV2) return { ...DEFAULT_AUTH_CONFIG };
+  // V1 且网关禁止修改应用认证时，默认保持应用认证开启
+  return applyAuthKind(DEFAULT_AUTH_CONFIG, allowNoAuth.value ? '' : 'app');
+};
 const tempAuthConfig = ref(defaultBulkAuthConfig());
+// 取消批量修改认证方式时递增，重置子选择器内部的临时交互记忆
+const authSelectorKey = shallowRef(0);
 const localDocConfig = ref({ ...docConfig });
 
 const tableRef = useTemplateRef<IAgTableInstance<ILocalImportedResource>>('tableRef');
@@ -233,6 +237,7 @@ const handleConfirmAuthConfig = () => {
 // 批量修改认证方式取消后
 const handleCancelAuthConfig = () => {
   tempAuthConfig.value = defaultBulkAuthConfig();
+  authSelectorKey.value += 1;
 };
 
 // 点击清空搜索条件后
@@ -262,6 +267,10 @@ const handleConfirmDocConfig = () => {
   emit('confirm-doc-config', localDocConfig.value);
 };
 
+const BULK_POPCONFIRM_OPTIONS = {
+  extCls: 'bk-pop-confirm-box pending-resource-bulk-popconfirm',
+};
+
 const renderAuthConfigColLabel = () => {
   const AuthSelector = gatewayStore.isResourceAuthV2 ? ResourceAuthSelector : LegacyResourceAuthSelector;
   return (
@@ -271,36 +280,45 @@ const renderAuthConfigColLabel = () => {
         <bk-pop-confirm
           width={gatewayStore.isResourceAuthV2 ? 620 : 430}
           trigger="click"
-          title={<span style="font-size: 16px;color: #313238;">{t('批量修改认证方式')}</span>}
-          content={(
-            <div class="multi-edit-popconfirm-wrap" style="margin-bottom: -12px;">
-              <AuthSelector
-                {...{
-                  'authConfig': tempAuthConfig.value,
-                  'onUpdate:authConfig': (value: IResourceAuthFormConfig) => {
-                    tempAuthConfig.value = value;
-                  },
-                }}
-                {...(gatewayStore.isResourceAuthV2 && { allowNoAuth: allowNoAuth.value })}
-                compact
-              />
-            </div>
-          )}
+          title={t('批量修改认证方式')}
+          popoverOptions={BULK_POPCONFIRM_OPTIONS}
           onConfirm={() => handleConfirmAuthConfig()}
           onCancel={() => handleCancelAuthConfig()}
-        >
-          <ag-icon
-            name="bulk-edit"
-            class="edit-action ml-5px color-#3A84FF"
-            v-bk-tooltips={{
-              content: (
-                <div>
-                  {t('批量修改认证方式')}
+          v-slots={{
+            default: () => (
+              <ag-icon
+                name="bulk-edit"
+                class="edit-action ml-5px color-#3A84FF"
+                v-bk-tooltips={{
+                  content: (
+                    <div>
+                      {t('批量修改认证方式')}
+                    </div>
+                  ),
+                }}
+              />
+            ),
+            content: () => (
+              <div class="bk-pop-confirm-content">
+                <div class="multi-edit-popconfirm-wrap" style="margin-bottom: -12px;">
+                  <AuthSelector
+                    key={authSelectorKey.value}
+                    {...{
+                      'authConfig': tempAuthConfig.value,
+                      'onUpdate:authConfig': (value: IResourceAuthFormConfig) => {
+                        tempAuthConfig.value = value;
+                      },
+                    }}
+                    {...(gatewayStore.isResourceAuthV2
+                      ? { allowNoAuth: allowNoAuth.value }
+                      : { canEditAppAuth: allowNoAuth.value })}
+                    compact
+                  />
                 </div>
-              ),
-            }}
-          />
-        </bk-pop-confirm>
+              </div>
+            ),
+          }}
+        />
       </div>
     </div>
   );
@@ -315,53 +333,64 @@ const renderIsPublicColLabel = () => {
         <bk-pop-confirm
           width="360"
           trigger="click"
-          title={<span class="text-16px color-#313238">{t('批量修改公开设置')}</span>}
-          content={(
-            <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
-              <bk-form model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
-                <bk-form-item
-                  label={t('是否公开')}
-                  required={true}
-                  description={t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')}
-                  style="margin-bottom: 12px;"
-                >
-                  <bk-switcher
-                    v-model={tempPublicConfig.value.is_public}
-                    theme="primary"
-                    size="small"
-                  />
-                </bk-form-item>
-                {tempPublicConfig.value.is_public
-                  ? (
-                    <bk-form-item style="margin-bottom: 12px;">
-                      <bk-checkbox
-                        v-model={tempPublicConfig.value.allow_apply_permission}
-                      >
-                        <span class="bottom-line">
-                          {t('允许申请权限')}
-                        </span>
-                      </bk-checkbox>
-                    </bk-form-item>
-                  )
-                  : ''}
-              </bk-form>
-            </div>
-          )}
+          title={t('批量修改公开设置')}
+          popoverOptions={BULK_POPCONFIRM_OPTIONS}
           onConfirm={() => handleConfirmPublicConfig()}
           onCancel={() => handleCancelPublicConfig()}
-        >
-          <ag-icon
-            name="bulk-edit"
-            class="edit-action ml-5px color-#3A84FF"
-            v-bk-tooltips={{
-              content: (
-                <div>
-                  {t('批量修改公开设置')}
+          v-slots={{
+            default: () => (
+              <ag-icon
+                name="bulk-edit"
+                class="edit-action ml-5px color-#3A84FF"
+                v-bk-tooltips={{
+                  content: (
+                    <div>
+                      {t('批量修改公开设置')}
+                    </div>
+                  ),
+                }}
+              />
+            ),
+            content: () => (
+              <div class="bk-pop-confirm-content">
+                <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
+                  <bk-form model={tempPublicConfig.value} labelWidth="100" labelPosition="right">
+                    <bk-form-item
+                      label={t('是否公开')}
+                      required={true}
+                      description={t('公开，则用户可查看资源文档、申请资源权限；不公开，则资源对用户隐藏')}
+                      style="margin-bottom: 12px;"
+                    >
+                      <bk-switcher
+                        v-model={tempPublicConfig.value.is_public}
+                        theme="primary"
+                        size="small"
+                        onChange={(isPublic: boolean) => {
+                          if (!isPublic) {
+                            tempPublicConfig.value.allow_apply_permission = false;
+                          }
+                        }}
+                      />
+                    </bk-form-item>
+                    {tempPublicConfig.value.is_public
+                      ? (
+                        <bk-form-item style="margin-bottom: 12px;">
+                          <bk-checkbox
+                            v-model={tempPublicConfig.value.allow_apply_permission}
+                          >
+                            <span class="bottom-line">
+                              {t('允许申请权限')}
+                            </span>
+                          </bk-checkbox>
+                        </bk-form-item>
+                      )
+                      : ''}
+                  </bk-form>
                 </div>
-              ),
-            }}
-          />
-        </bk-pop-confirm>
+              </div>
+            ),
+          }}
+        />
       </div>
     </div>
   );
@@ -376,53 +405,67 @@ const renderDocColLabel = () => {
         <bk-pop-confirm
           width="360"
           trigger="click"
-          title={<span class="text-16px color-#313238">{t('批量修改资源文档')}</span>}
-          content={(
-            <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
-              <bk-form model={localDocConfig.value} labelWidth="100" labelPosition="right">
-                <bk-form-item
-                  label={t('生成文档')}
-                  style="margin-bottom: 12px;"
-                >
-                  <bk-switcher
-                    v-model={localDocConfig.value.showDoc}
-                    theme="primary"
-                    size="small"
-                  />
-                </bk-form-item>
-                {localDocConfig.value.showDoc
-                  ? (
-                    <bk-form-item
-                      label={t('文档语言')}
-                      style="margin-bottom: 12px;"
-                    >
-                      <bk-radio-group v-model={localDocConfig.value.language} size="small">
-                        <bk-radio label="zh">{t('中文文档')}</bk-radio>
-                        <bk-radio label="en">{t('英文文档')}</bk-radio>
-                      </bk-radio-group>
-                    </bk-form-item>
-                  )
-                  : ''}
-              </bk-form>
-            </div>
-          )}
+          title={t('批量修改资源文档')}
+          popoverOptions={BULK_POPCONFIRM_OPTIONS}
           onAfterShow={resetDocConfigDraft}
           onConfirm={() => handleConfirmDocConfig()}
-        >
-          <ag-icon
-            name="bulk-edit"
-            class="edit-action ml-5px color-#3A84FF"
-            v-bk-tooltips={{
-              content: (
-                <div>
-                  {t('批量修改资源文档')}
+          v-slots={{
+            default: () => (
+              <ag-icon
+                name="bulk-edit"
+                class="edit-action ml-5px color-#3A84FF"
+                v-bk-tooltips={{
+                  content: (
+                    <div>
+                      {t('批量修改资源文档')}
+                    </div>
+                  ),
+                }}
+              />
+            ),
+            content: () => (
+              <div class="bk-pop-confirm-content">
+                <div class="multi-edit-popconfirm-wrap public-config" style="margin-bottom: -12px;">
+                  <bk-form model={localDocConfig.value} labelWidth="100" labelPosition="right">
+                    <bk-form-item
+                      label={t('生成文档')}
+                      style="margin-bottom: 12px;"
+                    >
+                      <bk-switcher
+                        v-model={localDocConfig.value.showDoc}
+                        theme="primary"
+                        size="small"
+                      />
+                    </bk-form-item>
+                    {localDocConfig.value.showDoc
+                      ? (
+                        <bk-form-item
+                          label={t('文档语言')}
+                          style="margin-bottom: 12px;"
+                        >
+                          <bk-radio-group v-model={localDocConfig.value.language} size="small">
+                            <bk-radio label="zh">{t('中文文档')}</bk-radio>
+                            <bk-radio label="en">{t('英文文档')}</bk-radio>
+                          </bk-radio-group>
+                        </bk-form-item>
+                      )
+                      : ''}
+                  </bk-form>
                 </div>
-              ),
-            }}
-          />
-        </bk-pop-confirm>
+              </div>
+            ),
+          }}
+        />
       </div>
     </div>
   );
 };
 </script>
+
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的批量修改确认气泡标题样式 -->
+<style lang="scss">
+.pending-resource-bulk-popconfirm .bk-pop-confirm-title {
+  font-size: 16px;
+  color: #313238;
+}
+</style>

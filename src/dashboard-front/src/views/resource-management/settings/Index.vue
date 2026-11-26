@@ -963,16 +963,19 @@ const columns = computed<ITableColumn<IResourceRow>[]>(() => [
     ellipsis: true,
     width: 100,
     cell: (_h, { row }) => {
+      const enabled = Boolean(
+        row?.auth_config?.auth_verified_required && row?.auth_config?.oauth2_personal_client_enabled,
+      );
       return (
         <bk-tag
           class={
             [
               'border-transparent',
-              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row?.auth_config?.oauth2_personal_client_enabled },
+              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': enabled },
             ]
           }
         >
-          {t(row?.auth_config?.oauth2_personal_client_enabled ? '已开启' : '未开启')}
+          {t(enabled ? '已开启' : '未开启')}
         </bk-tag>
       );
     },

@@ -30,6 +30,7 @@ import {
   getUserAuthMethods,
   getUserAuthMethodsLabel,
   isAuthConfigEmpty,
+  isResourcePermEffective,
   normalizeAuthConfig,
   parseAuthTypeQuery,
   parseResourceAuthConfig,
@@ -166,6 +167,20 @@ describe('utils/auth-config', () => {
         oauth2_personal_client_enabled: false,
         oauth2_public_client_enabled: false,
       });
+
+      // 显式 undefined 不覆盖默认值，且过滤多余的历史上下文键
+      expect(normalizeAuthConfig({
+        auth_verified_required: true,
+        app_verified_required: undefined,
+        resource_perm_required: undefined,
+        skip_auth_verification: false,
+      } as unknown as Record<string, unknown>)).toEqual({
+        auth_verified_required: true,
+        app_verified_required: true,
+        resource_perm_required: true,
+        oauth2_personal_client_enabled: false,
+        oauth2_public_client_enabled: false,
+      });
     });
 
     it('正确区分 v1 与 v2 的认证类型文案与方式文案', () => {
@@ -203,6 +218,18 @@ describe('utils/auth-config', () => {
 
       expect(canConfigureResourcePerm({ app_verified_required: true })).toBe(true);
       expect(canConfigureResourcePerm({ app_verified_required: false })).toBe(false);
+
+      expect(isResourcePermEffective({
+        app_verified_required: true,
+        resource_perm_required: true,
+      })).toBe(true);
+      expect(isResourcePermEffective({
+        app_verified_required: false,
+        resource_perm_required: true,
+      })).toBe(false);
+      expect(isResourcePermEffective({ resource_perm_required: true })).toBe(false);
+      expect(isResourcePermEffective('{"app_verified_required":true,"resource_perm_required":true}')).toBe(true);
+      expect(isResourcePermEffective(null)).toBe(false);
 
       expect(canAllowApplyPermission(true, {
         app_verified_required: true,

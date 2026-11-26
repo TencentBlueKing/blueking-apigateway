@@ -97,7 +97,7 @@
 
       <BkRow :class="{ 'ag-diff': authTypeChanged }">
         <BkCol :span="5">
-          <label class="ag-key">{{ t('认证方式') }}:</label>
+          <label class="ag-key">{{ gatewayStore.isResourceAuthV2 ? t('认证类型') : t('认证方式') }}:</label>
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
@@ -151,7 +151,7 @@
         </BkCol>
         <BkCol :span="10">
           <div class="ag-value">
-            {{ authConfig?.resource_perm_required ? t('是') : t('否') }}
+            {{ isResourcePermEffective(authConfig) ? t('是') : t('否') }}
           </div>
         </BkCol>
       </BkRow>
@@ -439,6 +439,8 @@ import { useGateway } from '@/stores';
 import {
   createDiffIndex,
   getPluginDiffClass,
+  hasEffectiveAllowApplyDiff,
+  hasEffectiveResourcePermDiff,
   hasProxyDisplayDiff,
   normalizeResource,
 } from '../resource-diff';
@@ -452,6 +454,7 @@ import {
   canConfigureResourcePerm,
   getAuthTypeLabel,
   getUserAuthMethodsLabel,
+  isResourcePermEffective,
   parseResourceAuthConfig,
 } from '@/utils/auth-config';
 
@@ -494,7 +497,7 @@ const authConfig = computed(() => parseResourceAuthConfig(normalizedResource.val
 const userRequiredChanged = computed(() => checkDiff('contexts.resource_auth.config.auth_verified_required'));
 const appRequiredChanged = computed(() => checkDiff('contexts.resource_auth.config.app_verified_required'));
 const resourcePermissionChanged = computed(() =>
-  checkDiff('contexts.resource_auth.config.resource_perm_required'),
+  hasEffectiveResourcePermDiff(normalizedResource.value, diffData),
 );
 
 // V2 下开启用户认证时，app_verified_required 表示「OAuth 授权」而非独立的「应用认证」类型
@@ -514,13 +517,10 @@ const canApplyPermission = computed(() =>
   canAllowApplyPermission(!!normalizedResource.value.is_public, authConfig.value),
 );
 const applyPermissionChanged = computed(() =>
-  checkDiff('allow_apply_permission')
-  || checkDiff('is_public')
-  || resourcePermissionChanged.value,
+  hasEffectiveAllowApplyDiff(normalizedResource.value, diffData),
 );
 const showResourcePermission = computed(() =>
   canConfigureResourcePerm(authConfig.value)
-  || authConfig.value?.resource_perm_required
   || resourcePermissionChanged.value
   || appRequiredChanged.value,
 );
@@ -535,7 +535,8 @@ const hasBasicInfoDiff = computed(() =>
   || authTypeChanged.value
   || checkDiff('is_public')
   || userAuthMethodsChanged.value
-  || applyPermissionChanged.value,
+  || applyPermissionChanged.value
+  || resourcePermissionChanged.value,
 );
 const hasRequestConfigDiff = computed(() =>
   checkDiff('method')

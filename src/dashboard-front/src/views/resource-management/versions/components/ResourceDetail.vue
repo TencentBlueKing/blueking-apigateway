@@ -196,7 +196,9 @@
 
                         <BkRow>
                           <BkCol :span="4">
-                            <label class="ag-key">{{ t('认证方式') }}:</label>
+                            <label class="ag-key">
+                              {{ gatewayStore.isResourceAuthV2 ? t('认证类型') : t('认证方式') }}:
+                            </label>
                           </BkCol>
                           <BkCol :span="10">
                             <div class="ag-value">
@@ -243,7 +245,7 @@
                           </BkCol>
                         </BkRow>
 
-                        <BkRow v-if="getAuthConfig(resource)">
+                        <BkRow v-if="canConfigureResourcePerm(getAuthConfig(resource))">
                           <BkCol :span="4">
                             <label class="ag-key">{{ t('校验应用权限') }}:</label>
                           </BkCol>
@@ -488,6 +490,7 @@ import { useGateway } from '@/stores';
 import { getMethodsTheme } from '@/utils';
 import {
   canAllowApplyPermission,
+  canConfigureResourcePerm,
   getAuthTypeLabel,
   getUserAuthMethodsLabel,
   parseResourceAuthConfig,

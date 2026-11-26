@@ -28,12 +28,14 @@
     >
       <ResourceAuthSelector
         v-if="gatewayStore.isResourceAuthV2"
+        :key="`v2-${detailRevision}`"
         v-model:auth-config="formData.auth_config"
         :allow-no-auth="canUpdateGatewayAuth"
         :has-saved-authorization="hasSavedOAuth"
       />
       <LegacyResourceAuthSelector
         v-else
+        :key="`v1-${detailRevision}`"
         v-model:auth-config="formData.auth_config"
         :can-edit-app-auth="canUpdateGatewayAuth"
       />
@@ -102,6 +104,8 @@ const formData = ref({
   is_public: true,
   allow_apply_permission: true,
 });
+// 每次回显新资源详情时递增，重置子选择器中的临时交互记忆与未决弹窗
+const detailRevision = shallowRef(0);
 
 const hasSavedOAuth = computed(() => editingExisting && getUserAuthMethods(detail?.auth_config).includes('oauth'));
 const canUpdateGatewayAuth = computed(() => !!gatewayStore.currentGateway?.allow_update_gateway_auth);
@@ -114,26 +118,25 @@ const allowApplyHint = computed(() => {
   return t('开启后，其他蓝鲸应用可在开发者中心申请本资源访问权限；关闭则只能由网关管理员主动授权。');
 });
 
-watch(
-  () => [formData.value.is_public, formData.value.auth_config.resource_perm_required],
-  ([isPublic, permRequired]) => {
-    if (!isPublic || !permRequired) {
-      formData.value.allow_apply_permission = false;
-    }
-  },
-);
+watch(canAllowApply, (allowed) => {
+  if (!allowed) {
+    formData.value.allow_apply_permission = false;
+  }
+});
 
 watch(
   () => detail,
   (resource) => {
     if (resource && Object.keys(resource).length) {
       const isPublic = resource.is_public ?? true;
+      const authConfig = normalizeAuthConfig(resource.auth_config);
       formData.value = {
-        auth_config: normalizeAuthConfig(resource.auth_config),
+        auth_config: authConfig,
         is_public: isPublic,
-        allow_apply_permission: canAllowApplyPermission(isPublic, resource.auth_config)
+        allow_apply_permission: canAllowApplyPermission(isPublic, authConfig)
           && !!resource.allow_apply_permission,
       };
+      detailRevision.value += 1;
     }
   },
   { immediate: true },
