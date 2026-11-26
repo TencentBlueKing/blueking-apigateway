@@ -88,7 +88,6 @@ const resourceId = ref(0);
 const activeIndex = ref<string[]>(['baseInfo', 'authConfig', 'frontConfig', 'backConfig']);
 const resourceDetail = ref<Record<string, any>>({});
 const isDetailLoading = ref(!!route.params.resourceId);
-const formDataBack = ref<Record<string, any>>({});
 const frontConfig = ref({
   path: '',
   method: 'GET',
@@ -219,8 +218,6 @@ const handleSubmit = async () => {
       await createResources(gatewayId.value, params);
     }
 
-    formDataBack.value = { ...getFormData };
-
     Message({
       message: t(`${resourceId.value && !unref(isClone) ? '更新' : '新建'}成功`),
       theme: 'success',
@@ -237,7 +234,7 @@ const handleSubmit = async () => {
 };
 
 const handleCancel = async () => {
-  const params = { ...getFormData };
+  const params = getFormData();
   const result = await isSidebarClosed(JSON.stringify(params));
   if (result) {
     router.back();
@@ -246,9 +243,8 @@ const handleCancel = async () => {
 
 // 缓存初始表单数据
 const handleSetFormDataBack = () => {
-  formDataBack.value = { ...getFormData };
   nextTick(() => {
-    initSidebarFormData(formDataBack.value);
+    initSidebarFormData(getFormData());
   });
 };
 

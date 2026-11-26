@@ -18,7 +18,12 @@
 
 import { useGateway } from '@/stores';
 import type { IAuthConfig } from '@/types/resource';
-import { getAuthTypeLabel, getUserAuthMethodLabels } from '@/utils/auth-config';
+import {
+  getAuthTypeLabel,
+  getUserAuthMethodLabels,
+  isResourcePermEffective,
+  parseResourceAuthConfig,
+} from '@/utils/auth-config';
 
 /**
  * 自定义钩子函数，用于获取文本信息
@@ -44,25 +49,10 @@ export function useTextGetter() {
    * @param {string | object | null | undefined} authConfig - 认证配置
    * @returns {string} - 权限要求的文本描述
    */
-  const getPermRequiredText = (authConfig: string | object | null | undefined) => {
-    if (!authConfig) return '--';
-    let auth;
-
-    try {
-      if (typeof authConfig === 'string') {
-        auth = JSON.parse(authConfig);
-      }
-      else {
-        auth = authConfig;
-      }
-      if (auth?.resource_perm_required) {
-        return `${t('是')}`;
-      }
-      return `${t('否')}`;
-    }
-    catch {
-      return '--';
-    }
+  const getPermRequiredText = (authConfig: Partial<IAuthConfig> | string | null | undefined) => {
+    const auth = parseResourceAuthConfig(authConfig);
+    if (!auth) return '--';
+    return isResourcePermEffective(auth) ? `${t('是')}` : `${t('否')}`;
   };
 
   /**

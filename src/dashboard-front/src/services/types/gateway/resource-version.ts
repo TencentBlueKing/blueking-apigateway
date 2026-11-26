@@ -1,4 +1,5 @@
 import type { IMCPServerToolSchema, IResourceAuthResponse } from '@/types/mcp-server';
+import type { IAuthConfig } from '@/types/resource';
 
 /** /gateways/{gateway_id}/resource-versions/ [GET] */
 export interface IGatewaysResourceVersionsListQuery {
@@ -60,8 +61,22 @@ export interface IResourceVersionListOutput {
   deletable?: boolean
 }
 
-/** 后端版本 diff 返回的差异对象，仅包含存在变更的字段；值可能为 false、0、null、空集合或嵌套对象。 */
-export type ResourceVersionDiff = Record<string, unknown>;
+/**
+ * 后端版本 diff（`diff.py`）返回的局部差异对象，仅包含两侧存在变更的字段；
+ * 嵌套对象（如 `contexts.resource_auth.config`）同样只包含发生变化的子字段，未出现的字段表示与对侧一致。
+ * 字段值可能为 false、0、null、空集合或嵌套对象。
+ */
+export interface IResourceVersionDiff extends Record<string, unknown> {
+  is_public?: boolean
+  allow_apply_permission?: boolean
+  contexts?: {
+    resource_auth?: {
+      config?: string | Partial<IAuthConfig>
+    }
+  }
+}
+
+export type ResourceVersionDiff = IResourceVersionDiff;
 
 /** 资源版本快照中的插件绑定配置 */
 export interface IResourceVersionPlugin {

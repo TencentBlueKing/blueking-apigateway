@@ -286,7 +286,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const panelNamesList = ref(['add', 'update', 'unchanged', 'uncheck']);
 const isResourceDocSliderVisible = ref(false);
-const editingResource = ref<ILocalImportedResource>({
+const createDefaultEditingResource = (): ILocalImportedResource => ({
   name: '',
   description: '',
   label_ids: [],
@@ -297,6 +297,8 @@ const editingResource = ref<ILocalImportedResource>({
   _localId: -1,
   _unchecked: false,
 });
+
+const editingResource = ref<ILocalImportedResource>(createDefaultEditingResource());
 const isSliderShow = ref(false);
 const isPluginsSliderShow = ref(false);
 const tempPublicConfig = ref({
@@ -338,9 +340,11 @@ const handleEditSliderHidden = () => {
 const setEditingResource = (localId: number) => {
   const resource = Object.values(groups).flat().find(row => row._localId === localId);
   if (resource) {
+    // 每次基于干净默认结构构建编辑态对象，避免残留上一条资源的可选字段
     editingResource.value = {
-      ...editingResource.value,
+      ...createDefaultEditingResource(),
       ...resource,
+      auth_config: resource.auth_config ? { ...resource.auth_config } : undefined,
     };
   }
 };

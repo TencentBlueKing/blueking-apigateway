@@ -102,4 +102,6 @@ export function usePopInfoBox(props: Partial<IProps>) {
   if (props?.isShow) {
     renderInfoBox();
   }
+
+  return infoBoxInstance;
 }

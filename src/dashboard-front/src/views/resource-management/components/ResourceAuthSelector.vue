@@ -248,6 +248,7 @@ const userAuthOptions = computed(() => [
 
 const userAuthMethods = computed<UserAuthMethod[]>(() => getUserAuthMethods(authConfig.value));
 const pendingOAuthRemoval = shallowRef<(confirmed: boolean) => void>();
+const pendingOAuthInfoBox = shallowRef<ReturnType<typeof usePopInfoBox>>();
 const lastUserAuthMethods = ref<UserAuthMethod[]>(['oauth']);
 const selectedUserAuthMethods = computed<UserAuthMethod[]>({
   get: () => userAuthMethods.value,
@@ -289,9 +290,14 @@ watch(userAuthMethods, (methods) => {
   }
 }, { immediate: true });
 
-const finishOAuthRemoval = (confirmed: boolean) => {
+const finishOAuthRemoval = (confirmed: boolean, hideDialog = false) => {
   const resolve = pendingOAuthRemoval.value;
+  const infoBox = pendingOAuthInfoBox.value;
   pendingOAuthRemoval.value = undefined;
+  pendingOAuthInfoBox.value = undefined;
+  if (hideDialog) {
+    infoBox?.hide?.();
+  }
   resolve?.(confirmed);
 };
 
@@ -299,9 +305,9 @@ const finishOAuthRemoval = (confirmed: boolean) => {
 const beforeOAuthChange = (checked: boolean | string | number) => {
   if (checked || !hasSavedAuthorization) return true;
   return new Promise<boolean>((resolve) => {
-    finishOAuthRemoval(false);
+    finishOAuthRemoval(false, true);
     pendingOAuthRemoval.value = resolve;
-    usePopInfoBox({
+    pendingOAuthInfoBox.value = usePopInfoBox({
       isShow: true,
       type: 'warning',
       title: t('确定取消 OAuth 授权？'),
@@ -346,7 +352,7 @@ const handleViewPermGuide = () => {
   window.open(href, '_blank');
 };
 
-onBeforeUnmount(() => finishOAuthRemoval(false));
+onBeforeUnmount(() => finishOAuthRemoval(false, true));
 </script>
 
 <style lang="scss" scoped>

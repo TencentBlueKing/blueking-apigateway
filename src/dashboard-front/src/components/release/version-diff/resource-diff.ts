@@ -20,7 +20,13 @@ import type {
   IResourceVersionDiffResource,
   ResourceVersionDiff,
 } from '@/services/types/gateway/resource-version';
+import type { IAuthConfig } from '@/types/resource';
 import type { IDiffData } from '@/types/resource-version';
+import {
+  canAllowApplyPermission,
+  isResourcePermEffective,
+  parseResourceAuthConfig,
+} from '@/utils/auth-config';
 
 /** 资源版本差异分类 */
 export type ResourceDiffType = keyof IDiffData;
@@ -196,6 +202,73 @@ export const matchesResourceKeyword = (
 
   return [resource.method, resource.path, resource.name, backendPath]
     .some(value => typeof value === 'string' && value.toLowerCase().includes(lowerKeyword));
+};
+
+/**
+ * 基于后端 `diff.py` 局部差异协议，使用「当前侧完整认证配置 + 对侧局部差异」对称还原对侧认证配置。
+ */
+const reconstructOtherSideAuth = (
+  currentAuth: Partial<IAuthConfig> | null,
+  otherSideDiff: ResourceVersionDiff,
+): Partial<IAuthConfig> | null => {
+  const otherAuthDiff = parseResourceAuthConfig(otherSideDiff.contexts?.resource_auth?.config);
+  return currentAuth
+    ? {
+      ...currentAuth,
+      ...otherAuthDiff,
+    }
+    : otherAuthDiff;
+};
+
+/**
+ * 判断「校验应用权限」的实际生效展示值在源/目标两侧是否存在差异。
+ *
+ * 复用后端 `diff.py` 的局部差异协议还原对侧配置并比较 `isResourcePermEffective`：
+ * 避免双方均关闭应用认证时，历史快照残留的原始 `resource_perm_required` 变化导致两侧均显示「否」却误报高亮，
+ * 也避免仅变更 `app_verified_required` 导致生效值变化时漏报高亮。
+ */
+export const hasEffectiveResourcePermDiff = (
+  resource: Pick<IResourceVersionDiffResource, 'contexts'> | null | undefined,
+  otherSideDiff: ResourceVersionDiff | null | undefined,
+): boolean => {
+  if (!resource || !otherSideDiff) {
+    return false;
+  }
+
+  const currentAuth = parseResourceAuthConfig(resource.contexts?.resource_auth?.config);
+  const otherAuth = reconstructOtherSideAuth(currentAuth, otherSideDiff);
+  return isResourcePermEffective(currentAuth) !== isResourcePermEffective(otherAuth);
+};
+
+/**
+ * 判断「允许申请权限」的实际生效展示值在源/目标两侧是否存在差异。
+ *
+ * 依赖后端 `diff.py` 的局部差异协议：`otherSideDiff`（含 `contexts.resource_auth.config`）
+ * 仅包含两侧发生变化的字段，未出现的字段表示与当前侧一致，因此可通过「当前侧完整配置 + 对侧局部差异」
+ * 对称还原对侧的生效结果；仅当两侧有效结果不一致时返回 true，避免不公开或未开应用权限校验时误报高亮。
+ */
+export const hasEffectiveAllowApplyDiff = (
+  resource: Pick<IResourceVersionDiffResource, 'is_public' | 'allow_apply_permission' | 'contexts'> | null | undefined,
+  otherSideDiff: ResourceVersionDiff | null | undefined,
+): boolean => {
+  if (!resource || !otherSideDiff) {
+    return false;
+  }
+
+  const currentAuth = parseResourceAuthConfig(resource.contexts?.resource_auth?.config);
+  const currentEffective = canAllowApplyPermission(Boolean(resource.is_public), currentAuth)
+    && Boolean(resource.allow_apply_permission);
+
+  const otherIsPublic = 'is_public' in otherSideDiff
+    ? Boolean(otherSideDiff.is_public)
+    : Boolean(resource.is_public);
+  const otherAllowApply = 'allow_apply_permission' in otherSideDiff
+    ? Boolean(otherSideDiff.allow_apply_permission)
+    : Boolean(resource.allow_apply_permission);
+  const otherAuth = reconstructOtherSideAuth(currentAuth, otherSideDiff);
+  const otherEffective = canAllowApplyPermission(otherIsPublic, otherAuth) && otherAllowApply;
+
+  return currentEffective !== otherEffective;
 };
 
 /**

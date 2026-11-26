@@ -79,6 +79,15 @@ export const getUserAuthMethods = (input: ResourceAuthInput): UserAuthMethod[] =
 export const canConfigureResourcePerm = (input: ResourceAuthInput): boolean =>
   !!parseResourceAuthConfig(input)?.app_verified_required;
 
+/**
+ * 判断资源的「校验应用权限」是否实际生效（需同时开启应用认证与校验应用权限）。
+ * 缺失 `app_verified_required` 时与 `canConfigureResourcePerm` 保持一致，按未生效处理。
+ */
+export const isResourcePermEffective = (input: ResourceAuthInput): boolean => {
+  const config = parseResourceAuthConfig(input);
+  return Boolean(config?.app_verified_required && config.resource_perm_required);
+};
+
 export const getAuthKind = (config: Partial<IAuthConfig> | null | undefined): AuthKind => {
   if (config?.auth_verified_required) return 'user';
   if (config?.app_verified_required) return 'app';
@@ -119,15 +128,16 @@ export const applyAuthKind = (
 };
 
 export const normalizeAuthConfig = (input?: ResourceAuthInput): IResourceAuthFormConfig => {
-  const config = {
-    ...DEFAULT_AUTH_CONFIG,
-    ...parseResourceAuthConfig(input),
-  };
+  const parsed = parseResourceAuthConfig(input);
+  const authVerified = parsed?.auth_verified_required ?? DEFAULT_AUTH_CONFIG.auth_verified_required;
+  const appVerified = parsed?.app_verified_required ?? DEFAULT_AUTH_CONFIG.app_verified_required;
+  const resourcePerm = parsed?.resource_perm_required ?? DEFAULT_AUTH_CONFIG.resource_perm_required;
   return {
-    ...config,
-    resource_perm_required: config.app_verified_required && config.resource_perm_required,
-    oauth2_personal_client_enabled: config.auth_verified_required && !!config.oauth2_personal_client_enabled,
-    oauth2_public_client_enabled: config.auth_verified_required && !!config.oauth2_public_client_enabled,
+    auth_verified_required: Boolean(authVerified),
+    app_verified_required: Boolean(appVerified),
+    resource_perm_required: Boolean(appVerified && resourcePerm),
+    oauth2_personal_client_enabled: Boolean(authVerified && parsed?.oauth2_personal_client_enabled),
+    oauth2_public_client_enabled: Boolean(authVerified && parsed?.oauth2_public_client_enabled),
   };
 };
 
