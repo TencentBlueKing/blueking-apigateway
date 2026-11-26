@@ -323,6 +323,24 @@ class BaseParser:
 
 
 class OpenAPIV3Parser(BaseParser):
+    def _remove_invalid_method(self, paths: Dict[str, Any]) -> Dict[str, Any]:
+        """Keep supported operations and apply their inherited parameters."""
+        valid_paths = super()._remove_invalid_method(paths)
+        for path, operations in valid_paths.items():
+            shared_parameters = paths[path].get("parameters")
+            if not shared_parameters:
+                continue
+
+            shared_by_key = {(parameter["name"], parameter["in"]): parameter for parameter in shared_parameters}
+            for method, operation in operations.items():
+                # OpenAPI identifies parameters by both name and location.
+                merged = shared_by_key.copy()
+                for parameter in operation.get("parameters", []):
+                    merged[parameter["name"], parameter["in"]] = parameter
+                operations[method] = {**operation, "parameters": list(merged.values())}
+
+        return valid_paths
+
     def _get_base_path(self):
         """
         对于 openapi3.0,basePath默认选择

@@ -23,9 +23,11 @@ from ddf import G
 from django.utils.translation import override
 from openapi_spec_validator.versions import get_spec_version
 
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.constants import OpenAPIFormatEnum
+from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.openapi import OpenAPIImportManager
 from apigateway.biz.openapi.schema import openapi_validator_mapping
 from apigateway.biz.resource.importer import sync_openapi_resources_from_content
@@ -1776,6 +1778,116 @@ class TestOpenAPIImportManagerValidateRefs:
 
 class TestSyncOpenAPIResourcesFromContent:
     PATCH_PREFIX = "apigateway.biz.resource.importer.sync"
+
+    @pytest.mark.parametrize("version", ["3.0.3", "3.1.0"])
+    def test_shared_parameters_survive_sync_and_export(self, fake_gateway, fake_default_backend, version):
+        path = "/orders/{id}"
+        existing = G(Resource, gateway=fake_gateway, name="get_order", method="GET", path=path)
+        order_id = {
+            "name": "id",
+            "in": "path",
+            "required": True,
+            "schema": {"type": "integer"},
+            "description": "Order identifier",
+            "example": 42,
+        }
+        page = {"name": "page", "in": "query", "schema": {"type": "integer"}, "description": "Shared page"}
+        get_page = {"name": "page", "in": "query", "schema": {"type": "integer"}, "description": "GET page"}
+        page_header = {"name": "page", "in": "header", "schema": {"type": "string"}}
+        options = {
+            "name": "options",
+            "in": "query",
+            "description": "JSON filter options",
+            "content": {"application/json": {"schema": {"anyOf": [{"type": "object"}, {"type": "string"}]}}},
+        }
+        order_view = {"name": "order_view", "in": "cookie", "schema": {"type": "string"}}
+        other_shared_parameters = [options, order_view]
+        if version == "3.1.0":
+            other_shared_parameters.append(
+                {
+                    "name": "filter",
+                    "in": "query",
+                    "schema": {"type": ["string", "null"]},
+                    "description": "Order filter",
+                }
+            )
+        responses = {"200": {"description": "OK"}}
+        content = {
+            "openapi": version,
+            "info": {"title": "Orders", "version": "1.0"},
+            "components": {"parameters": {"OrderId": order_id}},
+            "paths": {
+                path: {
+                    "parameters": [{"$ref": "#/components/parameters/OrderId"}, page, *other_shared_parameters],
+                    "get": {
+                        "operationId": "get_order",
+                        "parameters": [get_page, page_header],
+                        "responses": responses,
+                    },
+                    "put": {"operationId": "put_order", "parameters": [], "responses": responses},
+                    "delete": {"operationId": "delete_order", "responses": responses},
+                },
+            },
+        }
+        ok, message, result = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content=json.dumps(content),
+            delete_missing_resources=False,
+            doc_language="en",
+        )
+
+        assert ok, message
+        assert result["updated"] == [{"id": existing.id}]
+        expected = {
+            "get": [order_id, get_page, *other_shared_parameters, page_header],
+            "put": [order_id, page, *other_shared_parameters],
+            "delete": [order_id, page, *other_shared_parameters],
+        }
+        resources = []
+        saved_schemas = OpenAPIResourceSchema.objects.filter(resource__gateway=fake_gateway).select_related("resource")
+        for saved in saved_schemas:
+            resource = saved.resource
+            assert saved.schema.get("parameters") == expected[resource.method.lower()]
+            resources.append(
+                {
+                    "path": resource.path,
+                    "method": resource.method,
+                    "name": resource.name,
+                    "description": resource.description,
+                    "openapi_schema": saved.schema,
+                }
+            )
+
+        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
+        exported = exporter.get_openapi_content(resources)["paths"][path]
+        assert {method: operation["parameters"] for method, operation in exported.items()} == expected
+        doc = ResourceDoc.objects.get(resource_id=existing.id, language="en")
+        assert "Order identifier" in doc.content
+        assert "JSON filter options" in doc.content
+
+    @pytest.mark.parametrize("operation_fields", [{}, {"parameters": []}])
+    def test_no_shared_parameters_preserve_legacy_schema(self, fake_gateway, fake_default_backend, operation_fields):
+        path = "/legacy/{id}"
+        response = {"200": {"description": "OK"}}
+        content = {
+            "openapi": "3.0.3",
+            "info": {"title": "Legacy", "version": "1.0"},
+            "paths": {path: {"get": {"operationId": "get_legacy", "responses": response, **operation_fields}}},
+        }
+        ok, message, _ = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content=json.dumps(content),
+            delete_missing_resources=False,
+        )
+
+        assert ok, message
+        saved = OpenAPIResourceSchema.objects.get(resource__gateway=fake_gateway, resource__path=path)
+        expected = {"version": "OpenAPIV3.0", "responses": response}
+        if "parameters" in operation_fields:
+            expected.update(parameters=[], none_schema=False)
+        assert saved.schema == expected
 
     def _mock_sync_deps(self, mocker):
         mgr = mocker.patch(f"{self.PATCH_PREFIX}.OpenAPIImportManager.load_from_content").return_value
