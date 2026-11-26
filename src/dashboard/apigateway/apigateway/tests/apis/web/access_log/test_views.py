@@ -260,9 +260,18 @@ class TestLogDetailInfoApi:
 
 
 class TestLogExportApi:
-    def test_get(self, mocker, request_view, fake_stage):
-        mock_time_start = 1720606081
+    @pytest.mark.parametrize(
+        "time_params, mock_time_start",
+        [
+            ({"time_range": 300}, 1721210581),
+            ({"time_start": 1720606081, "time_end": 1721210881}, 1720606081),
+            ({"time_start": 1720606081, "time_end": 1721210881, "time_range": 300}, 1720606081),
+        ],
+        ids=["relative", "absolute", "absolute-takes-precedence"],
+    )
+    def test_get(self, mocker, request_view, fake_stage, settings, time_params, mock_time_start):
         mock_time_end = 1721210881
+        mocked_now = mocker.patch("apigateway.utils.time.now_timestamp", return_value=mock_time_end)
         llm_summary = {
             "request_model": "",
             "prompt_tokens": 107,
@@ -271,9 +280,24 @@ class TestLogExportApi:
             "model": "deepseek-v4-flash",
             "duration": 11662,
         }
-        mocker.patch(
-            "apigateway.apis.web.access_log.views.LogSearchClient.search_logs",
-            return_value=(3, [{"a": 1, "llm_summary": llm_summary}, {"a": 2}, {"a": 3}]),
+
+        def execute_search(search):
+            # The filename must keep the query boundaries even if the search takes time.
+            mocked_now.return_value += 60
+            return {
+                "hits": {
+                    "total": 3,
+                    "hits": [
+                        {"_source": {"a": 1, "llm_summary": llm_summary}},
+                        {"_source": {"a": 2}},
+                        {"_source": {"a": 3}},
+                    ],
+                }
+            }
+
+        mocked_search = mocker.patch(
+            "apigateway.biz.access_log.log_search.BKLogESClient.execute_search",
+            side_effect=execute_search,
         )
 
         fake_gateway = fake_stage.gateway
@@ -285,12 +309,10 @@ class TestLogExportApi:
             gateway=fake_gateway,
             data={
                 "stage_id": fake_stage.id,
-                "time_range": 300,
                 "offset": 0,
-                "time_start": mock_time_start,
-                "time_end": mock_time_end,
                 "limit": 3,
                 "query": "api_id: 2",
+                **time_params,
             },
         )
         time_start_dt = datetime.fromtimestamp(mock_time_start)
@@ -299,6 +321,18 @@ class TestLogExportApi:
         formatted_time_start = time_start_dt.strftime("%Y%m%d%H%M%S")
         formatted_time_end = time_end_dt.strftime("%Y%m%d%H%M%S")
         assert response.status_code == 200
+        mocked_search.assert_called_once()
+        search = mocked_search.call_args.args[0]
+        assert {
+            "range": {
+                settings.ACCESS_LOG_CONFIG["es_time_field_name"]: {
+                    "gte": mock_time_start * 1000,
+                    "lte": mock_time_end * 1000,
+                }
+            }
+        } in search["query"]["bool"]["filter"]
+        assert search["from"] == 0
+        assert search["size"] == 10000
         assert response.headers["Content-Type"] == "application/octet-stream"
         assert (
             response["Content-Disposition"]
@@ -309,3 +343,23 @@ class TestLogExportApi:
         rows = list(reader)
         assert len(rows) == 3
         assert json.loads(rows[0]["llm_summary"]) == llm_summary
+
+    @pytest.mark.parametrize(
+        "time_params",
+        [{}, {"time_start": 1720606081}, {"time_end": 1721210881}, {"time_range": 0}, {"time_range": -1}],
+        ids=["missing", "missing-end", "missing-start", "zero-range", "negative-range"],
+    )
+    def test_get_invalid_time(self, mocker, request_view, fake_stage, time_params):
+        mocked_search = mocker.patch("apigateway.biz.access_log.log_search.BKLogESClient.execute_search")
+        fake_gateway = fake_stage.gateway
+
+        response = request_view(
+            "GET",
+            "access_log.export",
+            path_params={"gateway_id": fake_gateway.id},
+            gateway=fake_gateway,
+            data={"stage_id": fake_stage.id, **time_params},
+        )
+
+        assert response.status_code == 400
+        mocked_search.assert_not_called()
