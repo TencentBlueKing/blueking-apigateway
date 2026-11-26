@@ -42,6 +42,7 @@ SENSITIVE_KEYS = frozenset(
         "bk_signature",
         "authorization",
         "proxy-authorization",
+        "x-api-key",
         "x-bkapi-authorization",
         "x-bkapi-jwt",
         "cookie",
@@ -82,6 +83,8 @@ _FORM_COMPONENT = r"(?:[a-zA-Z0-9_.~*+\-]|%[0-9a-fA-F]{2})"
 _FORM_PAIR = re.compile(rf"{_FORM_COMPONENT}+={_FORM_COMPONENT}*")
 _QUERY_PAIR = re.compile(rf"{_FORM_COMPONENT}+(?:={_FORM_COMPONENT}*)?")
 _JSON_FRAGMENT = re.compile(r'^\s*(?:\{\s*"|\[\s*(?:[\[{"\-0-9]|(?:true|false|null)\b)|"\s*(?:\{|\[|\\"))')
+_MCP_ERROR_PREFIX = re.compile(r"^(call tool err \(status [1-5][0-9]{2}\))(?:: |\Z)")
+_MCP_TEXT_PATHS = {("content",), ("messages", "content")}
 
 
 class UnsafeLogData(ValueError):
@@ -91,7 +94,8 @@ class UnsafeLogData(ValueError):
 class LogDataScrubber:
     """Return sanitized copies without mutating fetched logs or transport payloads."""
 
-    def __init__(self):
+    def __init__(self, *, mcp: bool = False):
+        self._mcp = mcp
         self._sensitive_keys = SENSITIVE_KEYS | {key.lower() for key in getattr(settings, "LOG_SENSITIVE_KEYS", [])}
 
     @staticmethod
@@ -116,11 +120,25 @@ class LogDataScrubber:
             return self.hidden_body()
 
     def _field(
-        self, key: str, value: Any, depth: int, decodes: int, budget: list[int], *, record: bool = False
+        self,
+        key: str,
+        value: Any,
+        depth: int,
+        decodes: int,
+        budget: list[int],
+        *,
+        record: bool = False,
+        sdk_path: tuple[str, ...] | None = None,
     ) -> Any:
         if self.sensitive(key):
             return value if self._empty(value) else MASK
         name = key.lower()
+        if self._mcp and record and name in {"error", "errorverbose"}:
+            return (
+                self._mcp_error(value, depth, decodes, budget)
+                if name == "error"
+                else (value if self._empty(value) else MASK)
+            )
         if name in _BODY_FIELDS or name == "__ext_json" or record and name in _ENVELOPE_FIELDS:
             return self._payload(
                 value,
@@ -129,39 +147,57 @@ class LogDataScrubber:
                 budget,
                 allow_form=name in _BODY_FIELDS,
                 record=name == "__ext_json",
+                sdk_path=() if self._mcp and record and name in {"response", "result"} else None,
             )
         if record and name == "path" and isinstance(value, str) and value.lstrip().startswith(("{", "[")):
             return self._payload(value, depth, decodes, budget, allow_form=False)
-        if name in _PARAMETER_FIELDS or record and name in _STRUCTURE_FIELDS:
-            if isinstance(value, str):
-                return self._payload(
-                    value,
-                    depth,
-                    decodes,
-                    budget,
-                    allow_form=name in {"params", "query", "query_param"},
-                    allow_flags=True,
-                )
-            return self._walk(value, depth, decodes, budget)
-        return self._walk(value, depth, decodes, budget)
+        if isinstance(value, str) and (name in _PARAMETER_FIELDS or record and name in _STRUCTURE_FIELDS):
+            return self._payload(
+                value,
+                depth,
+                decodes,
+                budget,
+                allow_form=name in {"params", "query", "query_param"},
+                allow_flags=True,
+            )
+        return self._walk(value, depth, decodes, budget, sdk_path=sdk_path)
 
-    def _walk(self, value: Any, depth: int, decodes: int, budget: list[int], *, record: bool = False) -> Any:
+    def _walk(
+        self,
+        value: Any,
+        depth: int,
+        decodes: int,
+        budget: list[int],
+        *,
+        record: bool = False,
+        sdk_path: tuple[str, ...] | None = None,
+    ) -> Any:
         self._check(value, depth, budget)
         if isinstance(value, dict):
             result = {}
+            is_sdk_text = sdk_path in _MCP_TEXT_PATHS and value.get("type") == "text"
             for key, item in value.items():
                 saved_budget = budget.copy()
+                is_sdk_text_field = is_sdk_text and key.lower() == "text" and not self.sensitive(key)
                 try:
                     self._check(key, depth, budget)
-                    if key.lower() == "text" and value.get("type") == "text":
+                    if is_sdk_text_field:
                         result[key] = self._payload(item, depth + 1, decodes, budget, allow_form=False)
                     else:
-                        result[key] = self._field(key, item, depth + 1, decodes, budget, record=record)
+                        result[key] = self._field(
+                            key,
+                            item,
+                            depth + 1,
+                            decodes,
+                            budget,
+                            record=record,
+                            sdk_path=(*sdk_path, key) if sdk_path is not None else None,
+                        )
                 except UnsafeLogData, ValueError, TypeError, RecursionError:
                     if not (
                         key.lower() in _BODY_FIELDS | _PARAMETER_FIELDS | {"__ext_json"}
                         or (record and key.lower() in _ENVELOPE_FIELDS | _STRUCTURE_FIELDS)
-                        or (key.lower() == "text" and value.get("type") == "text")
+                        or is_sdk_text_field
                     ):
                         raise
                     budget[:] = saved_budget
@@ -169,10 +205,27 @@ class LogDataScrubber:
                     result[key] = self.hidden_body()
             return result
         if isinstance(value, list):
-            return [self._walk(item, depth + 1, decodes, budget, record=record) for item in value]
+            return [self._walk(item, depth + 1, decodes, budget, record=record, sdk_path=sdk_path) for item in value]
         if isinstance(value, str) and value.lstrip().startswith(("{", "[", '"')):
             return self._embedded_json(value, depth, decodes, budget)
         return value
+
+    def _mcp_error(self, value: Any, depth: int, decodes: int, budget: list[int]) -> Any:
+        if self._empty(value):
+            return value
+        match = _MCP_ERROR_PREFIX.match(value) if isinstance(value, str) else None
+        if not match:
+            return MASK
+
+        # go-openapi's APIError includes the upstream payload after this prefix.
+        status = match[1]
+        if len(value) > MAX_INPUT_LENGTH:
+            return status
+        try:
+            detail = self._payload(value[match.end() :], depth, decodes, budget, allow_form=False)
+        except ValueError, TypeError, RecursionError:
+            return status
+        return f"{status}: {detail}" if detail else status
 
     def _embedded_json(self, value: str, depth: int, decodes: int, budget: list[int]) -> str:
         """Mask serialized structures and hide credible fragments while retaining ordinary prose."""
@@ -215,12 +268,13 @@ class LogDataScrubber:
         allow_form: bool,
         allow_flags: bool = False,
         record: bool = False,
+        sdk_path: tuple[str, ...] | None = None,
     ) -> Any:
         self._check(value, depth, budget)
         if self._empty(value) or value == MASK or value == self.hidden_body():
             return value
         if isinstance(value, (dict, list)):
-            return self._walk(value, depth, decodes, budget, record=record)
+            return self._walk(value, depth, decodes, budget, record=record, sdk_path=sdk_path)
         if not isinstance(value, str) or decodes >= MAX_STRING_DECODES:
             raise UnsafeLogData()
         text = value.strip()
@@ -240,6 +294,7 @@ class LogDataScrubber:
                     allow_form=allow_form,
                     allow_flags=allow_flags,
                     record=record,
+                    sdk_path=sdk_path,
                 ),
                 ensure_ascii=False,
             )
@@ -247,7 +302,10 @@ class LogDataScrubber:
             return "null"
         if not isinstance(parsed, (dict, list)):
             raise UnsafeLogData()
-        return json.dumps(self._walk(parsed, depth + 1, decodes + 1, budget, record=record), ensure_ascii=False)
+        return json.dumps(
+            self._walk(parsed, depth + 1, decodes + 1, budget, record=record, sdk_path=sdk_path),
+            ensure_ascii=False,
+        )
 
     def scrub_form(
         self,

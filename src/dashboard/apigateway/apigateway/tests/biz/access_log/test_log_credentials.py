@@ -107,7 +107,7 @@ def test_headers_forms_and_additional_rules(settings):
     assert result["path"] == {"client_secret": "***"}
 
 
-def test_envelope_and_sdk_text_sanitize_embedded_json():
+def test_envelopes_sanitize_embedded_json():
     value = {
         "response": json.dumps(
             {"status_code": 200, "request_id": "req", "response_body": '{"bk_token":"fixture-credential"}'}
@@ -118,7 +118,7 @@ def test_envelope_and_sdk_text_sanitize_embedded_json():
         "response_body": {
             "content": [
                 {"type": "text", "text": '[{"secret":"fixture-credential"}]'},
-                {"type": "text", "text": "fixture-credential"},
+                {"type": "text", "text": "ordinary document"},
             ]
         },
     }
@@ -132,7 +132,7 @@ def test_envelope_and_sdk_text_sanitize_embedded_json():
     assert result["params"]["body"] == '{"bk_app_secret": "***"}'
     assert json.loads(result["request"])["body"] == [{"api_key": "***"}]
     assert json.loads(result["response_body"]["content"][0]["text"]) == [{"secret": "***"}]
-    assert result["response_body"]["content"][1]["text"] == HIDDEN
+    assert result["response_body"]["content"][1]["text"] == "ordinary document"
     assert "fixture-credential" not in json.dumps(result)
 
 
@@ -234,15 +234,16 @@ def test_serialized_proxy_handler_fields_and_sdk_result():
         "params": {
             "body_param": '{"bk_token":"fixture-credential"}',
             "query_param": "token=fixture-credential&keep=1&keep=2",
-            "header_param": '{"authorization":"fixture-credential"}',
+            "header_param": '{"authorization":"fixture-credential","x-ApI-kEy":"fixture-credential"}',
             "path_param": '{"secret":"fixture-credential"}',
         },
         "result": {"content": [{"type": "text", "text": "fixture-credential"}]},
     }
-    result = DataScrubber().scrub_sensitive_data([data])[0]
+    result = _parse_hits([{"_source": {"mcp_method": "tools/call", **data}, "sort": [1700000000000]}])[0]
     assert "fixture-credential" not in json.dumps(result)
     assert json.loads(result["params"]["body_param"]) == {"bk_token": "***"}
     assert parse_qsl(result["params"]["query_param"]) == [("token", "***"), ("keep", "1"), ("keep", "2")]
+    assert json.loads(result["params"]["header_param"]) == {"authorization": "***", "x-ApI-kEy": "***"}
     assert result["result"]["content"][0]["text"] == HIDDEN
 
 
@@ -403,7 +404,7 @@ def test_real_envelopes_and_nested_body_fields_still_fail_closed():
         "query": "hello",
         "response": "ok",
         "nested": {"body": "token=fixture-credential broken", "response_body": "fixture-credential"},
-        "content": [{"type": "text", "text": "fixture-credential"}],
+        "content": [{"type": "text", "text": "ordinary text"}],
     }
     original = {"body": payload, "response": "fixture-credential", "query": "fixture-credential broken"}
     result = DataScrubber().scrub_sensitive_data([original])[0]
@@ -411,9 +412,46 @@ def test_real_envelopes_and_nested_body_fields_still_fail_closed():
         "query": "hello",
         "response": "ok",
         "nested": {"body": HIDDEN, "response_body": HIDDEN},
-        "content": [{"type": "text", "text": HIDDEN}],
+        "content": [{"type": "text", "text": "ordinary text"}],
     }
     assert result["response"] == result["query"] == HIDDEN
+
+
+@pytest.mark.parametrize(
+    "method,field", [("tools/call", "response"), ("prompts/get", "response"), ("tools/call", "result")]
+)
+def test_mcp_sdk_text_is_scrubbed_only_in_response_content(method, field):
+    content = {"type": "text", "text": "fixture-credential"}
+    sdk_payload = (
+        {"messages": [{"role": "user", "content": content}]} if method == "prompts/get" else {"content": [content]}
+    )
+    document = {"content": [{"type": "text", "text": "ordinary document"}]}
+    response = {**sdk_payload, "structuredContent": document}
+    source = {"mcp_method": method, field: json.dumps(response), "params": json.dumps(document)}
+    result = _parse_hits([{"_source": source, "sort": [1700000000000]}])[0]
+    content["text"] = HIDDEN
+    assert json.loads(result[field]) == response
+    assert json.loads(result["params"]) == document
+
+
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (
+            'call tool err (status 400): {"response_body":{"access_token":"fixture-credential","code":"failed"}}',
+            'call tool err (status 400): {"response_body": {"access_token": "***", "code": "failed"}}',
+        ),
+        ('call tool err (status 502): {"access_token":"fixture-credential', "call tool err (status 502)"),
+        ("upstream failure: fixture-credential", "***"),
+        ("", ""),
+        (None, None),
+    ],
+)
+def test_mcp_error_fields_are_scrubbed_in_legacy_extension(error, expected):
+    source = {"mcp_method": "tools/call", "__ext_json": {"error": error, "errorVerbose": error}}
+    result = _parse_hits([{"_source": source, "sort": [1700000000000]}])[0]
+    assert result.get("error") == result["__ext_json"]["error"] == expected
+    assert result["__ext_json"]["errorVerbose"] == ("***" if error else error)
 
 
 @pytest.mark.parametrize("field", ["params", "query", "query_param"])

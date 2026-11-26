@@ -74,12 +74,17 @@ def test_log_credentials_at_public_outputs(entry, body_kind, request_view, fake_
         source["params"] = '{"body_param":{"bk_token":"fixture-credential'
         source["response_body"] = source["body"]
         source["response"] = json.dumps({"status_code": 200, "request_id": "req", "response_body": source["body"]})
-    mocker.patch(
-        "apigateway.service.es.BKLogESClient.execute_search",
-        side_effect=lambda *args, **kwargs: {
-            "hits": {"total": 1, "hits": [{"_source": copy.deepcopy(source), "sort": [1700000000000]}]}
-        },
-    )
+    if entry.startswith("mcp"):
+        source["__ext_json"]["header"] = {"X-API-KEY": "fixture-credential"}
+        source["error"] = 'call tool err (status 400): {"response_body":{"access_token":"fixture-credential"}}'
+
+    def execute_search(query):
+        # This fixture has no matching record in the separate gateway access-log index.
+        if entry.startswith("mcp") and "mcp_method" not in query["_source"]:
+            return {"hits": {"total": 0, "hits": []}}
+        return {"hits": {"total": 1, "hits": [{"_source": copy.deepcopy(source), "sort": [1700000000000]}]}}
+
+    mocker.patch("apigateway.service.es.BKLogESClient.execute_search", side_effect=execute_search)
     names = {
         "access_list": "access_log.logs",
         "access_csv": "access_log.export",

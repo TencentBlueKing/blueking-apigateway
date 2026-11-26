@@ -327,4 +327,4 @@ class MCPServerLogSearchClient:
         if "status" in log and log["status"] is not None:
             log["status"] = self._normalize_status(log["status"])
 
-        return LogDataScrubber().scrub_log(log)
+        return LogDataScrubber(mcp=True).scrub_log(log)
