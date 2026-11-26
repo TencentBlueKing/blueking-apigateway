@@ -56,6 +56,7 @@ def requests_callback(span: Span, prepared_request: PreparedRequest, response: R
     if not span.is_recording():
         return
 
+    # New ESB and API Gateway use x-bkapi-request-id; IAM backend uses x-request-id.
     has_request_id = _set_request_id(span, response.headers.get("x-bkapi-request-id")) or _set_request_id(
         span, response.headers.get("x-request-id")
     )
@@ -73,6 +74,22 @@ def requests_callback(span: Span, prepared_request: PreparedRequest, response: R
     if not isinstance(json_result, dict):
         return
 
+    # esb
+    # {
+    #     "message": "",
+    #     "code": "00",
+    #     "data": {},
+    #     "result": true
+    # }
+    # iam backend
+    # {
+    #     "code": 0,
+    #     "message": "",
+    #     "data": {}
+    # }
+
+    # NOTE: ESB responses include result; API Gateway, IAM backend and
+    # search-engine responses may omit it.
     # Legacy ESB uses "00"; BK Monitor uses 200 with a true result.
     # Leave HTTP error statuses set by the upstream instrumentation intact.
     if response.status_code == HTTPStatus.OK.value:
@@ -88,6 +105,7 @@ def requests_callback(span: Span, prepared_request: PreparedRequest, response: R
         span.set_attribute("result_errors", "[redacted]")
 
     if not has_request_id:
+        # Old ESB includes request_id in the JSON response body.
         _set_request_id(span, json_result.get("request_id"))
 
 
