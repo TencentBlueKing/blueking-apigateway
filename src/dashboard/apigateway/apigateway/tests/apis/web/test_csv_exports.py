@@ -65,13 +65,17 @@ pytestmark = pytest.mark.django_db
 )
 def test_log_csv_download(request_view, mocker, fake_stage, export_kind, user_agent, value, expected):
     text_fields = (
-        ["http_path", "params", "body", "response_body", "app_code", "error"]
+        ["http_path", "app_code", "error"]
         if export_kind == "access"
         else ["tool_name", "prompt_name", "params", "response", "app_code", "error"]
     )
     if export_kind == "access" and isinstance(value, (int, float)):
         text_fields = ["status", "response_size"]
     log = dict.fromkeys(text_fields, value)
+    if export_kind == "access":
+        # Payload fields are decoded and scrubbed before CSV cell escaping.
+        payload = json.dumps({"name": value, "password": "sample-credential"})
+        log.update(params=payload, body=payload, response_body=payload)
     # Preserve the access-log JSON contract and genuine numeric cells.
     log.update(llm_summary={"model": "=1+1", "中文": '"\n'})
     log.setdefault("status", 500)
@@ -95,12 +99,18 @@ def test_log_csv_download(request_view, mocker, fake_stage, export_kind, user_ag
     assert response.charset == ("utf-8-sig" if user_agent == "Windows" else "utf-8")
     rows = list(csv.DictReader(StringIO(b"".join(response.streaming_content).decode(response.charset))))
     assert len(rows) == 1
+    scrubbed_value = value
+    if export_kind == "access" and value == '\n{"name": "sample"}':
+        # Embedded JSON is scrubbed and serialized again.
+        scrubbed_value = expected = '{"name": "sample"}'
     for field in text_fields:
         assert rows[0][field] == expected
-        assert log[field] == source[field]
     assert rows[0]["status"] == str(source["status"])
     if export_kind == "access":
         assert json.loads(rows[0]["llm_summary"]) == source["llm_summary"]
+        for field in ("params", "body", "response_body"):
+            assert json.loads(rows[0][field]) == {"name": scrubbed_value, "password": "***"}
+    assert log == source
 
 
 @pytest.mark.parametrize("value", ["=1+1", "+1", "-1", "@sample"])
