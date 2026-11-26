@@ -26,9 +26,8 @@ from requests.structures import CaseInsensitiveDict
 from apigateway.common.constants import HEADER_BKAPI_AUTHORIZATION
 from apigateway.service.resource import get_resource_url_tmpl
 from apigateway.service.utils import get_resource_url
-from apigateway.utils.sensitive_cleaner import SensitiveCleaner
 
-from .sensitive import SENSITIVE_HEADER_NAMES, SENSITIVE_KEYS
+from .sensitive import SENSITIVE_HEADER_NAMES, SENSITIVE_KEYS, DebugDataSanitizer
 
 
 def render_path(path, path_params):
@@ -42,7 +41,6 @@ def render_path(path, path_params):
 class PreparedRequestHeaders:
     def __init__(self, headers=None):
         self._headers = CaseInsensitiveDict(headers or {})
-        self._sensitive_cleaner = SensitiveCleaner(list(SENSITIVE_KEYS))
 
     def prepare_headers(
         self,
@@ -111,7 +109,7 @@ class PreparedRequestHeaders:
 
         authorization = self.get_bkapi_authorization()
         if authorization:
-            headers[HEADER_BKAPI_AUTHORIZATION] = json.dumps(self._sensitive_cleaner.clean(authorization))
+            headers[HEADER_BKAPI_AUTHORIZATION] = json.dumps(DebugDataSanitizer().clean(authorization))
 
         return headers
 
