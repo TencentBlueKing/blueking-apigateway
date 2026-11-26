@@ -133,7 +133,9 @@ class BatchTranslateApi(generics.CreateAPIView):
             logger.info("[gateway:%s]查询到网关下所有文档ID: %s", gateway_name, len(doc_ids))
         try:
             # 启动异步翻译任务，使用delay_on_commit确保在事务提交后执行
-            delay_on_commit(batch_translate_docs, doc_ids=doc_ids, target_language=target_language)
+            delay_on_commit(
+                batch_translate_docs, doc_ids=doc_ids, target_language=target_language, gateway_id=gateway_id
+            )
 
             logger.info("[gateway:%s]启动批量翻译任务，文档ID列表: %s", gateway_name, doc_ids)
 

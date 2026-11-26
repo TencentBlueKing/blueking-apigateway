@@ -193,7 +193,11 @@ class ResourceImportValidator:
             ):
                 validate_err = SchemaValidateErr(
                     _(
-                        "网关下资源名称 {name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲突），请使用其他命名，建议使用统一的命名格式。"
+                        "网关下资源名称 {name} 已被占用，可能原因："
+                        "1. 名称与已有资源完全相同；"
+                        "2. 名称归一化后与已有资源相同（如 get_foo 与 getFoo）；"
+                        "3. 名称未变，但请求方法（method）或请求路径（path）已修改，导入时被识别为新增资源。"
+                        "请检查 operationId、method 和 path，确保资源名称及其归一化名称唯一。"
                     ).format(name=resource_data.name),
                     f"$.paths.{resource_data.path}.{resource_data.method.lower()}.operationId",
                     absolute_path=[],

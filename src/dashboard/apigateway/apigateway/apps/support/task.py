@@ -30,8 +30,24 @@ from apigateway.biz.ai import AIContentTypeEnum, AIHandler
 logger = logging.getLogger(__name__)
 
 
+def _get_docs_to_translate(doc_ids: List[int], gateway_id: int | None) -> List[ResourceDoc]:
+    # 旧批量消息无法恢复请求网关，不能从文档归属推断调用者的授权范围。
+    if gateway_id is None:
+        raise ValueError("批量翻译任务缺少网关ID，请重新提交")
+
+    docs = list(ResourceDoc.objects.filter(gateway_id=gateway_id, id__in=doc_ids))
+    if not docs:
+        raise ValueError("未找到需要翻译的文档")
+
+    # 校验整个批次后再调用 AI，避免外部或失效 ID 导致部分执行。
+    if {doc.id for doc in docs} != set(doc_ids):
+        raise ValueError("文档不存在或不属于当前网关")
+
+    return docs
+
+
 @shared_task
-def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
+def batch_translate_docs(doc_ids: List[int], target_language: str = "", *, gateway_id: int | None = None):
     """
     批量翻译文档任务
 
@@ -40,16 +56,12 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
     Args:
         doc_ids: 需要翻译的文档ID列表
         target_language: 目标语言，如果为空则自动检测并翻译为相反语言
+        gateway_id: 请求网关ID；旧消息缺少该值时安全终止，需从网关重新提交
     """
     logger.info("开始批量翻译任务，文档ID列表: %s", doc_ids)
 
     try:
-        # 获取需要翻译的文档
-        docs = ResourceDoc.objects.filter(id__in=doc_ids).select_related("gateway")
-
-        if not docs.exists():
-            logger.warning("未找到需要翻译的文档，ID列表: %s", doc_ids)
-            return {"success": False, "message": "未找到需要翻译的文档"}
+        docs = _get_docs_to_translate(doc_ids, gateway_id)
 
         success_count = 0
         error_count = 0
@@ -68,10 +80,10 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
             try:
                 # 检查是否已经存在目标语言的文档
                 existing_doc = ResourceDoc.objects.filter(
-                    gateway=doc.gateway, resource_id=doc.resource_id, language=trans_target_language
+                    gateway_id=gateway_id, resource_id=doc.resource_id, language=trans_target_language
                 ).first()
 
-                if existing_doc and existing_doc.content.strip():
+                if existing_doc and (existing_doc.content or "").strip():
                     logger.info("文档 %s 的目标语言 %s 已存在，跳过翻译", doc.id, trans_target_language)
                     continue
 
@@ -100,7 +112,7 @@ def batch_translate_docs(doc_ids: List[int], target_language: str = ""):
                     else:
                         # 创建新的翻译文档
                         new_doc = ResourceDoc.objects.create(
-                            gateway=doc.gateway,
+                            gateway_id=gateway_id,
                             resource_id=doc.resource_id,
                             type=doc.type,
                             language=trans_target_language,
@@ -148,4 +160,7 @@ def translate_single_doc(doc_id: int, target_language: str = ""):
         doc_id: 需要翻译的文档ID
         target_language: 目标语言，如果为空则自动检测并翻译为相反语言
     """
-    return batch_translate_docs([doc_id], target_language)
+    gateway_id = ResourceDoc.objects.filter(id=doc_id).values_list("gateway_id", flat=True).first()
+    if gateway_id is None:
+        return {"success": False, "message": "未找到需要翻译的文档"}
+    return batch_translate_docs([doc_id], target_language, gateway_id=gateway_id)
