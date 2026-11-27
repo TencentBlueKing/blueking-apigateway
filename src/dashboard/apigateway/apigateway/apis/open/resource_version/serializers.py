@@ -21,9 +21,9 @@ from typing import Optional
 from django.utils.translation import gettext as _
 from rest_framework import serializers
 
-from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.stage import StageHandler
 from apigateway.biz.validators import ProgrammableGatewayVersionValidator, ResourceVersionValidator
+from apigateway.common.constants import SEMVER_PATTERN
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.models import ResourceVersion
 

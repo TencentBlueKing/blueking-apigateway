@@ -22,9 +22,9 @@ from apigateway.apis.web.ai_backend import serialize_ai_backend_config_for_web
 from apigateway.apis.web.constants import PLUGIN_MERGE_TYPE
 from apigateway.apps.plugin.constants import PluginBindingScopeEnum
 from apigateway.apps.support.constants import DocArchiveTypeEnum, OpenAPIFormatEnum
-from apigateway.biz.constants import SEMVER_PATTERN
 from apigateway.biz.resource import ResourceOpenAPISchemaHandler
 from apigateway.biz.validators import ResourceVersionValidator
+from apigateway.common.constants import SEMVER_PATTERN
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.core.constants import ResourceKindEnum, ResourceVersionSchemaEnum, ResourceVersionTypeEnum
 

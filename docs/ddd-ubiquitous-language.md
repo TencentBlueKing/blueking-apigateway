@@ -28,6 +28,7 @@ DDD 中，**限界上下文（Bounded Context）**指语义与规则的责任边
 | 发布事件接收 | core-api | 接收 operator 事件、关联 ReleaseHistory、去重落库；不发起发布。 |
 | MCP 服务定义 | dashboard `apps/mcp_server`、`biz/mcp_server` | 定义服务、工具选择与别名、协议、扩展及应用权限。 |
 | MCP 协议代理 | mcp-proxy | 加载定义与版本 OpenAPI 制品，生成工具、管理协议实例、检查访问权限并经网关调用 API。 |
+| Skill 定义 | dashboard `apps/skill` | 定义内置 Skill 与网关 Skill 的元数据、编排、版本、标签与引用资源。 |
 | 产品交互 | dashboard-front | 通过控制面 API 展示编辑对象，适配 DTO；路由与 store 不重新定义领域概念。 |
 | 数据面执行 | APISIX（独立仓库 `blueking-apigateway-apisix`） | 加载配置，执行匹配、认证、鉴权、插件与转发。 |
 
@@ -174,7 +175,7 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 [OAuth2 scope 查询](../src/dashboard/apigateway/apigateway/service/oauth2_client_scope.py)、
 [OAuth2 插件下发](../src/dashboard/apigateway/apigateway/controller/convertor/route.py)。
 
-## 6. 插件、接口制品与 MCP
+## 6. 插件、接口制品、MCP 与 Skill
 
 | 中文 / English | 代码名 | 统一含义 |
 | --- | --- | --- |
@@ -192,17 +193,29 @@ MCP 使用 `v_mcp_{mcp_server_id}_{app_code}` 虚拟应用调用工具 API，其
 | MCP 提示模板 / MCP Prompt | `MCPServerExtend(type=prompts)` | 服务扩展中的提示模板，与工具、后端 provider、API 请求体区分。 |
 | MCP 协议类型 / MCP Protocol Type | protocol_type | SSE / Streamable HTTP，与 Backend.type、Resource.kind 区分。 |
 | MCP 原始响应模式 / Raw Response Mode | raw_response_enabled | 工具结果返回原始 API 响应体，不改变身份、授权或版本选择。 |
+| Skill 元数据 / Skill Metadata | `SkillMetadata`；`(type, gateway, name)` 唯一 | 编排网关 API 的 Skill；type 为 platform（内置，gateway 为空）或 gateway（属于某个网关）。name 是 Agent Skills 规范名，即 SKILL.md 的 name 和包目录名，在同一来源内唯一：同一网关内由唯一约束保证；内置 Skill 的 gateway 为空，数据库约束拦不住，由内置 Skill 注入保证；display_name / display_name_en 是展示名。status：published（使用中，市场可见）、archived（已归档，市场和免登录下载（web 接口，给 npx 临时使用）不可见，网关内仍可查看、下载、恢复；只有已归档的网关 Skill 能删除）；unpublished 只作模型默认值。网关 Skill 随网关删除级联删除。 |
+| Skill ID | `SkillMetadata.code`（property） | 不入库，读取时由 type、网关名、name 拼出：`p_{name}` 或 `g_{网关名}_{name}`，即对外的 skill_id。 |
+| Skill 编排 / Skill Orchestration | `SkillConfig.orchestration` | 可编辑草稿，按 GitHub Actions composite action 的骨架写：每个 step 用 `uses` 调一个网关 API，`with` 传参，`${{ }}` 引用输入和之前步骤的响应；`description` 是给 AI 读的自然语言，执行条件、轮询、逐个调用都写在里面。 |
+| Skill 版本 / Skill Version | `SkillVersion`；`(metadata, version)` 唯一 | 一次发版的编排副本和 SKILL.md 正文。version 为 major.minor.patch（无预发布、构建后缀），按三段整数比较。内置 Skill 注入时，版本号与当前版本相同则原地覆盖，不新增行。网关 Skill 上传的版本号已存在时，确认后覆盖该版本（不限线上版本）并设为线上版本；不存在时须大于已有的最高版本。覆盖不改 `created_time`，它是下载包 `metadata.datetime` 的来源，输出为 RFC 3339 UTC 秒精度。线上版本（`current_version`）可切换到任一已有版本。与 ResourceVersion 区分。 |
+| Skill 引用资源 / Skill Version Relation | `SkillVersionRelation` | 某一版 steps[].uses 里的网关名、资源名，供检索；按名称引用，不是外键。 |
+| 内置 Skill 声明 / Platform Skill Declaration | `data/skill/declarations/{name}.yaml`；`SkillDeclaration` | 随代码发布的内置 Skill 源文件；部署时注入为 platform 类型的 SkillMetadata 与 SkillVersion。版本号与当前版本一致时覆盖当前版本，不另建一行；已存在但不是当前版本，或低于当前版本的声明跳过。 |
+| Skill 资源定义 / Skill Resource Definition | `SkillResource`；`(gateway, stage, resource)` | 校验和渲染 Skill 时看到的一个 API。它包装目标环境当前发布的 ReleasedResourceData（方法、路径、说明和全部认证，含 OAuth2）；参数和响应由该版本 OpenAPI schema 转换得到。不是 Resource 或 ReleasedResource 本身。 |
 
+内置 Skill 绑定启用中网关、启用中环境当前发布版本里的普通资源（旧快照缺 kind 按 standard）。已写入的版本是注入当时资源定义的快照，网关之后的发布不改写它。再次注入且版本号与当前版本一致时，用这次注入时的资源定义覆盖这一版。
 MCP 候选资源来自活跃 Stage 的 Release 所引用版本，筛选 kind=standard（旧快照缺 kind 按 standard），排除 AI 资源。
 **存量兼容：当前候选校验不筛选 disabled_stages；APISIX Route 编译仍跳过历史快照中该环境禁用的资源。候选合法不保证工具 API 在目标环境可调用。**
 mcp-proxy 按原资源名选择版本 OpenAPI operation、按别名暴露工具，再经网关调用；别名变化不改变资源 ID 或权限归属。
 MCP 协议的 resources 能力与网关 Resource/MCP Tool 是不同概念。
+SKILL.md frontmatter 以 Agent Skills 规范为基础，依次只有 name、description、display_name、display_name_en、metadata；metadata 只有 type、version、author、datetime、source。展示名和描述在下载时取 SkillMetadata 的当前值，改基本信息不产生新版本。code 和 `SkillMetadata.metadata` 扩展 JSON 不写入 SKILL.md。
+网关 Skill 上传包只导入 declaration.yaml，SKILL.md 正文由网关按声明渲染；声明原文不存，网关 Skill 管理页的下载包按库里的数据重新生成 declaration.yaml，Skill 市场和免登录下载（web 接口，给 npx 临时使用）的包不含它。
 
 核对：[插件模型](../src/dashboard/apigateway/apigateway/apps/plugin/models.py)、
 [OpenAPI 模型](../src/dashboard/apigateway/apigateway/apps/openapi/models.py)、
 [文档与 SDK](../src/dashboard/apigateway/apigateway/apps/support/models.py)、
 [审计模型](../src/dashboard/apigateway/apigateway/apps/audit/models.py)、
 [MCP 模型](../src/dashboard/apigateway/apigateway/apps/mcp_server/models.py)、
+[Skill 模型](../src/dashboard/apigateway/apigateway/apps/skill/models.py)、
+[Skill 生成与注入](../src/dashboard/apigateway/apigateway/biz/skill/AGENTS.md)、
 [MCP 校验与权限同步](../src/dashboard/apigateway/apigateway/biz/mcp_server/mcp_server.py)、
 [候选类别筛选](../src/dashboard/apigateway/apigateway/service/resource_version/schema.py)、
 [环境禁用路由过滤](../src/dashboard/apigateway/apigateway/controller/convertor/route.py)、

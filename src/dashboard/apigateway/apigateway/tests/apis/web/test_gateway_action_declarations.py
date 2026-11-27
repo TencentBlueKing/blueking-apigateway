@@ -27,6 +27,7 @@ from apigateway.apis.web.mcp_server_metrics import views as mcp_server_metrics_v
 from apigateway.apis.web.metrics import views as metrics_views
 from apigateway.apis.web.monitor import views as monitor_views
 from apigateway.apis.web.permission import views as permission_views
+from apigateway.apis.web.skill import views as skill_views
 from apigateway.apps.rbac.constants import GatewayActionEnum
 
 WEB_GATEWAY_URL_PREFIX = "backend/gateways/"
@@ -52,6 +53,7 @@ OPERATE_VIEWS = (
     mcp_server_log_views.MCPServerLogDetailApi,
     mcp_server_log_views.MCPServerLogTraceApi,
     mcp_server_log_views.MCPServerLogChainApi,
+    skill_views.SkillTagListApi,
 )
 
 APPROVE_VIEWS = (
@@ -156,6 +158,13 @@ MANAGE_DEFAULT_VIEW_FQCNS = frozenset(
         "apigateway.apis.web.resource_version.views.ResourceVersionNeedNewVersionRetrieveApi",
         "apigateway.apis.web.resource_version.views.ResourceVersionRetrieveDestroyApi",
         "apigateway.apis.web.sdk.views.GatewaySDKListCreateApi",
+        "apigateway.apis.web.skill.views.SkillCurrentVersionUpdateApi",
+        "apigateway.apis.web.skill.views.SkillDownloadApi",
+        "apigateway.apis.web.skill.views.SkillFileListApi",
+        "apigateway.apis.web.skill.views.SkillPackageCheckApi",
+        "apigateway.apis.web.skill.views.SkillRetrieveUpdateDestroyApi",
+        "apigateway.apis.web.skill.views.SkillUpdateStatusApi",
+        "apigateway.apis.web.skill.views.SkillVersionListCreateApi",
         "apigateway.apis.web.stage.views.ProgrammableStageDeployRetrieveApi",
         "apigateway.apis.web.stage.views.StageBackendListApi",
         "apigateway.apis.web.stage.views.StageBackendRetrieveUpdateApi",
@@ -220,6 +229,10 @@ def test_gateway_detail_get_uses_operate_action():
     assert gateway_views.GatewayRetrieveUpdateDestroyApi.gateway_action_map == {
         "GET": GatewayActionEnum.OPERATE_GATEWAY.value
     }
+
+
+def test_skill_list_get_uses_operate_action():
+    assert skill_views.SkillListCreateApi.gateway_action_map == {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
 
 
 def test_web_gateway_urlconf_actions_are_valid_and_explicit():

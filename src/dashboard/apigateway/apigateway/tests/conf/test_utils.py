@@ -61,6 +61,26 @@ def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch
     assert flags["ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT"] is False
 
 
+def test_get_default_feature_flags_skill(monkeypatch):
+    env = Env()
+    kwargs = {
+        "enable_bk_notice": False,
+        "enable_multi_tenant_mode": False,
+        "ai_open_api_base_url": "",
+        "enable_gateway_operation_status": False,
+        "enable_run_data_metrics": False,
+        "enable_itsm4_permission_apply": False,
+    }
+
+    monkeypatch.delenv("FEATURE_FLAG_ENABLE_SKILL", raising=False)
+    flags = get_default_feature_flags(env, **kwargs)
+    assert flags["ENABLE_SKILL"] is False
+
+    monkeypatch.setenv("FEATURE_FLAG_ENABLE_SKILL", "true")
+    flags = get_default_feature_flags(env, **kwargs)
+    assert flags["ENABLE_SKILL"] is True
+
+
 def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
     monkeypatch.setenv("BK_USER_URL", "https://user.example.com")
 

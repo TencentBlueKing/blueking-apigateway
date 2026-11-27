@@ -59,6 +59,9 @@ if [ "${esb_enabled}" = "true" ]; then
     sync_bk_esb
 fi
 
+# 注入内置 Skill
+python manage.py sync_platform_skills
+
 # only sync IAM when BK_IAM_V4_ENABLED = true/True
 if [ "${BK_IAM_V4_ENABLED}" = "true" ] || [ "${BK_IAM_V4_ENABLED}" = "True" ]; then
     python manage.py sync_gateway_rbac_model_to_iam

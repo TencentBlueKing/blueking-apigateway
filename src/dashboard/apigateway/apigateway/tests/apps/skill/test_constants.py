@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # TencentBlueKing is pleased to support the open source community by making
 # 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
@@ -16,23 +15,18 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import pytest
 
-from apigateway.biz import constants
+from apigateway.apps.skill.constants import SKILL_CODE_PREFIXES, SkillStatusEnum, SkillTypeEnum
 
 
-class TestConstants:
-    @pytest.mark.parametrize(
-        "value, match",
-        [
-            ("1.0.0", True),
-            ("1.0.0-beta.1", True),
-            ("v1.0.0", False),
-        ],
-    )
-    def test_semver_pattern(self, value, match):
-        result = constants.SEMVER_PATTERN.match(value)
-        if match:
-            assert result
-        else:
-            assert not result
+class TestSkillTypeEnum:
+    def test_values(self):
+        assert SkillTypeEnum.get_values() == ["platform", "gateway"]
+
+    def test_every_type_has_code_prefix(self):
+        assert set(SKILL_CODE_PREFIXES) == set(SkillTypeEnum.get_values())
+
+
+class TestSkillStatusEnum:
+    def test_values(self):
+        assert SkillStatusEnum.get_values() == ["unpublished", "published", "archived"]

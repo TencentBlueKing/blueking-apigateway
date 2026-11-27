@@ -129,6 +129,7 @@ INSTALLED_APPS = [
     "apigateway.apps.docs",
     "apigateway.apps.api_debug",
     "apigateway.apps.mcp_server",
+    "apigateway.apps.skill",
     "apigateway.apps.bk_itsm",
     "apigateway.apps.data_plane",
     "apigw_manager.apigw",
@@ -863,6 +864,11 @@ VERSION_LOG_DIR = os.path.join(BASE_DIR, "data/version_log")
 # 网关响应错误码说明文档
 # ==============================================================================
 API_RESPONSE_ERR_CODE_DOC_DIR = os.path.join(BASE_DIR, "data/knowledge_doc/api_response")
+
+# ==============================================================================
+# 内置 Skill 声明与模板
+# ==============================================================================
+SKILL_DATA_DIR = os.path.join(BASE_DIR, "data/skill")
 
 # ==============================================================================
 # 访问日志

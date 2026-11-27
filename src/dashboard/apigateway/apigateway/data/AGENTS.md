@@ -3,6 +3,8 @@
 Paths here are relative to this directory. `apigw-definitions/` contains gateway
 resource registrations; `apidocs/zh/` contains Markdown API documentation.
 This checkout has only the `zh` API documentation directory.
+`skill/` holds built-in Skill declarations, the SKILL.md template and
+references; `../biz/skill/AGENTS.md` owns those files.
 
 Keep affected API views/serializers under `../apis/`, resource YAML, and Markdown
 aligned by operationId: HTTP method/path, input/output, status and errors. Preserve
