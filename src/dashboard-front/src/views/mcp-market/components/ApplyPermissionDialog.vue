@@ -143,10 +143,20 @@ const selectedAppName = computed(() => {
   return app?.name ?? '';
 });
 
+// 重复的 bk_app_code 会让 BkOption 以 id 为键的注册互相覆盖，未被注册的选项在搜索时不会被隐藏，导致搜索结果混入无关项
+const dedupedApps = (apps: IUserApplicationOutput[]) => {
+  const seen = new Set<string>();
+  return apps.filter((app) => {
+    if (seen.has(app.bk_app_code)) return false;
+    seen.add(app.bk_app_code);
+    return true;
+  });
+};
+
 const getApplicableAppList = async () => {
   try {
     const res = await getUserApplicationList();
-    applicableApps.value = res ?? [];
+    applicableApps.value = dedupedApps(res ?? []);
   }
   catch {
     applicableApps.value = [];
