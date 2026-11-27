@@ -1,5 +1,7 @@
 FORCE:
 
+SEMGREP = uv tool run --from semgrep==1.186.0
+
 .PHONY: init
 init:
 	pip install -U pip setuptools
@@ -16,6 +18,7 @@ lint:
 	mypy --config-file=pyproject.toml .
 	cd apigateway && lint-imports --config=../pyproject.toml && cd ..
 	python3 $(OPENAPI_LINT_SCRIPT)
+	$(MAKE) lint-semgrep
 
 .PHONY: lint-check
 lint-check:
@@ -23,8 +26,17 @@ lint-check:
 	mypy --config-file=pyproject.toml . || (echo "mypy check fail"; exit 1)
 	cd apigateway && lint-imports --config=../pyproject.toml || (echo "importlinter check fail"; exit 1) && cd ..
 	python3 $(OPENAPI_LINT_SCRIPT) || (echo "openapi check fail"; exit 1)
+	$(MAKE) lint-semgrep
 
+.PHONY: lint-semgrep
+lint-semgrep:
+	$(SEMGREP) semgrep scan --config=.semgrep/rules --error --strict \
+		--metrics=off --disable-version-check --disable-nosem --no-rewrite-rule-ids \
+		apigateway/apigateway
 
+.PHONY: test-semgrep
+test-semgrep:
+	$(SEMGREP) python -m unittest discover -s scripts/tests -p 'test_semgrep_rules.py' -v
 
 # ====== dependencies ======
 

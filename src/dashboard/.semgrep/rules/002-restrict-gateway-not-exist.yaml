@@ -1,0 +1,30 @@
+rules:
+  - id: 002-restrict-gateway-not-exist-files
+    languages: [python]
+    severity: ERROR
+    message: Only the two approved GatewaySyncApi classes may enable allow_gateway_not_exist.
+    paths:
+      exclude:
+        - "**/tests/**"
+        - "**/migrations/**"
+        - "/src/dashboard/apigateway/apigateway/apis/open/gateway/views.py"
+        - "/src/dashboard/apigateway/apigateway/apis/v2/sync/views.py"
+    pattern-either: &enable_flag
+      - pattern: allow_gateway_not_exist = True
+      - pattern: $OBJ.allow_gateway_not_exist = True
+      - pattern: setattr($OBJ, "allow_gateway_not_exist", True)
+      - pattern: $VIEW.as_view(..., allow_gateway_not_exist=True, ...)
+
+  - id: 003-restrict-gateway-not-exist-class
+    languages: [python]
+    severity: ERROR
+    message: Only GatewaySyncApi may enable allow_gateway_not_exist in these files.
+    paths:
+      include:
+        - "/src/dashboard/apigateway/apigateway/apis/open/gateway/views.py"
+        - "/src/dashboard/apigateway/apigateway/apis/v2/sync/views.py"
+    patterns:
+      - pattern-either: *enable_flag
+      - pattern-not-inside: |
+          class GatewaySyncApi(...):
+              ...
