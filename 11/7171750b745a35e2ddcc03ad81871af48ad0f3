@@ -1,0 +1,1597 @@
+src/dashboard-front/src/views/model-services/components/AddModelService.vue
+  s_a8186a58c4428c::t_7144002a54950b 120,139-143,149,171,186-191,204,211,215-216,224,227,242,267-270,319-328,332,336-347,370-389,393-396,423,427,429,583-588
+src/dashboard-front/src/components/plugin/plugin-form/bk-access-token-source/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-66
+src/dashboard-front/src/stores/useTrace.ts
+  s_a8186a58c4428c::t_7144002a54950b 21-27,30,34
+src/dashboard-front/src/components/base/ag-table/README.md
+  s_a8186a58c4428c::t_7144002a54950b 1-628
+src/dashboard-front/src/views/online-debugging/components/ResponseContent.vue
+  s_a8186a58c4428c::t_7144002a54950b 162,180,203-207,219-220,257,262,344,353,356,364,384-385,388,393,398,400,403,408-409,414,418,421,425,430,433-434,438,442,446,453,456,459,462,467,471,476,479,483,486,490,495,498,501-502,505,509-510,515
+src/dashboard-front/tsconfig.node.json
+  s_a8186a58c4428c::t_7144002a54950b 6
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/12-personal-no-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-23
+src/dashboard/apigateway/apigateway/utils/time.py
+  s_a8186a58c4428c::t_7144002a54950b 228
+src/dashboard-front/src/views/resource-management/settings/import/components/ExcludedResourceTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-194
+src/dashboard-front/src/views/mcp-server/permission/components/ApprovalDetailSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 146-147
+src/dashboard-front/src/views/resource-management/components/BaseInfo.vue
+  s_a8186a58c4428c::t_7144002a54950b 97,119,163
+src/dashboard/apigateway/apigateway/tests/apis/web/test_csv_exports.py
+  s_a8186a58c4428c::t_7144002a54950b 1-145
+src/dashboard/apigateway/apigateway/biz/iam/authorization.py
+  s_a8186a58c4428c::t_7144002a54950b 104-106,109-117,192-193,207,234-235,255
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-header-row/timeline-viewing-layer.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-51
+src/dashboard/apigateway/apigateway/biz/mcp_server_log/log_search.py
+  s_a8186a58c4428c::t_7144002a54950b 27,299,315,330
+src/dashboard/apigateway/apigateway/tests/biz/resource/importer/test_parser.py
+  s_a8186a58c4428c::t_7144002a54950b 92-122
+src/dashboard-front/src/layout/my-gateway/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 39,153-155,157,168-175,177-178,204,236,252,255,263,265,282,294,389,749-756,759,767-769,775-817,822,824,836-838,981,983-994,1005-1008,1011-1014,1204
+src/dashboard-front/env.d.ts
+  s_a8186a58c4428c::t_7144002a54950b 86-90,105
+  s_a8186a58c4428c::t_71cce9dcbbbad7 106
+src/dashboard-front/src/components/base/ag-table/table.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-207
+src/dashboard/apigateway/apigateway/apis/v2/inner/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 62,78-79,240-245,1134,1143
+src/dashboard-front/src/components/user/user-selector/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-95
+src/dashboard/apigateway/apigateway/tests/core/management/commands/test_sync_released_resource.py
+  s_a8186a58c4428c::t_7144002a54950b 1-92
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_gateway_released_resources.md
+  s_a8186a58c4428c::t_7144002a54950b 21,40-42,64-65
+src/dashboard-front/src/types/permission.ts
+  s_a8186a58c4428c::t_7144002a54950b 77-84
+src/dashboard-front/src/views/permission/app/components/ProactiveAuthorization.vue
+  s_a8186a58c4428c::t_7144002a54950b 2-17,19,31,65,72-74,79,91,99,108,121-122,164,170,174,182,187,202-211,232-242,245-248,286,291-294,315-318,325-328,332-341,343-369,371-373,405-423,445-450,465-470,485-489,511,525-528,536-550
+docs/ddd-ubiquitous-language.md
+  s_a8186a58c4428c::t_7144002a54950b 158-160,164-165,173-176
+src/dashboard/apigateway/apigateway/tests/biz/gateway/test_saver.py
+  s_a8186a58c4428c::t_7144002a54950b 54,73,88,102-114,136-163
+  s_a8186a58c4428c::t_fc03e61cbf3015 164
+src/dashboard-front/src/views/mcp-server/components/CustomMdGuideSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 20,41,45,50,77,84,90,105,124-125
+src/dashboard/apigateway/apigateway/tests/controller/convertor/test_plugin_metadata.py
+  s_a8186a58c4428c::t_7144002a54950b 1-33
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/vertical-resizer.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-157
+src/dashboard/apigateway/apigateway/tests/apis/v2/inner/test_gateway_lookup_views.py
+  s_a8186a58c4428c::t_7144002a54950b 34-35,48-49,319,345-346,357-358,398-432,463-464,495-496
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/IpRestrictionTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-101
+src/dashboard-front/src/services/source/mcp-marketplace.ts
+  s_a8186a58c4428c::t_7144002a54950b 24,26-27,33,35,79-80
+src/dashboard-front/src/components/release/release-stage-slider/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-938
+src/dashboard/apigateway/apigateway/biz/resource/openapi_schema.py
+  s_a8186a58c4428c::t_7144002a54950b 21-24,41-48
+src/dashboard-front/src/hooks/__tests__/use-chart-interval-option.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-81
+src/dashboard-front/src/components/plugin/plugin-form/bk-rate-limit/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-391
+src/dashboard/apigateway/apigateway/apis/web/metrics/views.py
+  s_a8186a58c4428c::t_7144002a54950b 42,322,324
+src/dashboard/apigateway/apigateway/controller/management/commands/sync_releases_to_gateway_parallel.py
+  s_a8186a58c4428c::t_7144002a54950b 23-25,29,67-83,85-92,96-111,122-133
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/BaseTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-111
+src/dashboard-front/src/services/source/gateway/ai.ts
+  s_a8186a58c4428c::t_7144002a54950b 21,23-24,34,42
+src/dashboard-front/src/services/source/gateway/label.ts
+  s_a8186a58c4428c::t_7144002a54950b 24-28,46,53,62
+src/dashboard/apigateway/apigateway/biz/programmable/releaser.py
+  s_a8186a58c4428c::t_7144002a54950b 29-30,48-49,53-55,178-191,195-197,209-210,216,221,224,227-228,243-247,249-252,258-261,263-264,267
+src/dashboard/apigateway/apigateway/tests/conf/test_utils.py
+  s_a8186a58c4428c::t_7144002a54950b 37-44,115-116,126-137
+src/dashboard-front/src/services/types/external/bk-user.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-15
+src/dashboard-front/src/components/mcp/mcp-server-card/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-573
+src/dashboard-front/src/views/online-debugging/components/RequestRecord.vue
+  s_a8186a58c4428c::t_7144002a54950b 43,59,87,99,141,157,196-204,206-207,210-211,213-231,236,248,252,255-256,258-259,286,288,299,313,329,335,342,353,357,363,366,369,372,379,381,387,399-401,409,420-421,425-426,430-438,453,456-458,461-463,481,493-496,505,566,587,670
+src/dashboard-front/src/views/permission/app/components/ExpireDaySelector.vue
+  s_a8186a58c4428c::t_7144002a54950b 33
+src/dashboard-front/src/views/personal-workbench/components/TopBar.vue
+  s_a8186a58c4428c::t_7144002a54950b 38,41
+src/dashboard-front/src/views/resource-management/versions/components/SdkLanguageSelector.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-100
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/30-switch-off-personal-unknown-delegated-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard/apigateway/apigateway/utils/log_scrubber.py
+  s_a8186a58c4428c::t_7144002a54950b 1-335
+src/dashboard-front/src/utils/__tests__/gateway-domain.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-261
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/index.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-237
+src/dashboard-front/src/views/platform-tools/toolbox/components/Base64Decoder.vue
+  s_a8186a58c4428c::t_7144002a54950b 105-106,110
+src/dashboard-front/src/components/mcp/trace-view/typings/span-graph.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-77
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/span-tree-offset.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-179
+src/dashboard-front/src/views/personal-workbench/components/Form.vue
+  s_a8186a58c4428c::t_7144002a54950b 44,50,81,97,105,107,109,121,123-124,143,147-149,155-161,172-173,233-236
+  s_a8186a58c4428c::t_7d8d95a36d364a 237
+src/dashboard-front/src/views/resource-management/settings/import/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 21,36,38-57,59,70,78,84-85,120,122,143-152,155-156,159-161,163-167,177-179,183,185-186,188,191,193-209,211,214-216,219-220,223-226,228,231-233,236,241-242,246,248,250,252,255-259,261-264,266-268,271-274,278-284,288-290,308-322,327,337-341,351,359-384,387-392,395-409,412-413
+src/dashboard-front/src/components/ai/ai-blueking-button/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-55
+src/dashboard-front/src/views/mcp-server/components/ServerTools.vue
+  s_a8186a58c4428c::t_7144002a54950b 32-35,115,206,210,215,251,266,269,272-273,313
+src/dashboard-front/src/components/mcp/trace-view/typings/trace.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-322
+src/dashboard-front/src/services/source/gateway/stage.ts
+  s_a8186a58c4428c::t_7144002a54950b 20-21,23,27,29,55,63,72,81,111
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/37-app-token-no-permission.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-30
+src/dashboard-front/.agents/skills/bkui-builder/references/checklist.md
+  s_a8186a58c4428c::t_7144002a54950b 3,5,7-11,13,15-18,20,22-26,28,30-34,36,38-41
+src/dashboard-front/src/utils/gateway-form.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-50
+src/dashboard-front/src/stores/useStaff.ts
+  s_a8186a58c4428c::t_7144002a54950b 53
+test/cases/dashboard/02-inner-api/25-list-oauth2-client-scope-resources-app-delegated.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-48
+src/dashboard/apigateway/apigateway/common/django/validators.py
+  s_a8186a58c4428c::t_7144002a54950b 18-19,23-33
+  s_a8186a58c4428c::t_12bf0bf38c721d 34
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/36-app-token-audience-mismatch.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-41
+src/dashboard-front/src/views/mcp-server/components/AuthApplications.vue
+  s_a8186a58c4428c::t_7144002a54950b 57,127-131,136-142,158-160,179,192,198,210-211,306,338,342-343
+src/dashboard-front/src/services/source/gateway/member.ts
+  s_a8186a58c4428c::t_7144002a54950b 22,24-26,67
+src/dashboard/apigateway/apigateway/biz/resource/models.py
+  s_a8186a58c4428c::t_7144002a54950b 18,28-35,51-57,112-116
+  s_a8186a58c4428c::t_6601b5a3a48768 117-118
+src/dashboard-front/src/utils/markdown.ts
+  s_a8186a58c4428c::t_7144002a54950b 19-20,32-33
+src/dashboard/apigateway/apigateway/biz/resource/resource.py
+  s_a8186a58c4428c::t_7144002a54950b 23,34-35,106-108,116-138,184-185,187-189,224-232
+  s_a8186a58c4428c::t_7173aef26573c8 233
+src/dashboard/apigateway/apigateway/tests/biz/resource/test_models.py
+  s_a8186a58c4428c::t_7144002a54950b 50-68,130-154
+src/dashboard-front/src/views/basic-info/components/EditBasicInfoDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-449
+src/dashboard-front/src/views/platform-tools/toolbox/components/JwtDecoder.vue
+  s_a8186a58c4428c::t_7144002a54950b 86,96
+src/dashboard-front/src/views/resource-management/settings/edit/components/Standard.vue
+  s_a8186a58c4428c::t_7144002a54950b 38-56,144,187-192,207
+src/dashboard-front/src/views/resource-management/settings/import/components/PendingResourceTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-471
+src/dashboard-front/src/components/plugin/plugin-form/api-breaker/components/StatusCodes.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-191
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_open_list_gateway_resources.md
+  s_a8186a58c4428c::t_7144002a54950b 6,23,42,69-70,102
+src/dashboard-front/src/components/plugin/plugin-manage/README.md
+  s_a8186a58c4428c::t_7144002a54950b 1-92
+src/dashboard/apigateway/apigateway/biz/gateway/members.py
+  s_a8186a58c4428c::t_7144002a54950b 37,82-110,117,133-135,154-155,158,166,169-171,180-181,184,189,192-194,213
+src/dashboard-front/src/views/api-docs/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 71,237-238,245,265,285,290,371,380,387,389,395,403,447,449,465,469,476,489
+src/dashboard-front/src/views/resource-management/settings/edit/Index.scss
+  s_a8186a58c4428c::t_7144002a54950b 62-73
+src/dashboard-front/src/components/user/user-selector/__tests__/user-selector.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-168
+src/dashboard-front/src/constants/index.ts
+  s_a8186a58c4428c::t_7144002a54950b 83-109,144
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/22-app-token-on-user-resource.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-39
+src/dashboard/apigateway/apigateway/tests/apis/web/api_test/test_sensitive.py
+  s_a8186a58c4428c::t_7144002a54950b 20,122-192,247-416
+src/dashboard-front/src/hooks/use-text-getter.ts
+  s_a8186a58c4428c::t_7144002a54950b 19-27,33,40-44,52-55
+src/dashboard-front/src/utils/__tests__/auth-config.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-290
+src/dashboard/apigateway/apigateway/controller/convertor/route.py
+  s_a8186a58c4428c::t_7144002a54950b 23,29,222-224,226-232,236-239,244
+src/dashboard-front/.agents/skills/bkui-cheatsheet/references/complex-components.md
+  s_a8186a58c4428c::t_7144002a54950b 3,9-10,12-30,33,35-38,42,45-59,62-63,66,68,70-74,76-77,79,83,86,92-94,97,100,105-111,114-115,120,123-129,132,134,137-143,146,150-152,155-162,164-165,167-170,173-174,176-179,181,184,186,190,193,196,198,200-203,206,208,211-247
+src/dashboard/apigateway/apigateway/apis/web/gateway/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 286,324-326,391-396,433,448-451,464-470,489-494
+  s_a8186a58c4428c::t_2191eea9a0fe28 495
+src/dashboard/apigateway/apigateway/tests/healthz/test_redaction.py
+  s_a8186a58c4428c::t_7144002a54950b 50,56
+src/dashboard-front/src/views/api-docs/components/ApplyPermissionDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 97
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-header-row/timeline-collapser.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-19
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/list-view/positions.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-200
+src/dashboard-front/src/views/resource-management/versions/components/ResourceDetail.vue
+  s_a8186a58c4428c::t_7144002a54950b 199-201,205,210-211,214-216,220,228,232,237,239,243-254,491-498,669
+src/dashboard-front/src/views/mcp-server/permission/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 149,164,200-201,203,208,214-219,223-232,240,248,266,290,333-357,359,361-375,377-385,387-402,404,407,411,424,437,445-446,468-471,480,494,501,515,520,522,545-558,562,601,604,650-651,654,698-699,702,706-707,735,767
+src/dashboard-front/src/services/types/platform/version-log.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-6
+src/dashboard/apigateway/apigateway/tests/apis/v2/sync/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 26-27,68-103,662-721,1822,1825,2026,2086,2198-2284
+  s_a8186a58c4428c::t_13efda9de29ca8 2285
+src/dashboard-front/src/views/operate-data/access-log/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 34,128,207,268,305,374,382-386,389,411,413-421,423,427-437,452-455,480,486,610-615,651-655,665,730-737,761,773,902,962,970,987-989,1006,1014,1027,1091-1094,1102-1108,1127-1128,1143-1145,1183-1184,1190,1202-1204,1221,1225-1235,1238-1239,1245,1629-1630
+src/dashboard/apigateway/apigateway/apps/permission/models.py
+  s_a8186a58c4428c::t_7144002a54950b 23,49-74,83,130
+src/dashboard-front/src/views/member-management/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 61,98,154,159-163,169-173,179,185-202
+src/dashboard/apigateway/apigateway/fixtures/plugins.yaml
+  s_a8186a58c4428c::t_7144002a54950b 383-402,414-417,439,461-464,479
+src/dashboard-front/src/views/member-management/components/AddMember.vue
+  s_a8186a58c4428c::t_7144002a54950b 39,41,102,104
+src/dashboard-front/src/services/types/gateway/release.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-136
+src/dashboard-front/src/components/base/ag-table/__tests__/data-source-and-pagination.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-278
+src/dashboard-front/src/components/mcp/mcp-access-config-dialog/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-77
+src/dashboard-front/src/services/http/middleware/response.ts
+  s_a8186a58c4428c::t_7144002a54950b 91,95-98,102,107,118,122-124,133-151,153-157,160
+src/dashboard-front/src/components/mcp/trace-view/utils/date.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-237
+src/dashboard-front/src/views/permission/record/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 60,77,219-223,225,229-236,238-239,241,243,250,265,273,281,290,300,309-310,321-322,327-328,335,340-341,358,362,366,386-387,406,414,429,438,453,460,481,483-486,489,494,499-500,502,506,508-509,512,530,538,551,571
+src/dashboard-front/src/views/resource-management/components/ResourceAuthSelector.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-561
+src/dashboard-front/src/views/resource-management/components/response-params-v2/components/ResponseParamsJsonSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 20,28,34,58,85,89-90,106
+src/dashboard-front/src/views/platform-tools/toolbox/components/JsonFormat.vue
+  s_a8186a58c4428c::t_7144002a54950b 97,99,107
+src/dashboard-front/src/services/types/gateway/access-log.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-192
+src/dashboard/apigateway/apigateway/tests/apis/open/gateway/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 45,47-48,63,65-71,73-79,81-82,84,86-88,90,95,97,102,104,109,111,126,128
+src/dashboard-front/src/components/plugin/plugin-form/fault-injection/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-337
+src/dashboard-front/src/components/plugin/plugin-form/request-validation/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-137
+src/dashboard-front/src/types/resource.ts
+  s_a8186a58c4428c::t_7144002a54950b 27,31-32,42,86,117
+src/dashboard-front/src/views/model-services/components/AIInstanceNameList.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-59
+src/dashboard/apigateway/apigateway/tests/apis/open/gateway/test_serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 158-159,165-168
+src/dashboard-front/src/components/release/publish-event-slider/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-367
+src/dashboard-front/src/views/mcp-market/components/GuideLine.vue
+  s_a8186a58c4428c::t_7144002a54950b 76,99-100,114-116
+src/dashboard/apigateway/apigateway/apps/support/task.py
+  s_a8186a58c4428c::t_7144002a54950b 33-48,50,59,64,83,86,115,163-166
+src/dashboard/apigateway/apigateway/data/apigw-definitions/bk-apigateway-definition.yaml
+  s_a8186a58c4428c::t_7144002a54950b 41-42,63,102-103,123-124,164-173
+src/dashboard/apigateway/apigateway/locale/en/LC_MESSAGES/django.po
+  s_a8186a58c4428c::t_7144002a54950b 355,359-366,422-425,2739-2749,3136-3139
+  s_a8186a58c4428c::t_2234538dbda623 3140
+src/dashboard-front/src/utils/__tests__/trace.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-284
+src/dashboard-front/src/views/online-debugging/components/PayloadBody.vue
+  s_a8186a58c4428c::t_7144002a54950b 23,42-43,58,64,85,88-89,93
+src/dashboard-front/src/views/resource-management/components/request-params-v2/components/FieldSettingsPopover.vue
+  s_a8186a58c4428c::t_7144002a54950b 713
+src/dashboard-front/src/views/online-debugging/components/PayloadHeaders.vue
+  s_a8186a58c4428c::t_7144002a54950b 74,92,195,198,209-210,216,218,265,278,281,342,375,407
+src/dashboard-front/src/views/member-management/types.ts
+  s_a8186a58c4428c::t_7144002a54950b 23
+src/dashboard-front/src/views/resource-management/components/response-params-v2/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 164,169
+src/dashboard-front/src/components/plugin/plugin-form/uri-blocker/components/RuleInput.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-146
+src/dashboard-front/src/components/base/ag-table/use-table-layout.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-336
+src/dashboard-front/src/views/mcp-server/components/DashboardQuestMonitor.vue
+  s_a8186a58c4428c::t_7144002a54950b 219-224,244-254
+src/dashboard-front/src/assets/bk_icon_font/demo.html
+  s_a8186a58c4428c::t_7144002a54950b 1088-1090,1148-1251,2723,2725,2811-2966
+src/dashboard-front/src/components/base/ag-table/__tests__/selection.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-485
+src/dashboard-front/tsconfig.json
+  s_a8186a58c4428c::t_7144002a54950b 9-11
+src/dashboard-front/src/components/mcp/trace-view/model/trace-viewer.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-35
+src/dashboard-front/src/services/types/gateway/mcp-server/log.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-186
+src/dashboard-front/src/views/backend-services/components/ServicePublishDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-143
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/04-app-only-legacy-header-with-unknown-app-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-26
+src/dashboard/apigateway/apigateway/apps/permission/management/commands/copy_app_permission.py
+  s_a8186a58c4428c::t_7144002a54950b 22,33,38,41-42,47,53,57-58,63,67,69,72,82,92,95,98
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/21-app-token-ok.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-45
+src/dashboard-front/src/views/resource-management/settings/import/__tests__/pending-resource-table-auth.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-351
+src/dashboard/apigateway/apigateway/biz/resource/__init__.py
+  s_a8186a58c4428c::t_7144002a54950b 18,28
+src/dashboard/apigateway/apigateway/tests/lint/test_bk_paas3_resource_grants.py
+  s_a8186a58c4428c::t_7144002a54950b 1-35
+src/dashboard-front/src/components/plugin/plugin-form/bk-ip-restriction/__tests__/bk-ip-restriction.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-78
+src/dashboard-front/src/hooks/use-date-picker.ts
+  s_a8186a58c4428c::t_7144002a54950b 20,24-131,135-137,139-142,145-153,156-158,160-162,168-169,172-176,178-180,183-187,189-240,247-248,253,257,265,285-286
+src/dashboard-front/src/views/api-docs/components/SDKInstructionContent.vue
+  s_a8186a58c4428c::t_7144002a54950b 57,62
+src/dashboard/apigateway/apigateway/tests/components/test_bkiam.py
+  s_a8186a58c4428c::t_7144002a54950b 227,246,374
+src/dashboard-front/src/components/plugin/plugin-manage/components/PluginIcon.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-52
+src/dashboard-front/eslint.config.ts
+  s_a8186a58c4428c::t_7144002a54950b 32,69-77,79-83,98,100,105,107,109,113-114,117,120-122
+src/dashboard-front/src/services/source/gateway/backend.ts
+  s_a8186a58c4428c::t_7144002a54950b 21,25-28,54,63,71-76,84
+src/dashboard-front/src/views/model-services/utils/ai-backend-config.ts
+  s_a8186a58c4428c::t_7144002a54950b 2-9,13,15-22,24-25,29-35,43-46,64-74,89,96,104,112-120,405,411-514,516-543,545-556,561-563,567-701,709,711-718,730-746,749-758,761,764-794,815-822,835,837-841,846-856,858-859,871,874,877-935
+src/dashboard/apigateway/apigateway/tests/conf/test_redis_settings.py
+  s_a8186a58c4428c::t_7144002a54950b 1-104
+src/dashboard-front/src/views/online-debugging/preset-headers.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-54
+src/dashboard/apigateway/apigateway/conf/default.py
+  s_a8186a58c4428c::t_7144002a54950b 21,398-413,417-418,429-431,470-471,508-544,723,808-810,815,876-878,927
+  s_a8186a58c4428c::t_1c878861aba623 928
+src/dashboard-front/src/utils/index.ts
+  s_a8186a58c4428c::t_7144002a54950b 18-20
+src/dashboard-front/src/views/api-docs/components/SDKDetail.vue
+  s_a8186a58c4428c::t_7144002a54950b 171-172
+src/dashboard-front/src/views/online-debugging/components/Doc.vue
+  s_a8186a58c4428c::t_7144002a54950b 58,123,158-161,210-211,220,287
+src/dashboard-front/src/views/stage-management/overview/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 49,61
+src/dashboard-front/src/components/base/ag-table/__tests__/helpers.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-211
+src/dashboard-front/src/components/mcp/mcp-access-config/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-159
+src/dashboard-front/.agents/rules/vue-code-style.md
+  s_a8186a58c4428c::t_7144002a54950b 9-24,29-31,35,38-41,45,47,49-54,56,59-61,64-70,72-75,78-80,83,85,87-93,95,97-98,100,102-103,105-110,112,114-118,120-123,125-127,130-131,134-155,160-176,182-187,194,196-200,202-219,221,223-227,229,231-237,239-246,248-252,255-274
+src/dashboard-front/src/views/resource-management/settings/components/SelectCheckBox.vue
+  s_a8186a58c4428c::t_7144002a54950b 181-183
+src/dashboard-front/src/services/source/gateway/api-test.ts
+  s_a8186a58c4428c::t_7144002a54950b 27-30,39-40
+src/dashboard-front/src/views/mcp-server/components/QueryStatement.vue
+  s_a8186a58c4428c::t_7144002a54950b 76-77
+src/dashboard-front/src/views/mcp-server/observability/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 38,45-46
+  s_a8186a58c4428c::t_6e3bc5fb4d290a 47
+src/dashboard-front/src/views/resource-management/settings/edit/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 21-40,46,84,88,90,98-99,107-112,118,129,168,178,237,247,255,272
+src/dashboard/apigateway/apigateway/apis/web/validators.py
+  s_a8186a58c4428c::t_7144002a54950b 1-40
+src/dashboard-front/src/views/platform-tools/toolbox/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 27,100
+src/dashboard-front/src/views/stage-management/AGENTS.md
+  s_a8186a58c4428c::t_7144002a54950b 9-11
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/list-view/index.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-569
+src/dashboard/apigateway/apigateway/controller/transformer.py
+  s_a8186a58c4428c::t_7144002a54950b 18-19
+src/dashboard-front/src/views/resource-management/components/TopBar.vue
+  s_a8186a58c4428c::t_7144002a54950b 80,115,120-124,126,128,149-150,153,160,169,174,180,182-183,187-189,216,276
+src/dashboard-front/src/services/types/external/chat.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-22
+src/dashboard/apigateway/apigateway/biz/gateway/gateway.py
+  s_a8186a58c4428c::t_7144002a54950b 106-107,309,576-577,586,621,634-639,695,699,708-711,713-716,719-721
+src/dashboard-front/src/components/base/ag-table/use-tdesign-table-adapter.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-190
+src/dashboard-front/src/views/mcp-server/components/ServerCardTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 24,30,41-45,56-60,64-74,125-126,157-158,162,177,187,193-226,228-241,243-263,266-267,269-284,286-296,298-312,314-324,326-340,342-379,381-399,401-419,421-452,454-502,506,510,513,516-520,522-525,531-532,534,547,549,562,566,570,574,580,587-590,600,616-617
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/27-personal-app-unknown-delegated-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard-front/stylelint.config.js
+  s_a8186a58c4428c::t_7144002a54950b 6,11-13,16,25
+src/dashboard-front/src/locales/en.json
+  s_a8186a58c4428c::t_7144002a54950b 810-811,813,815-816,880-881,883-885,1147,1519-1527,2078,2476,2735-2815
+src/dashboard-front/src/components/mcp/trace-view/utils/color-generator.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-113
+src/dashboard-front/.agents/skills/bkui-builder/references/visual-mapping.md
+  s_a8186a58c4428c::t_7144002a54950b 1,3,7,9-10,12-17,21-26,29-30,32-33,38,40,42-50,52,56,58-62,65-89,94,96,98-104,106,108-113,115,118-122,126-130
+src/dashboard-front/src/components/plugin/plugin-form/bk-header-rewrite/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-153
+src/dashboard-front/src/layout/app-header/UserMenu.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-88
+src/dashboard-front/src/services/source/docs/gateway.ts
+  s_a8186a58c4428c::t_7144002a54950b 25,28,31,33,35,37-38,40-42,58
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/20-delegated-token-ok.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-44
+src/dashboard/apigateway/apigateway/tests/service/test_oauth2_client_scope.py
+  s_a8186a58c4428c::t_7144002a54950b 1,24,33,46-47,79-80,271-361,494-505
+  s_a8186a58c4428c::t_f2063764fbd7f5 506-508
+src/dashboard-front/src/views/resource-management/components/__tests__/auth-config.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-914
+src/dashboard-front/src/utils/inferJsonSchema.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-220
+src/dashboard-front/src/views/stage-management/release-record/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 53,62,81-83,87,89-97,105,118,122-132,136,159-160,162,166,168,178,187,196,203,217,233-235,243,253,265-273,284,299,310-318,336-337,339,341,345,362,367-368,371
+src/dashboard-front/src/components/__tests__/browser-render.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-101
+src/dashboard-front/src/views/permission/apply/components/ApprovalDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 65,118
+src/dashboard-front/.agents/skills/bkui-builder/references/code-snippets.md
+  s_a8186a58c4428c::t_7144002a54950b 3,7,9,12-28,33-86,88-89,91-93,95-125,127-129,131-133,135-149,151-194,197-199,202-228,230-245,247-252,254-295
+src/dashboard/apigateway/apigateway/tests/apis/v2/test_resource_deprecation.py
+  s_a8186a58c4428c::t_7144002a54950b 15
+src/dashboard-front/src/views/model-services/components/AIBackendInstancesForm.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-561
+src/dashboard-front/src/components/plugin/plugin-form/bk-query-string-rewrite/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-164
+src/dashboard-front/src/components/mcp/trace-view/utils/draggable-manager/types.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-43
+src/dashboard/apigateway/apigateway/apis/v2/open/permissions.py
+  s_a8186a58c4428c::t_7144002a54950b 1-46
+src/dashboard/apigateway/apigateway/biz/openapi/validate.py
+  s_a8186a58c4428c::t_7144002a54950b 196-200
+src/dashboard/apigateway/apigateway/apis/open/gateway/views.py
+  s_a8186a58c4428c::t_7144002a54950b 20,40,98,106-107,119-120,128,130,171
+src/dashboard-front/src/services/source/gateway/audit.ts
+  s_a8186a58c4428c::t_7144002a54950b 20
+src/dashboard-front/.agents/skills/bkui-builder/SKILL.md
+  s_a8186a58c4428c::t_7144002a54950b 5-6,9,11,13,15-25,27,29-30,32-40,42,44,46-47,50-52
+src/dashboard-front/src/services/source/external/chat.ts
+  s_a8186a58c4428c::t_7144002a54950b 19,23,25,29,31
+src/dashboard-front/src/utils/echarts.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-62
+src/dashboard-front/src/views/operate-data/dashboard/components/Top.vue
+  s_a8186a58c4428c::t_7144002a54950b 109-112,119-123,126,184-185
+src/dashboard-front/src/services/source/gateway/access-log.ts
+  s_a8186a58c4428c::t_7144002a54950b 20-23,28,77-78
+src/dashboard/apigateway/apigateway/tests/controller/management/commands/test_sync_releases_to_gateway_parallel.py
+  s_a8186a58c4428c::t_7144002a54950b 1-9,14,17-18,22-36,55-255
+src/dashboard-front/src/components/plugin/plugin-form/components/KeyValuePairs.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-245
+src/dashboard-front/src/types/trace.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-186
+src/dashboard/apigateway/apigateway/apis/web/gateway/views.py
+  s_a8186a58c4428c::t_7144002a54950b 356
+src/dashboard/apigateway/apigateway/biz/iam/sync.py
+  s_a8186a58c4428c::t_7144002a54950b 37,79-80,128-129,138-145,256,272,274-275
+src/dashboard/apigateway/apigateway/tests/apis/v2/sync/test_serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 20,25,33-47,123-124,130-133
+src/dashboard-front/src/components/release/version-diff/components/ResourceDiffDetail.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-867
+src/dashboard-front/src/views/backend-services/components/AddBackendService.vue
+  s_a8186a58c4428c::t_7144002a54950b 123-124,148,302,306,372,374-376,390,403,406-411,416,418,421-424,426,451,459,633-637,645-647,669-670,674,677,680,682-683,685,688,696,698-705,715-716,718,735,749,755,794-805,807-815,822,859,861-867,1125
+.github/workflows/dashboard-front.yml
+  s_a8186a58c4428c::t_7144002a54950b 23-28,33-34,38-45,49,53-87
+src/dashboard-front/src/components/plugin/plugin-manage/config-editor/components/PluginFormRenderer.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-133
+src/dashboard/apigateway/apigateway/tests/biz/iam/test_authorization.py
+  s_a8186a58c4428c::t_7144002a54950b 144-146,172-177
+src/dashboard-front/src/views/operate-data/report/components/Chart.vue
+  s_a8186a58c4428c::t_7144002a54950b 49,60,64,100,238,260-270
+test/cases/environments/dev.bru
+  s_a8186a58c4428c::t_7144002a54950b 13-16
+test/sync/run.sh
+  s_a8186a58c4428c::t_7144002a54950b 3-4,46-58
+src/dashboard-front/src/views/basic-info/components/EditAPIDoc.vue
+  s_a8186a58c4428c::t_7144002a54950b 63,66,70,188,215,263,307-309,391,393
+src/dashboard/apigateway/apigateway/tests/apis/web/api_test/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 23,25-26,32,34-35,42-544,772,787-941,948-954,958-959,971-973
+src/dashboard-front/src/views/online-debugging/components/Top.vue
+  s_a8186a58c4428c::t_7144002a54950b 52,62,66-67,70-72,78,80,84,88,92
+src/dashboard/apigateway/apigateway/biz/access_log/log_search.py
+  s_a8186a58c4428c::t_7144002a54950b 27,191
+src/dashboard-front/.dockerignore
+  s_a8186a58c4428c::t_7144002a54950b 1-5
+src/dashboard/apigateway/apigateway/apis/v2/open/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 601,614-617,664,879-882
+  s_a8186a58c4428c::t_150eb26f958d20 883
+src/dashboard/apigateway/apigateway/tests/conftest.py
+  s_a8186a58c4428c::t_7144002a54950b 47,787-794
+  s_a8186a58c4428c::t_96130c6435bf02 795-796
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/ticks.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-47
+src/dashboard/apigateway/apigateway/tests/utils/test_responses.py
+  s_a8186a58c4428c::t_7144002a54950b 1-51
+src/dashboard-front/src/views/platform-tools/toolbox/components/QueryLog.vue
+  s_a8186a58c4428c::t_7144002a54950b 26,124,137,139
+src/dashboard-front/src/views/mcp-server/components/ObservabilityBasicForm.vue
+  s_a8186a58c4428c::t_7144002a54950b 156,158-163,217-222,288-292,307-309,335-337,388-389,394-402,404-406,439
+src/dashboard-front/src/components/base/ag-table/use-table-data-source.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-246
+src/dashboard-front/src/components/mcp/trace-view/utils/tree-node.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-195
+src/dashboard-front/src/utils/time-range.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-183
+src/dashboard-front/src/components/mcp/trace-view/typings/index.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-20
+src/dashboard-front/src/types/shims/tdesign-icons-vue-next.d.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-26
+src/dashboard-front/src/components/base/ag-sideslider/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-149
+src/dashboard-front/src/utils/getStageStatus.ts
+  s_a8186a58c4428c::t_7144002a54950b 21
+src/dashboard/apigateway/apigateway/editions/ee/apps/esb/component/helpers.py
+  s_a8186a58c4428c::t_7144002a54950b 22,28
+src/operator/pkg/core/agent/timer/init.go
+  s_a8186a58c4428c::t_7144002a54950b 29-30
+src/dashboard-front/src/views/api-docs/components/SDKDetailDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 217
+src/dashboard-front/src/views/model-services/components/AIBackendConfigForm.vue
+  s_a8186a58c4428c::t_7144002a54950b 8-19,90-95,108-110,112-123,142-143,148,151-157,167,277,280-301,303-305,316-317,337,339-345,350-351,358,361,367,373-376,411-436,442-444,446-448,451-454,459-483,490,510,523-528,612,619,624-628,637-638,640,644,723,734-741
+  s_a8186a58c4428c::t_35158299808b83 7,742
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_lookup_gateway_released_resources.md
+  s_a8186a58c4428c::t_7144002a54950b 22,37-39,58-59
+src/dashboard-front/.agents/skills/bkui-cheatsheet/SKILL.md
+  s_a8186a58c4428c::t_7144002a54950b 5,9,11,13,15-24,26,29-50,52-53,55-57,60-62,65-87,90,92,94
+src/dashboard-front/src/components/release/create-resource-version-slider/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-643
+src/dashboard-front/src/services/types/gateway/ai.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-32
+src/dashboard-front/src/components/base/ag-markdown-editor/index.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-28
+src/dashboard-front/src/views/online-debugging/components/EditTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 32,202,524,526-528
+src/dashboard-front/Dockerfile
+  s_a8186a58c4428c::t_7144002a54950b 1-2,5,9-11,14
+src/dashboard/apigateway/apigateway/apis/web/api_test/prepared_request.py
+  s_a8186a58c4428c::t_7144002a54950b 30,112
+src/dashboard-front/src/components/plugin/plugin-form/bk-mock/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-124
+src/dashboard-front/src/views/audit-log/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 50,54-55,64-66,76,78,89-90,98,100,111-116,129-134,144,147-149,154,168-171,178-181,188-191,218,237,242,263,273,292,314,334,346-349,353,365-373,375-376,380-385,390-392,407-411,418,422-435,438
+src/dashboard-front/src/views/resource-management/settings/edit/__tests__/edit-leave-guard.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-386
+test/cases/dashboard/02-inner-api/30-list-oauth2-client-scope-mcp-servers-app-delegated.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-29
+src/dashboard-front/src/views/resource-management/components/LegacyResourceAuthSelector.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-274
+src/dashboard-front/src/components/mcp/trace-view/utils/info.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-58
+src/dashboard-front/README.md
+  s_a8186a58c4428c::t_7144002a54950b 22-35
+src/dashboard-front/src/components/plugin/plugin-manage/config-editor/types.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-36
+src/dashboard-front/src/components/base/ag-dropdown/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-127
+src/dashboard-front/src/services/source/gateway/sdk.ts
+  s_a8186a58c4428c::t_7144002a54950b 21-25,43
+src/dashboard-front/src/stores/useStage.ts
+  s_a8186a58c4428c::t_7144002a54950b 21
+src/dashboard/apigateway/apigateway/apps/support/management/commands/check_bkrepo.py
+  s_a8186a58c4428c::t_7144002a54950b 1-229
+src/dashboard-front/src/views/platform-tools/micro-gateway/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 73
+src/dashboard-front/src/components/release/version-diff/resource-diff.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-295
+src/dashboard-front/src/views/resource-management/settings/import/components/ResourceImportResult.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-226
+test/sync/oauth2-app-off/definition.yaml
+  s_a8186a58c4428c::t_7144002a54950b 1-37
+src/dashboard-front/src/components/mcp/trace-view/utils/filter-spans.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-75
+src/dashboard-front/src/views/platform-tools/programmable-gateway/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 69
+src/dashboard-front/src/views/online-debugging/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 114,277,441,535-537,541,544-545,609-610,620,656,1199-1219,1390,1394,1415-1426,1430-1442,1558-1560,1868
+src/dashboard-front/src/services/types/gateway/label.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard/apigateway/apigateway/biz/esb/sdk/sdk_factory.py
+  s_a8186a58c4428c::t_7144002a54950b 24,29,57-58,63-65
+  s_a8186a58c4428c::t_1a7cd596d39292 66-67
+src/dashboard-front/src/constants/gateway-permission.ts
+  s_a8186a58c4428c::t_7144002a54950b 28
+src/dashboard-front/src/components/base/ag-copy-button/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-51
+src/dashboard-front/src/components/base/ag-expandable-text/__tests__/ag-expandable-text.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-111
+src/dashboard-front/src/views/basic-info/components/EditRelatedAppCodes.vue
+  s_a8186a58c4428c::t_7144002a54950b 91,116-117
+src/dashboard/apigateway/apigateway/apis/web/stage/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 431
+src/dashboard-front/src/views/resource-management/settings/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 254,256,260,263-264,386-443,463,503,510,512,521,532-543,547-554,566-591,593,622,745-751,779-803,805-818,820,822-861,863-867,869,871-892,894-915,918-921,923,926-932,934-1094,1098,1100,1102-1114,1116-1118,1120-1152,1154-1157,1288,1315-1381,1405,1495,1576,1611,1621,1657,1675,1683,1688,1693,1709,1716,1729,1737,1739,1759-1772,1800-1821,1895-1901,1904
+src/dashboard/apigateway/apigateway/core/management/commands/sync_released_resource.py
+  s_a8186a58c4428c::t_7144002a54950b 27,37-45,47-49,51-53,56-109
+  s_a8186a58c4428c::t_40f62e6a413909 110
+src/dashboard-front/src/views/mcp-server/components/ObservabilityTimeInterval.vue
+  s_a8186a58c4428c::t_7144002a54950b 126,135,146,148
+src/dashboard/apigateway/apigateway/biz/iam/auth.py
+  s_a8186a58c4428c::t_7144002a54950b 22,30-32,40-41,45-55
+src/dashboard-front/src/services/source/me/workbench.ts
+  s_a8186a58c4428c::t_7144002a54950b 22,24,27,84,91,98,105
+src/dashboard/apigateway/apigateway/controller/tasks/oauth2_builtin.py
+  s_a8186a58c4428c::t_7144002a54950b 54,158
+src/dashboard-front/src/services/source/platform/toolbox.ts
+  s_a8186a58c4428c::t_7144002a54950b 28-29,34-35,41-42,48-49,55-56
+src/dashboard-front/src/views/mcp-server/components/ObservabilityDashboard.vue
+  s_a8186a58c4428c::t_7144002a54950b 24-25,29,36,46,53,63,70,80-82,86,95-100,102-109,113,117-125,127-133
+src/dashboard-front/src/hooks/__tests__/use-gateway-and-mcp.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-185
+src/dashboard-front/src/services/http/__tests__/http-utils-and-cache.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-101
+src/dashboard-front/src/services/types/me/workbench.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-95
+src/dashboard-front/src/views/permission/app/components/Renewal.vue
+  s_a8186a58c4428c::t_7144002a54950b 48,107
+src/dashboard-front/src/hooks/__tests__/use-table-helpers.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-247
+src/dashboard-front/src/services/types/gateway/resource.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-345
+src/dashboard/apigateway/apigateway/tests/biz/esb/sdk/test_sdk_factory.py
+  s_a8186a58c4428c::t_7144002a54950b 20,23,91-106
+src/dashboard-front/src/views/resource-management/settings/import/error-location.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-155
+src/dashboard-front/src/views/resource-management/settings/import-doc/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 167,327,339,365,369-370,414,458,462,485-498,507-509
+src/dashboard-front/tsconfig.vitest.json
+  s_a8186a58c4428c::t_7144002a54950b 1-14
+src/dashboard-front/src/assets/bk_icon_font/iconcool.js
+  s_a8186a58c4428c::t_7144002a54950b 2
+src/dashboard-front/src/services/types/gateway/audit.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-41
+src/dashboard-front/src/services/types/mcp-client-config.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-24
+src/dashboard/apigateway/apigateway/apis/web/resource/views.py
+  s_a8186a58c4428c::t_7144002a54950b 23,79,101,119,291-304,371-381,390,395-396,402-405
+src/dashboard-front/src/views/home/CreateGateway.vue
+  s_a8186a58c4428c::t_7144002a54950b 200,219,250,257,277,306,315,323,345-349,482-483,485-486,491,501-506,528,755-765,773-779,801-804,825,841-842,923-932,938-944,947-964,1006-1010,1015,1017,1053,1096,1099,1101,1103,1123,1135,1140,1157,1160,1166,1193,1196-1197,1202,1205,1213-1215,1219,1221,1223,1227,1236,1239
+src/dashboard-front/bin/default.conf
+  s_a8186a58c4428c::t_7144002a54950b 5-7
+src/dashboard-front/src/services/types/gateway/plugin.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-106
+src/dashboard-front/src/components/base/ag-table/__tests__/layout-and-settings.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-589
+src/dashboard/apigateway/apigateway/tests/biz/mcp_server/test_mcp_server.py
+  s_a8186a58c4428c::t_7144002a54950b 30,1707-1790,1904-1936,2314-2316,2388,2390,2392,2397,2404-2423
+  s_a8186a58c4428c::t_93c02397a6e8e7 2424
+src/dashboard/apigateway/apigateway/core/constants.py
+  s_a8186a58c4428c::t_7144002a54950b 303-305
+src/dashboard/apigateway/apigateway/components/bkuser.py
+  s_a8186a58c4428c::t_7144002a54950b 24,45,89
+src/dashboard-front/src/components/user/tenant-user-editor/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-335
+src/dashboard-front/src/services/source/gateway/resource-version.ts
+  s_a8186a58c4428c::t_7144002a54950b 20,26-27,29-30,32-34,44,51,75,92,105,108,120,127-128
+src/dashboard-front/src/views/home/GatewayGuide.vue
+  s_a8186a58c4428c::t_7144002a54950b 54,84-86
+src/dashboard-front/src/views/platform-tools/cli/components/CodeBlock.vue
+  s_a8186a58c4428c::t_7144002a54950b 24
+src/dashboard-front/src/views/platform-tools/toolbox/components/QueryTraceChain.vue
+  s_a8186a58c4428c::t_7144002a54950b 27,59,72,93-95,191
+src/dashboard/apigateway/apigateway/tests/core/test_managers.py
+  s_a8186a58c4428c::t_7144002a54950b 24,28,32,87-144,489-513
+  s_a8186a58c4428c::t_cd598a4bd4ba26 514
+src/dashboard-front/src/components/mcp/trace-view/constants/tag-keys.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard-front/src/components/plugin/plugin-form/uri-blocker/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-138
+src/dashboard/apigateway/apigateway/tests/core/test_migration_oauth2_app_access_fields.py
+  s_a8186a58c4428c::t_7144002a54950b 1-223
+src/dashboard-front/src/services/source/gateway/mcp-server/server.ts
+  s_a8186a58c4428c::t_7144002a54950b 21,23-28,31,35-36,42-43,45-47,61-62,68-69,73,80,116,129,137,152,183-185
+src/dashboard-front/src/stores/__tests__/useGatewayRole.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-178
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-header-row/index.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard-front/src/views/resource-management/components/JsonEditorSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 2,10,16,40,66,70-71,97
+src/dashboard-front/src/views/resource-management/components/response-params-v2/utils.ts
+  s_a8186a58c4428c::t_7144002a54950b 20,143
+src/dashboard-front/src/views/resource-management/settings/import/components/ResourcePluginPreviewSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-164
+src/dashboard/apigateway/apigateway/tests/apis/web/resource_version/test_serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 20
+src/dashboard-front/src/views/stage-management/overview/card-mode/components/StageCardLineChart.vue
+  s_a8186a58c4428c::t_7144002a54950b 37,54,67-68,156
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/14-no-auth-bearer-passthrough.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-25
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/32-user-legacy-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-33
+src/dashboard/apigateway/apigateway/biz/programmable/constants.py
+  s_a8186a58c4428c::t_7144002a54950b 1-35
+src/dashboard-front/src/views/permission/apply/components/BatchApproval.vue
+  s_a8186a58c4428c::t_7144002a54950b 33,96,110-116,119,150-151,161
+src/dashboard-front/src/stores/__tests__/useGateway.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-232
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_oauth2_mcp_server_scopes.md
+  s_a8186a58c4428c::t_7144002a54950b 5,14
+src/dashboard-front/src/views/basic-info/components/EditDesc.vue
+  s_a8186a58c4428c::t_7144002a54950b 99
+src/dashboard-front/src/services/source/external/bk-user.ts
+  s_a8186a58c4428c::t_7144002a54950b 24,33,37,52,55
+src/dashboard-front/src/hooks/use-pop-info-box.tsx
+  s_a8186a58c4428c::t_7144002a54950b 22,105-106
+src/dashboard-front/src/views/platform-tools/cli/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 24,31
+src/dashboard/apigateway/apigateway/utils/responses.py
+  s_a8186a58c4428c::t_7144002a54950b 101-103
+src/dashboard-front/src/components/plugin/plugin-form/bk-resource-user-rate-limit/config.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-119
+src/dashboard/apigateway/apigateway/utils/csv.py
+  s_a8186a58c4428c::t_7144002a54950b 1-33
+src/dashboard-front/src/components/base/ag-table/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-364
+src/dashboard-front/src/views/stage-management/overview/components/CreateStage.vue
+  s_a8186a58c4428c::t_7144002a54950b 95,286,289,359,381-382,388,438,523,826-829,831,835-840,844,846,850,854,856,860-861,871,940,942-943,950-951,953-954,1018,1218,1396-1397,1399-1400,1407,1409
+test/cases/dashboard/02-inner-api/28-lookup-released-resources-oauth2-app-flags.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-50
+src/dashboard-front/index.prod.html
+  s_a8186a58c4428c::t_7144002a54950b 79-94,99-101
+src/dashboard-front/src/services/source/gateway/plugin.ts
+  s_a8186a58c4428c::t_7144002a54950b 26-29,31,36,91,121,132
+src/dashboard-front/src/views/operate-data/access-log/components/SearchInput.vue
+  s_a8186a58c4428c::t_7144002a54950b 27,88
+src/dashboard-front/src/views/resource-management/components/AuthConfig.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-207
+src/dashboard-front/src/views/mcp-server/components/ServerPrompts.vue
+  s_a8186a58c4428c::t_7144002a54950b 33-36,106,117,142,158
+src/dashboard-front/src/views/resource-management/settings/use-resource-filters.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-691
+src/dashboard/apigateway/apigateway/tests/apis/web/resource/test_serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 30,36,46-78
+  s_a8186a58c4428c::t_b16faff9b950a1 79-80
+src/dashboard/bin/start.sh
+  s_a8186a58c4428c::t_7144002a54950b 13-14
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/EnabledTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-87
+src/dashboard-front/src/services/types/gateway/gateway.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-188
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/09-user-unknown-delegated-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard-front/src/components/plugin/plugin-form/bk-ip-restriction/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-127
+src/dashboard-front/src/components/mcp/trace-view/utils/number.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-42
+src/dashboard/apigateway/apigateway/core/models.py
+  s_a8186a58c4428c::t_7144002a54950b 118-120,641-643,676-695
+src/dashboard-front/src/services/types/gateway/resource-version.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-239
+src/dashboard-front/src/components/mcp/mcp-server-toolbar/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-232
+src/dashboard-front/src/hooks/__tests__/use-date-picker.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-156
+src/dashboard-front/src/components/base/ag-icon-button/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-44
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/17-switch-off-unknown-delegated-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard-front/src/views/mcp-server/detail/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 237,284,327,346,399-403,405-413,417-451,460-462,464-467,471,489-492
+src/dashboard-front/src/services/types/platform/account.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-9
+src/dashboard/apigateway/apigateway/tests/biz/access_log/test_log_credentials.py
+  s_a8186a58c4428c::t_7144002a54950b 1-512
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-104
+src/dashboard-front/src/components/plugin/plugin-form/bk-header-rewrite/__tests__/bk-header-rewrite.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-122
+src/dashboard-front/src/services/source/gateway/resource-doc.ts
+  s_a8186a58c4428c::t_7144002a54950b 24,26,32-34,44,51-55,62-70,78,95,105,114
+src/dashboard/apigateway/apigateway/apis/web/resource_doc/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 22,27-29,78-80
+src/dashboard-front/src/hooks/use-bk-user-display-name.ts
+  s_a8186a58c4428c::t_7144002a54950b 23,29-33
+  s_a8186a58c4428c::t_3aa4faea576ddc 34
+src/dashboard-front/src/views/online-debugging/components/PayloadParams.vue
+  s_a8186a58c4428c::t_7144002a54950b 26,77,93-94,99,101,144,148,165,167,169,172,176,183,185
+src/dashboard/apigateway/apigateway/apis/web/mcp_server_log/views.py
+  s_a8186a58c4428c::t_7144002a54950b 37,159,163,262,267,272,281,289,294,306,315,320,338
+src/dashboard/apigateway/apigateway/tests/apis/web/docs/gateway/test_permissions.py
+  s_a8186a58c4428c::t_7144002a54950b 19,29,47-171
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-header-row/timeline-header-row.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard-front/src/services/source/me/application.ts
+  s_a8186a58c4428c::t_7144002a54950b 20
+src/dashboard-front/src/components/base/ag-table/__tests__/filter-and-nested.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-210
+src/dashboard-front/src/views/resource-management/settings/__tests__/use-resource-filters.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-538
+src/dashboard-front/src/views/stage-management/overview/detail-mode/components/ResourceDetails.vue
+  s_a8186a58c4428c::t_7144002a54950b 92,96,101-102,105,109,117,121,126,128,132-143,369-375,377,404,508
+test/cases/dashboard/02-inner-api/29-lookup-released-resources-oauth2-app-flags-switch-off.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-38
+test/cases/dashboard/02-inner-api/31-list-gateway-permission-resources-oauth2-app.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-40
+src/dashboard-front/src/views/platform-tools/toolbox/components/UrlDecoder.vue
+  s_a8186a58c4428c::t_7144002a54950b 105-106,110
+src/dashboard-front/src/views/mcp-market/components/DefaultMdGuideSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 2,10,13,18-20
+src/dashboard-front/src/views/backend-services/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 50,75,78,101,103,107,133,143,152,175,188,284,303
+src/dashboard/apigateway/apigateway/apis/web/resource/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 39,52,61-62,95-115,390-391,393-395,398-399,626-638
+  s_a8186a58c4428c::t_2e048c1948d49f 639
+src/dashboard/apigateway/apigateway/conf/utils.py
+  s_a8186a58c4428c::t_7144002a54950b 61-64,442-452,482-486
+src/dashboard-front/src/types/stage.ts
+  s_a8186a58c4428c::t_7144002a54950b 23
+test/cases/dashboard/02-inner-api/27-list-oauth2-client-scope-mcp-servers-app-only.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard-front/src/services/http/lib/request.ts
+  s_a8186a58c4428c::t_7144002a54950b 137-139
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/TrafficLabelTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-102
+src/dashboard/apigateway/apigateway/common/tenant/request.py
+  s_a8186a58c4428c::t_7144002a54950b 44
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/span-tree-offset.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-10
+src/dashboard-front/.agents/skills/bkui-builder/assets/pages/detail-page.vue
+  s_a8186a58c4428c::t_7144002a54950b 2,4-15,17-22,25,28-30,32-41,43,45-46,48,50-51,56-59,62-63,66-69,72-77,80-118,120-121
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/RateLimitTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-141
+src/dashboard-front/src/components/plugin/plugin-form/api-breaker/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-208
+src/dashboard-front/.agents/skills/bkui-builder/assets/pages/dashboard-page.vue
+  s_a8186a58c4428c::t_7144002a54950b 2-34,36-38,44-45,47-53,55-65,67-95,98-103,105-129,133-136
+src/dashboard-front/src/constants/trace.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-40
+src/dashboard-front/src/views/basic-info/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 38-91,95-104,112-123,125-126,128,146,158-161,164,233,279-286,293,325,329,391,449,508,658,691,746,748,762,783,787,791-793,802,833-843,845-846,857-869,871-872,934,954,958,1142,1342,1344,1346-1351,1418,1420,1712-1713
+src/dashboard-front/src/views/resource-management/versions/components/CreateSDK.vue
+  s_a8186a58c4428c::t_7144002a54950b 25,86,112
+src/dashboard/apigateway/apigateway/tests/apps/rbac/test_missing_iam_users.py
+  s_a8186a58c4428c::t_7144002a54950b 1-260
+src/dashboard-front/src/types/audit-log.ts
+  s_a8186a58c4428c::t_7144002a54950b 34-37
+src/dashboard-front/src/services/types/gateway/member.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-26
+src/dashboard/apigateway/apigateway/tests/apis/v2/open/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 25-26,35,41,179,182-184,188-193,229,622-651,668,689,705,724,742,761,782,801,818,876,901,1991-2077,2115-2151
+  s_a8186a58c4428c::t_b435f46c1dee07 2152
+src/dashboard-front/src/components/mcp/mcp-trace-chain/components/TraceChainInfo.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-164
+src/dashboard-front/src/views/personal-workbench/components/Table.vue
+  s_a8186a58c4428c::t_7144002a54950b 20-23,46,58-60,121,124,126,128,130-132,150,156-167,185-187,207,211-212,229,232,290,296,303,309-310,329-330,336,338,346,385,391,404,413,418-419,432,440,453,455,475-476,610-613,617,624-625,632,637-638,675,678-679,685,693,703,730,733,736-741,776-777,781,791,795,806,825,837,944,948,979-980,985-986,992,1010,1012-1020,1043,1045-1053,1059,1072,1075-1077,1157,1164
+src/dashboard-front/src/views/personal-workbench/my-apply/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 31-32,45
+src/dashboard-front/src/views/operate-data/access-log/components/QueryUsagePopover.vue
+  s_a8186a58c4428c::t_7144002a54950b 103
+src/dashboard-front/src/views/mcp-server/components/ObservabilityFlowLog.vue
+  s_a8186a58c4428c::t_7144002a54950b 107-111,115,140-141,204,294,296,314
+src/dashboard-front/src/views/platform-tools/automated-gateway/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 85
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/31-switch-off-personal-delegated-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-39
+src/dashboard-front/src/services/source/gateway/mcp-server/log.ts
+  s_a8186a58c4428c::t_7144002a54950b 28,30,40,49,57-58,74-75
+src/dashboard-front/src/views/resource-management/settings/import/use-resource-preview-columns.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-121
+src/dashboard/apigateway/apigateway/tests/biz/resource/test_openapi_schema.py
+  s_a8186a58c4428c::t_7144002a54950b 1-59
+src/dashboard/apigateway/apigateway/tests/apis/web/mcp_marketplace/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 28,1091-1176
+  s_a8186a58c4428c::t_fb455dd57dfd5c 1177
+src/dashboard-front/src/components/plugin/plugin-manage/config-editor/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-673
+src/dashboard-front/src/components/base/ag-status-dot/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-48
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/28-personal-app-delegated-token-ok.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-40
+src/dashboard-front/src/components/mcp/trace-view/utils/sort.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-65
+src/dashboard-front/src/components/plugin/plugin-form/bk-cors/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-413
+src/dashboard/apigateway/apigateway/apis/v2/open/views.py
+  s_a8186a58c4428c::t_7144002a54950b 52,80,267,787,804-812,823-825,917,1078-1079,1110-1111,1127-1128,1159-1160
+src/dashboard/apigateway/apigateway/apis/web/access_log/views.py
+  s_a8186a58c4428c::t_7144002a54950b 46,49,190-198,207-208,224-225,231,240
+src/dashboard-front/src/components/base/ag-markdown-viewer/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-251
+src/dashboard/apigateway/apigateway/apis/v2/AGENTS.md
+  s_a8186a58c4428c::t_7144002a54950b 20-48
+src/dashboard/apigateway/apigateway/tests/apis/web/resource_doc/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 21-22,29-66
+  s_a8186a58c4428c::t_8f3ffe2a967ea6 67-68
+src/dashboard-front/src/types/access-log.ts
+  s_a8186a58c4428c::t_7144002a54950b 26-27
+src/dashboard-front/src/types/metrics.ts
+  s_a8186a58c4428c::t_7144002a54950b 52,61
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/11-user-malformed-bkauth-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard-front/src/components/mcp/trace-view/selectors/trace.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-333
+src/dashboard-front/src/utils/dayUtc.ts
+  s_a8186a58c4428c::t_7144002a54950b 96-100
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/utils.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-141
+src/dashboard-front/src/utils/date-picker-range.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-47
+src/dashboard-front/src/services/types/me/application.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-24
+src/dashboard-front/src/views/resource-management/versions/components/SDKList.vue
+  s_a8186a58c4428c::t_7144002a54950b 46,66,73,82,84,92,108,125-131,143,193,211
+src/dashboard/apigateway/apigateway/tests/components/test_bkcmsi.py
+  s_a8186a58c4428c::t_7144002a54950b 1-73
+src/dashboard-front/src/services/types/gateway/common.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-9
+src/dashboard/apigateway/apigateway/data/apigw-definitions/bk-apigateway-resources.yaml
+  s_a8186a58c4428c::t_7144002a54950b 2680-2682,2695-2699,2771-2773,5578,5685-5688,5697,5867,5869-5870,7019,7082-7087,7129,7169-7174,8927,9043
+src/dashboard-front/src/components/plugin/plugin-manage/config-editor/components/WhitelistTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-1022
+src/dashboard-front/src/views/stage-management/overview/card-mode/components/CardContainer.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-43
+src/dashboard-front/src/hooks/__tests__/use-operation-lock.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-116
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/25-personal-app-legacy-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-28
+src/dashboard-front/src/components/base/ag-table/selection/use-row-selection.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-169
+src/dashboard-front/src/views/resource-management/settings/components/TmplExampleSideslider.vue
+  s_a8186a58c4428c::t_7144002a54950b 30,40
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/types.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-68
+src/dashboard-front/src/services/source/platform/setting.ts
+  s_a8186a58c4428c::t_7144002a54950b 19,27-28,34
+src/dashboard/apigateway/apigateway/tests/controller/convertor/test_route.py
+  s_a8186a58c4428c::t_7144002a54950b 99,339-358,361,363-414,421-485,490-492,495-501,504,506-508,513,516-518,523,527-528,540,547
+src/dashboard-front/src/views/online-debugging/components/RequestPayload.vue
+  s_a8186a58c4428c::t_7144002a54950b 114-116,177,179,181,183,185,189,191,197,199,203
+src/dashboard-front/AGENTS.md
+  s_a8186a58c4428c::t_7144002a54950b 18-28,35-41,45-47,51-54,63,66,69-79,81-83,89-110,121-127,131,133,135,139-140,143-144,147,150,153-154,163-164,195-211,263-289,293-319,329-331,346-347,350-353,366-367,373-393,397,401-411,416,422-444,472-483,488-493,495-520,522-548,552-556,578,586-590,613-620,622,624-625,627-633,636,640-641,647-650,654-659,662,664,666-679,683-689,695-698,702-703,709,747,751,763-769
+src/dashboard-front/src/hooks/use-mcp-batch-copy-config.ts
+  s_a8186a58c4428c::t_7144002a54950b 21,33-34,85
+src/dashboard/apigateway/apigateway/tests/apis/web/ai_completion/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 1-129
+src/dashboard-front/src/utils/__tests__/inferJsonSchema.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-157
+src/dashboard/apigateway/apigateway/biz/access_log/data_scrubber.py
+  s_a8186a58c4428c::t_7144002a54950b 20,23,26,30,32-33,35-36,39-42,46-48,50,52-54,57
+src/dashboard-front/src/views/stage-management/overview/card-mode/components/StageCardItem.vue
+  s_a8186a58c4428c::t_7144002a54950b 30,204
+src/dashboard-front/src/views/mcp-server/components/DashboardLineChart.vue
+  s_a8186a58c4428c::t_7144002a54950b 56,68,84,86,131-134,153,258-259,403-405,464,499
+src/dashboard/apigateway/apigateway/core/AGENTS.md
+  s_a8186a58c4428c::t_7144002a54950b 18-52
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/06-app-only-non-bkauth-bearer.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard-front/src/services/source/gateway/monitor.ts
+  s_a8186a58c4428c::t_7144002a54950b 21,24,27-28,54,63,71,80,88
+src/dashboard-front/src/layout/app-header/HelpMenu.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-188
+src/dashboard-front/src/views/monitor-alarm/alarm-history/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 88,177,179,181-187,200,204,211-215,234,238,241,262,268,274,282,298,315,326,344-347,350,372,417,425,575
+src/dashboard-front/src/views/mcp-server/components/ServerBasicForm.vue
+  s_a8186a58c4428c::t_7144002a54950b 291-294
+src/dashboard/apigateway/apigateway/apis/web/stage/views.py
+  s_a8186a58c4428c::t_7144002a54950b 504
+src/dashboard-front/src/views/permission/app/components/BatchRemove.vue
+  s_a8186a58c4428c::t_7144002a54950b 19,58,84,111,118-119,154,164,166,174,177-178
+src/dashboard-front/src/services/types/docs/gateway.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-210
+src/dashboard-front/src/components/base/ag-table-empty/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-143
+src/dashboard-front/src/services/source/gateway/mcp-server/permission.ts
+  s_a8186a58c4428c::t_7144002a54950b 26-28,32-35,37,59,61,77,86,96-102,112,129
+src/dashboard-front/src/assets/bk_icon_font/style.css
+  s_a8186a58c4428c::t_7144002a54950b 797-874
+src/dashboard/apigateway/apigateway/apis/web/metrics/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 24,39-41,48,56-58,64
+src/dashboard-front/src/components/mcp/trace-view/selectors/process.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-20
+src/dashboard-front/src/components/plugin/plugin-form/redirect/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-91
+src/dashboard-front/src/assets/bk_icon_font/fonts/iconcool.svg
+  s_a8186a58c4428c::t_7144002a54950b 803-878
+  s_a8186a58c4428c::t_7f74e9bdf31c73 879-880
+src/dashboard/apigateway/apigateway/tests/apis/v2/inner/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 379,404-450
+  s_a8186a58c4428c::t_fe5667aec3fd6b 451
+src/dashboard-front/src/components/ai/ai-chat-slider/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-186
+src/dashboard-front/src/components/gateway-auth-protocol/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-105
+src/dashboard-front/src/hooks/use-mcp-permission.ts
+  s_a8186a58c4428c::t_7144002a54950b 20,23-26,35-37,72-75
+src/dashboard-front/src/components/base/ag-table/index.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-59
+src/dashboard-front/src/views/api-docs/components/DocDetailSideContent.vue
+  s_a8186a58c4428c::t_7144002a54950b 79,144-145
+src/dashboard-front/src/views/resource-management/versions/components/TopBar.vue
+  s_a8186a58c4428c::t_7144002a54950b 51,63,68,72
+src/dashboard-front/src/services/types/gateway/resource-doc.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-82
+src/operator/pkg/core/synchronizer/synchronizer_test.go
+  s_a8186a58c4428c::t_7144002a54950b 871-880
+src/dashboard/pyproject.toml
+  s_a8186a58c4428c::t_7144002a54950b 17
+src/dashboard-front/src/locales/cn.json
+  s_a8186a58c4428c::t_7144002a54950b 810-811,813,815-816,880-881,883-885,1144,1519-1527,2078,2477,2736-2816
+src/dashboard-front/src/views/resource-management/components/request-params-v2/components/RequestParamsJsonSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 20,28,34,78,106,110-111,138
+src/dashboard/apigateway/apigateway/tests/apis/web/resource_doc/test_serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 21,24,33-46
+  s_a8186a58c4428c::t_887db296f154e5 47-48
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_oauth2_resource_scopes.md
+  s_a8186a58c4428c::t_7144002a54950b 5,16
+src/dashboard/apigateway/apigateway/tests/apps/support/test_task.py
+  s_a8186a58c4428c::t_7144002a54950b 1-216
+src/dashboard/apigateway/apigateway/tests/apis/web/mcp_server_log/__init__.py
+  s_a8186a58c4428c::t_7144002a54950b 1-17
+src/dashboard-front/src/services/types/gateway/mcp-server/metrics.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-37
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/23-delegated-token-on-app-resource.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-39
+src/dashboard-front/src/layout/mcp-market/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 104,134,151,159,201,206,237-240,262-264,278,525,554
+src/dashboard-front/src/components/base/ag-table/settings/table-preferences.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-128
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/span-bar.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-247
+src/dashboard-front/src/services/types/gateway/api-test.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-75
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/08-user-no-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-17
+src/dashboard-front/src/views/operate-data/dashboard/components/LineChart.vue
+  s_a8186a58c4428c::t_7144002a54950b 59,70,75,123
+src/dashboard/apigateway/apigateway/tests/apis/web/resource/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 230-231,235,239-312,547-548,696-788,877-960,981-1020
+  s_a8186a58c4428c::t_d0eb6184e63fcd 1021
+src/dashboard-front/src/services/source/gateway/gateway.ts
+  s_a8186a58c4428c::t_7144002a54950b 19,24,26,32-35,58,64,72,80,94,102,123
+src/dashboard-front/src/components/plugin/plugin-form/bk-request-body-limit/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-61
+src/dashboard-front/src/services/types/gateway/metrics.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-128
+src/dashboard-front/src/components/mcp/trace-view/utils/span-ancestor-ids.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-44
+src/dashboard-front/src/views/basic-info/components/EditMember.vue
+  s_a8186a58c4428c::t_7144002a54950b 72,134,173-174,212,236,369
+src/dashboard-front/src/views/resource-management/settings/components/ResourceDetail.vue
+  s_a8186a58c4428c::t_7144002a54950b 183,185,188-251,259-264,267-270,272,275-280,522,526,530-531,533,536,542,917-918,920,923-930,975-978,1006-1009,1014,1017,1067-1078,1081-1082,1319,1326
+src/dashboard-front/src/services/source/gateway/release.ts
+  s_a8186a58c4428c::t_7144002a54950b 22-23,26-27,30,40
+src/dashboard-front/src/components/mcp/mcp-trace-chain/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-68
+src/dashboard-front/src/services/types/docs/esb.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-123
+src/dashboard-front/src/views/resource-management/settings/import/components/ResourceExportDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-146
+src/dashboard-front/src/views/permission/apply/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 83,90,101-103,150-157,165-175,192,194-196,198,246-247,280,283,306,326-327,346,354,363,381,383,394,410,412,470,472-475,498-499,513-515,521-524,533,545,554,573,582,593,597,612,616,632,639,644-645,647,651,653-654,657,717
+src/dashboard/apigateway/apigateway/apis/web/mcp_server/views.py
+  s_a8186a58c4428c::t_7144002a54950b 60,1408,1410
+src/dashboard/apigateway/apigateway/biz/mcp_server_log/es_query.py
+  s_a8186a58c4428c::t_7144002a54950b 25,198,228,236,262
+test/cases/dashboard/02-inner-api/26-list-oauth2-client-scope-resources-app-only.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-48
+src/dashboard/apigateway/apigateway/tests/service/test_gateway_released_resource.py
+  s_a8186a58c4428c::t_7144002a54950b 140-161
+src/dashboard/apigateway/apigateway/tests/apis/v2/open/test_gateway_permission_apply.py
+  s_a8186a58c4428c::t_7144002a54950b 1-153
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_open_apply_gateway_permission.md
+  s_a8186a58c4428c::t_7144002a54950b 6-9
+src/dashboard-front/src/views/api-docs/detail/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 172,190,216,266-267,275,354,356-370,372-374,1190
+src/dashboard-front/src/views/audit-log/detail/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 91,93
+src/dashboard/apigateway/apigateway/tests/controller/convertor/test_service.py
+  s_a8186a58c4428c::t_7144002a54950b 499-501,527-529
+src/dashboard/apigateway/apigateway/biz/mcp_server_log/chain_query.py
+  s_a8186a58c4428c::t_7144002a54950b 30,40,45,70,78,80,97,104,106,110,117,119
+src/dashboard-front/src/components/base/ag-overflow-tags/components/UserDisplayTag.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-74
+src/dashboard-front/src/components/user/staff-selector/index.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-215
+src/dashboard-front/src/assets/bk_icon_font/iconcool.json
+  s_a8186a58c4428c::t_7144002a54950b 1
+src/dashboard-front/src/services/types/gateway/stage.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-206
+src/dashboard-front/src/views/permission/apply/components/CustomHeader.vue
+  s_a8186a58c4428c::t_7144002a54950b 42
+src/dashboard/apigateway/apigateway/tests/biz/iam/test_auth.py
+  s_a8186a58c4428c::t_7144002a54950b 81-94
+src/dashboard-front/src/views/personal-workbench/my-pending/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 31-32,45
+src/dashboard/apigateway/apigateway/tests/biz/resource/importer/test_openapi.py
+  s_a8186a58c4428c::t_7144002a54950b 23,26,30,35,41-113,1782-1890
+  s_a8186a58c4428c::t_3c971624e2574c 1891
+src/dashboard-front/src/stores/useAccessLog.ts
+  s_a8186a58c4428c::t_7144002a54950b 20-26,116
+src/dashboard-front/src/views/monitor-alarm/alarm-strategy/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 46,81,84-89,92,98-101,107-108,118-120,131,159,176,192,197,206,213,220,232,269,271-274,337,415
+src/dashboard-front/src/views/resource-management/components/request-params-v2/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 216
+src/dashboard/apigateway/apigateway/apis/web/api_test/views.py
+  s_a8186a58c4428c::t_7144002a54950b 20,49,96,112,126-128,146-148,151-179
+src/dashboard-front/src/services/source/gateway/programmable.ts
+  s_a8186a58c4428c::t_7144002a54950b 27-28,31-32,34-35,41,51
+src/dashboard-front/vitest.config.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-202
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/01-app-only-legacy-header.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-20
+src/dashboard-front/src/services/source/gateway/mcp-server/metrics.ts
+  s_a8186a58c4428c::t_7144002a54950b 27-29,38,46
+src/dashboard-front/src/views/mcp-server/components/FlowLogChart.vue
+  s_a8186a58c4428c::t_7144002a54950b 29,44,48-49,54-55,77,79,128-129,131,133,135-136,138-141,360
+src/dashboard/apigateway/apigateway/tracing/instrumentor.py
+  s_a8186a58c4428c::t_7144002a54950b 18-19,21,23,33-67,81,91-94,96,98-99,101-105,107-109,168
+src/dashboard-front/src/views/platform-tools/components/Collapse.vue
+  s_a8186a58c4428c::t_7144002a54950b 50
+src/dashboard-front/src/components/user/staff-selector/Tpl.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-51
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/folder.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-8
+src/dashboard-front/src/types/personal-workbench.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-62
+src/dashboard-front/src/views/mcp-server/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 22,92,123,131,173,193,226-229,240-242
+src/dashboard-front/src/views/resource-management/settings/components/ResourceDocViewer.vue
+  s_a8186a58c4428c::t_7144002a54950b 117,241-243,297,515,517-531,539-547,549-558,561,566,569-579,581-586
+src/dashboard/apigateway/apigateway/tests/biz/gateway/test_members.py
+  s_a8186a58c4428c::t_7144002a54950b 272-277,280,287-330,332-333,337-352
+  s_a8186a58c4428c::t_ab703c63484e98 353-354
+src/dashboard/apigateway/apigateway/healthz/views.py
+  s_a8186a58c4428c::t_7144002a54950b 25,85,87,97-100
+src/dashboard/apigateway/apigateway/tests/apis/web/access_log/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 263-272,274,283-300,315,324-335,346-365
+src/dashboard/apigateway/apigateway/apis/open/permission/views.py
+  s_a8186a58c4428c::t_7144002a54950b 93-95
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/span-bar-row.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-632
+src/dashboard-front/src/stores/usePermission.ts
+  s_a8186a58c4428c::t_7144002a54950b 23-28,37-43,55,57-58,74-75,83-84
+src/dashboard-front/src/types/resource-version.ts
+  s_a8186a58c4428c::t_7144002a54950b 23-24,39-41
+src/dashboard-front/src/views/resource-management/components/FrontConfig.vue
+  s_a8186a58c4428c::t_7144002a54950b 118
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/10-user-refresh-token-as-bearer.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard-front/vite.config.ts
+  s_a8186a58c4428c::t_7144002a54950b 14,16-19,21-23,36,52-53,65,67-68
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_sync_resource_doc.md
+  s_a8186a58c4428c::t_7144002a54950b 5-6,32,52
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/34-access-token-source-bearer-blocks-app-channel.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard-front/src/views/stage-management/overview/components/ReleaseProgrammable.vue
+  s_a8186a58c4428c::t_7144002a54950b 98,280-281,423,680
+src/dashboard-front/src/views/resource-management/components/ResourcePathConflictTips.vue
+  s_a8186a58c4428c::t_7144002a54950b 141,146-147,216,227,243,363
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/19-switch-off-personal-no-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-23
+src/dashboard-front/src/components/mcp/trace-view/index.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-269
+src/dashboard-front/src/components/base/ag-overflow-tags/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-106
+src/dashboard-front/src/views/resource-management/components/BackConfig.vue
+  s_a8186a58c4428c::t_7144002a54950b 90-97,108,115-124,147,298-302,305-312,324-325,333,343,361-362,364,379,413-416,421,429-437,626-636,639-640,649,653-657,813,949
+src/dashboard-front/src/services/types/mcp-marketplace.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-148
+src/dashboard-front/src/views/stage-management/overview/card-mode/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 68,86,113,116,138-141,147
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/05-app-only-no-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-17
+src/dashboard/apigateway/apigateway/tests/biz/gateway/test_gateway.py
+  s_a8186a58c4428c::t_7144002a54950b 522-527
+src/dashboard-front/src/utils/__tests__/date-picker-range.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-52
+src/dashboard/apigateway/apigateway/components/bkiam.py
+  s_a8186a58c4428c::t_7144002a54950b 396-404,408-409,461-476,492-493
+src/dashboard-front/src/views/mcp-server/components/FlowLogDetailTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 24,75,123,134-136,141-147,152-154,156-158,193-194,198,201-202,320,326,334,349,363,380,384-385,394,404,419,435,451-454,482,485,502,519,537-538,547,558,569,590,608,614-615,620-621,646-648,651
+src/dashboard-front/src/views/personal-workbench/my-handled/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 31-32,45
+src/dashboard/AGENTS.md
+  s_a8186a58c4428c::t_7144002a54950b 70-74
+src/dashboard-front/src/components/release/version-diff/__tests__/resource-diff.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-440
+test/sync/oauth2-app/resources.yaml
+  s_a8186a58c4428c::t_7144002a54950b 1-176
+src/dashboard-front/src/services/source/docs/esb.ts
+  s_a8186a58c4428c::t_7144002a54950b 20,22,24,26,29,31,33,36
+src/dashboard-front/src/components/base/ag-sideslider/__tests__/ag-sideslider-and-dropdown.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-213
+src/dashboard/apigateway/apigateway/tests/service/alert_flow/handlers/test_base.py
+  s_a8186a58c4428c::t_7144002a54950b 93-96,105-106,113,116
+src/dashboard-front/src/components/mcp/mcp-trace-chain/components/TraceChainLogTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-190
+src/dashboard-front/src/types/observability.ts
+  s_a8186a58c4428c::t_7144002a54950b 23,218-237
+src/dashboard-front/src/utils/gateway-name.ts
+  s_a8186a58c4428c::t_7144002a54950b 10-11,15-16,23
+src/dashboard-front/src/utils/getStrFromFile.ts
+  s_a8186a58c4428c::t_7144002a54950b 24
+src/dashboard/apigateway/apigateway/apis/web/ai_completion/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 20,24,71-80
+  s_a8186a58c4428c::t_42365442d10e6f 81
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_inner_list_gateway_permission_resources.md
+  s_a8186a58c4428c::t_7144002a54950b 3-11
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/GenericTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-122
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/QueryStringRewriteTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-121
+src/dashboard-front/src/utils/trace.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-280
+src/dashboard-front/src/views/resource-management/settings/import/types.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-47
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/15-access-token-source-blocks-app-channel.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-22
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/16-switch-off-unknown-app-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard-front/src/components/plugin/plugin-form/proxy-cache/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-104
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/ticks.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-75
+src/dashboard-front/src/views/mcp-server/components/ObservabilityTopBar.vue
+  s_a8186a58c4428c::t_7144002a54950b 44
+src/dashboard/apigateway/apigateway/tests/apps/rbac/test_tasks.py
+  s_a8186a58c4428c::t_7144002a54950b 104,107,209,212
+src/dashboard-front/src/views/resource-management/settings/import/components/ResourceImportPreview.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-505
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-header-row/timeline-header-row.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-110
+src/dashboard/apigateway/apigateway/components/bkpaas.py
+  s_a8186a58c4428c::t_7144002a54950b 27,146
+src/dashboard-front/.oxlintrc.json
+  s_a8186a58c4428c::t_7144002a54950b 1-23
+src/dashboard-front/src/services/source/gateway/permission.ts
+  s_a8186a58c4428c::t_7144002a54950b 20,22-25,28,33-34,58,80,88-89,104-105,124-125,133,144,151-152
+src/dashboard/apigateway/apigateway/apps/rbac/tasks.py
+  s_a8186a58c4428c::t_7144002a54950b 33,77,103
+src/dashboard-front/src/services/types/platform/setting.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-122
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/18-switch-off-legacy-header-with-unknown-app-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-26
+src/dashboard-front/src/components/base/ag-expandable-text/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-209
+src/dashboard-front/src/components/plugin/plugin-manage/config-editor/definitions.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-73
+src/dashboard/apigateway/apigateway/service/alert_flow/handlers/base.py
+  s_a8186a58c4428c::t_7144002a54950b 116-118
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/vertical-resizer.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-101
+src/dashboard/apigateway/apigateway/apis/web/api_test/sensitive.py
+  s_a8186a58c4428c::t_7144002a54950b 19,21-22,28-41,48-51,66-97,113-115,123-135,146,150-156,178-182,185-198,203-205,210-224,234-272,277,279-280,284-285,288
+src/dashboard/apigateway/apigateway/tests/biz/resource_version/test_diff.py
+  s_a8186a58c4428c::t_7144002a54950b 575-608
+src/dashboard/apigateway/apigateway/common/cache.py
+  s_a8186a58c4428c::t_7144002a54950b 1-164
+src/dashboard/apigateway/apigateway/tests/apis/web/plugin/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 22,24-26,436-614
+src/dashboard-front/src/components/plugin/plugin-form/components/KeysInput.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-206
+src/dashboard-front/src/views/resource-management/settings/import/components/ResourceEditSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-268
+src/dashboard-front/src/services/http/__tests__/request.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-163
+src/dashboard/apigateway/apigateway/tests/apis/web/access_log/test_log_credentials.py
+  s_a8186a58c4428c::t_7144002a54950b 1-120
+src/dashboard-front/.agents/skills/bkui-builder/assets/pages/table-page.vue
+  s_a8186a58c4428c::t_7144002a54950b 3-7,10-39,41,44-49,51,55-64,68-69,72-76,78,80-107,111-112,114-131,133-136,139-142,144-149,151,153-161,163-165,167-181,184-186,189-191,193-249,253,256-261,264-275,278-283,286-290,293-296,299-318,320-325,329-335,341-349,352-353,357
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_sync_gateway.md
+  s_a8186a58c4428c::t_7144002a54950b 25,40-41
+src/dashboard/apigateway/apigateway/tests/apps/permission/test_expiration_writes.py
+  s_a8186a58c4428c::t_7144002a54950b 1-166
+src/dashboard-front/src/components/base/ag-code-editor/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-386
+src/dashboard/apigateway/apigateway/apis/web/mcp_server_metrics/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 21,33-35,42,49-51,57
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/span-bar.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-60
+docs/design/resource-oauth2-app-access-design.md
+  s_a8186a58c4428c::t_7144002a54950b 1-843
+src/dashboard-front/src/components/base/ag-table/settings/use-table-settings.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-145
+src/dashboard-front/src/components/plugin/plugin-form/response-rewrite/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-198
+src/dashboard/apigateway/apigateway/service/resource_version/schema.py
+  s_a8186a58c4428c::t_7144002a54950b 26,80,104
+src/dashboard-front/src/App.vue
+  s_a8186a58c4428c::t_7144002a54950b 47-48,50,54,99-100,113-116,175,224-230,367-371
+  s_a8186a58c4428c::t_da1c5ce77fb3c4 372-373
+src/dashboard-front/src/components/base/ag-icon/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-47
+src/dashboard-front/src/hooks/__tests__/use-text-getter.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-187
+src/dashboard/apigateway/apigateway/apps/mcp_server/tasks.py
+  s_a8186a58c4428c::t_7144002a54950b 42,51
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-row-cell.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-51
+src/dashboard-front/src/utils/__tests__/yaml-json.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-82
+src/dashboard-front/src/components/mcp/trace-view/selectors/span.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-164
+src/dashboard-front/src/components/plugin/plugin-form/bk-user-restriction/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-134
+src/dashboard-front/src/layout/app-header/LanguageToggle.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-133
+src/dashboard-front/src/views/resource-management/settings/import/__tests__/import-bulk-auth.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-406
+src/dashboard/apigateway/apigateway/apis/v2/inner/views.py
+  s_a8186a58c4428c::t_7144002a54950b 22,284,292-293,531-542,563
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/virtualized-trace-view.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-254
+src/dashboard-front/src/services/types/gateway/sdk.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-40
+src/dashboard-front/src/components/plugin/plugin-form/bk-resource-user-rate-limit/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-370
+src/dashboard-front/.agents/skills/bkui-builder/assets/pages/wizard-form.vue
+  s_a8186a58c4428c::t_7144002a54950b 2-7,10,12-42,46-68,72-87,89,93-114,120,122-127,129-139,141,143,146-185,189-196
+src/dashboard/apigateway/apigateway/tests/apis/web/gateway/test_serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 360,531-545
+src/dashboard-front/src/components/plugin/plugin-manage/config-editor/form-adapter.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-74
+src/dashboard-front/src/layout/personal-workbench/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 91
+src/dashboard/apigateway/apigateway/apis/v2/sync/serializers.py
+  s_a8186a58c4428c::t_7144002a54950b 63,144-147,179,684-686,999-1001,1004
+src/dashboard/apigateway/apigateway/tests/tracing/test_instrumentor.py
+  s_a8186a58c4428c::t_7144002a54950b 1-267
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-header-row/timeline-collapser.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-116
+src/dashboard-front/src/stores/__tests__/useFeatureFlag-and-trace.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-214
+src/dashboard/apigateway/apigateway/data/apidocs/zh/v2_sync_stage_mcp_servers.md
+  s_a8186a58c4428c::t_7144002a54950b 40
+src/dashboard-front/src/components/base/ag-table/context.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-26
+src/dashboard-front/src/hooks/use-personal-workbench.ts
+  s_a8186a58c4428c::t_7144002a54950b 19
+src/dashboard-front/src/stores/useGateway.ts
+  s_a8186a58c4428c::t_7144002a54950b 67
+src/dashboard-front/src/types/mcp-server.ts
+  s_a8186a58c4428c::t_7144002a54950b 281
+src/dashboard-front/src/services/types/gateway/mcp-server/observability.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-6
+src/dashboard-front/src/views/api-docs/components/DocDetailMainContent.vue
+  s_a8186a58c4428c::t_7144002a54950b 40,74,78,177,213,217,227,230-231,271,320-331
+  s_a8186a58c4428c::t_080c6b84c339b6 332-333
+src/dashboard-front/src/views/backend-services/components/health-checks/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 46,89-92,94-97
+src/dashboard-front/src/views/mcp-market/components/ApplyPermissionDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 102-103,105,122
+src/dashboard-front/src/views/permission/app/components/BatchRenewal.vue
+  s_a8186a58c4428c::t_7144002a54950b 19,65,91,119,127-128,171,181,183,191,194-195,202,205
+src/dashboard-front/src/views/resource-management/settings/import/components/ResourceImportEditor.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-843
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/03-app-only-legacy-header-with-backend-bearer.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-26
+src/dashboard-front/src/components/release/version-diff/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-1154
+src/dashboard-front/src/components/base/ag-table-empty/__tests__/ag-table-empty.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-112
+src/dashboard-front/src/components/base/ag-table/selection/row-selection-column.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-64
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/29-personal-app-app-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-39
+src/dashboard-front/src/views/resource-management/settings/edit/components/ModelProxy.vue
+  s_a8186a58c4428c::t_7144002a54950b 39-57,93,106,142-145,160
+src/dashboard-front/src/views/api-docs/components/WecomGroupChat.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-215
+src/dashboard/apigateway/apigateway/apps/monitor/managers.py
+  s_a8186a58c4428c::t_7144002a54950b 21-22,48
+src/dashboard-front/src/components/plugin/plugin-form/bk-traffic-label/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-690
+src/dashboard-front/src/utils/__tests__/common-helpers.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-205
+src/dashboard-front/src/views/stage-management/overview/detail-mode/components/PluginManagement.vue
+  s_a8186a58c4428c::t_7144002a54950b 26
+src/dashboard/apigateway/apigateway/tests/biz/iam/test_sync.py
+  s_a8186a58c4428c::t_7144002a54950b 155,192,203-212,314,323-324,348,357-359
+src/dashboard-front/.agents/rules/ts-style.md
+  s_a8186a58c4428c::t_7144002a54950b 9-12
+test/sync/oauth2-app-off/resources.yaml
+  s_a8186a58c4428c::t_7144002a54950b 1-79
+src/dashboard-front/src/views/api-docs/components/DocDetailMaintainerAction.vue
+  s_a8186a58c4428c::t_7144002a54950b 23,44
+src/dashboard/apigateway/apigateway/apis/web/plugin/views.py
+  s_a8186a58c4428c::t_7144002a54950b 360-366
+src/dashboard/apigateway/apigateway/components/bkauth.py
+  s_a8186a58c4428c::t_7144002a54950b 24,108,129,161
+src/operator/pkg/config/config.go
+  s_a8186a58c4428c::t_7144002a54950b 243-244
+src/dashboard-front/src/components/plugin/plugin-manage/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-1307
+src/dashboard/apigateway/apigateway/biz/resource_doc/importer/importers.py
+  s_a8186a58c4428c::t_7144002a54950b 18-19
+src/dashboard/apigateway/apigateway/components/bkcmsi.py
+  s_a8186a58c4428c::t_7144002a54950b 66
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-header-row/timeline-viewing-layer.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-281
+src/dashboard-front/src/views/permission/app/components/DeletePermission.vue
+  s_a8186a58c4428c::t_7144002a54950b 62
+src/dashboard-front/src/views/stage-management/overview/detail-mode/components/ResourceInfo.vue
+  s_a8186a58c4428c::t_7144002a54950b 42,46,84-90,93-95,100-101,103,117,120-121,160-161,166,183,197,209,214,216,241,273,277,323,327,338,342,356,456,460,463,515-520,555
+src/dashboard-front/src/views/stage-management/components/ReleaseProgrammableEvent.vue
+  s_a8186a58c4428c::t_7144002a54950b 137,161,281
+test/README.md
+  s_a8186a58c4428c::t_7144002a54950b 61-88
+src/dashboard-front/src/components/plugin/plugin-form/bk-user-restriction/components/UserInput.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-142
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/33-personal-legacy-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard/apigateway/apigateway/utils/redis_utils.py
+  s_a8186a58c4428c::t_7144002a54950b 26-27,78-128,138,152-158
+  s_a8186a58c4428c::t_2cd7719941591b 159-160
+src/dashboard-front/src/views/api-docs/components/ComponentSearcher.vue
+  s_a8186a58c4428c::t_7144002a54950b 111
+src/dashboard-front/src/utils/auth-config.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-208
+src/dashboard/apigateway/apigateway/controller/AGENTS.md
+  s_a8186a58c4428c::t_7144002a54950b 49-99
+src/dashboard/apigateway/apigateway/service/oauth2_client_scope.py
+  s_a8186a58c4428c::t_7144002a54950b 1,13,16-17,19-29,36,46-47,51,54,63,65-66,74,82-83,113,117,126,134,144,158-159,220-221
+src/dashboard-front/src/services/types/gateway/permission.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-173
+src/dashboard-front/src/views/home/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 180,248-253,271,276,437,441,525
+src/operator/config.yaml.tpl
+  s_a8186a58c4428c::t_7144002a54950b 6-9
+src/dashboard/apigateway/apigateway/apps/rbac/management/commands/remove_excluded_gateway_members.py
+  s_a8186a58c4428c::t_7144002a54950b 1-46
+src/dashboard-front/src/types/common.ts
+  s_a8186a58c4428c::t_7144002a54950b 19,21-27,68-76,127,130-131,133-136
+src/dashboard/apigateway/apigateway/apis/web/docs/gateway/permissions.py
+  s_a8186a58c4428c::t_7144002a54950b 6-7,13,18-24,27,29,36-37,42-43
+src/dashboard-front/src/views/resource-management/components/request-params-v2/import-utils.ts
+  s_a8186a58c4428c::t_7144002a54950b 10,184
+src/dashboard-front/tsconfig.app.json
+  s_a8186a58c4428c::t_7144002a54950b 4,9-11
+src/dashboard-front/src/main.ts
+  s_a8186a58c4428c::t_7144002a54950b 25,42-47,63-71,74,87-99
+src/dashboard-front/src/services/types/gateway/programmable.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-163
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/timeline-row.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-42
+src/dashboard-front/src/views/monitor-alarm/alarm-strategy/components/AddAlarmStrategy.vue
+  s_a8186a58c4428c::t_7144002a54950b 19,40,64-65,404,416,496-500
+src/dashboard/apigateway/apigateway/core/migrations/0059_oauth2_app_access_fields.py
+  s_a8186a58c4428c::t_7144002a54950b 1-143
+src/dashboard/apigateway/apigateway/tests/common/test_cache.py
+  s_a8186a58c4428c::t_7144002a54950b 1-118
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/13-personal-non-bkauth-bearer.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard-front/src/components/plugin/plugin-form/bk-rate-limit/__tests__/bk-rate-limit.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-255
+src/dashboard-front/src/components/plugin/plugin-manage/config-display/components/HeaderRewriteTable.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-119
+src/dashboard-front/src/views/permission/app/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 70,84,147,160-162,170-176,184-185,197,215,217,225,227,236,238-239,249,252,262,265-266,275,420,470,472-475,505,507,511
+src/dashboard/apigateway/apigateway/tests/apis/web/mcp_server_log/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 1-86
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/07-app-only-unknown-app-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-27
+src/dashboard/apigateway/apigateway/controller/convertor/service.py
+  s_a8186a58c4428c::t_7144002a54950b 294-295
+  s_a8186a58c4428c::t_d868d113686e7f 296
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/35-access-token-source-bearer-legacy-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-20
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/span-bar-row.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-436
+src/dashboard-front/src/utils/__tests__/time-range.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-130
+test/sync/oauth2-app/definition.yaml
+  s_a8186a58c4428c::t_7144002a54950b 1-37
+src/dashboard-front/src/services/types/gateway/monitor.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-103
+src/dashboard-front/src/components/base/ag-overflow-tags/__tests__/ag-overflow-tags.browser.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-62
+src/dashboard/apigateway/apigateway/tests/biz/programmable/test_releaser.py
+  s_a8186a58c4428c::t_7144002a54950b 26-27,135,137-138,141-245
+src/operator/pkg/utils/schema/3.18/schema.json
+  s_a8186a58c4428c::t_7144002a54950b 8250
+src/dashboard-front/src/components/mcp/trace-view/utils/draggable-manager/e-update-types.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-28
+src/dashboard-front/src/views/mcp-market/Details.vue
+  s_a8186a58c4428c::t_7144002a54950b 159,242,355,360,367-368
+src/dashboard-front/src/services/source/platform/version-log.ts
+  s_a8186a58c4428c::t_7144002a54950b 19,25
+src/dashboard/apigateway/apigateway/apis/web/permission/views.py
+  s_a8186a58c4428c::t_7144002a54950b 54,381,383
+src/dashboard/apigateway/apigateway/tests/apis/web/gateway/test_views.py
+  s_a8186a58c4428c::t_7144002a54950b 421,482,523-536
+src/dashboard/apigateway/apigateway/apis/web/mcp_marketplace/views.py
+  s_a8186a58c4428c::t_7144002a54950b 18,29,54-84,99,299-300,305-311,318-323
+  s_a8186a58c4428c::t_43be82c6231f97 324
+src/dashboard-front/src/components/mcp/trace-view/utils/draggable-manager/index.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-21
+src/dashboard/apigateway/apigateway/tests/biz/resource/test_resource.py
+  s_a8186a58c4428c::t_7144002a54950b 49-84
+src/dashboard-front/src/services/http/__tests__/response-middleware.spec.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-291
+src/dashboard/apigateway/apigateway/apis/web/ai_completion/views.py
+  s_a8186a58c4428c::t_7144002a54950b 136-138
+src/dashboard-front/src/services/source/gateway/resource.ts
+  s_a8186a58c4428c::t_7144002a54950b 20,27-28,31,33,37-41,67,76,84,91-92,100,108,129,137,176-188
+src/dashboard-front/src/layout/my-gateway/components/V113ReleaseNoteDialog.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-133
+src/dashboard-front/src/services/types/gateway/mcp-server/server.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-321
+src/dashboard/apigateway/apigateway/apps/permission/management/commands/permission_export_import.py
+  s_a8186a58c4428c::t_7144002a54950b 48,50-52,57,71-72,190-192
+src/dashboard-front/src/views/mcp-server/components/OAuthSwitcher.vue
+  s_a8186a58c4428c::t_7144002a54950b 62,75
+src/dashboard-front/src/services/source/gateway/metrics.ts
+  s_a8186a58c4428c::t_7144002a54950b 30-34,67-68
+src/dashboard-front/src/views/mcp-server/components/TraceChainSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 57,75-76,102
+src/dashboard-front/src/views/model-services/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 47,65,68,81,91,96,109,113,122,150,258,262,284,331-339
+src/dashboard-front/src/services/source/platform/account.ts
+  s_a8186a58c4428c::t_7144002a54950b 19,25
+src/dashboard-front/src/views/operate-data/report/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 29,32-34,43,60,67-68,95,168,178,180-200,206-211,213-214,224-225,227,236,261-268,270-273,306-319,324-327,329,341,346-349,369-374,380-385,405-438,440,443-448,456-457,462-469,477-478,483,487-489,492,503,506,509,511,514-519,521,523,526,529,531,536,540,542,547,554,556,559,562,565,568,570,574,578,586,589-590,615,622
+src/dashboard-front/src/views/stage-management/overview/components/TopBar.vue
+  s_a8186a58c4428c::t_7144002a54950b 136
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/02-app-only-legacy-querystring.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-15
+src/dashboard/apigateway/apigateway/apps/rbac/management/commands/sync_gateway_rbac_auth_to_iam.py
+  s_a8186a58c4428c::t_7144002a54950b 45-46,187-188,219-220,226,228-229,243-244,265-267
+src/dashboard/apigateway/apigateway/service/gateway_released_resource.py
+  s_a8186a58c4428c::t_7144002a54950b 35,55,64-73
+src/dashboard/apigateway/apigateway/biz/openapi/parser.py
+  s_a8186a58c4428c::t_7144002a54950b 326-343
+src/dashboard-front/src/components/base/ag-table/types.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-237
+src/dashboard-front/src/components/mcp/trace-view/trace-timeline-viewer/virtualized-trace-view.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-41
+src/dashboard-front/src/hooks/use-observability-dashboard.ts
+  s_a8186a58c4428c::t_7144002a54950b 19,22-28,55,57,64-84,97-98,102-103,105,111-123,139-140,144-147,229,260-262,268-271,273-277,290,296-319
+src/dashboard-front/src/services/types/gateway/mcp-server/permission.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-117
+src/dashboard-front/src/views/operate-data/dashboard/components/ResourceSearcher.vue
+  s_a8186a58c4428c::t_7144002a54950b 121
+src/dashboard-front/src/views/resource-management/versions/components/VersionList.vue
+  s_a8186a58c4428c::t_7144002a54950b 22,66,115,146,156,159-169,183-184,206-207,214,223,250,252,257,271-272,283,304-310,316,387,391,448-449,451,491,538,544,567,686
+src/dashboard/apigateway/apigateway/tests/utils/test_redis_utils.py
+  s_a8186a58c4428c::t_7144002a54950b 22,53-113
+src/dashboard-front/src/components/user/staff-selector/member-select.scss
+  s_a8186a58c4428c::t_7144002a54950b 1-9
+src/dashboard-front/src/views/operate-data/dashboard/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 36,38-39,46,63,81,114,393,408,414-415,421-422,435-436,463,469-475,477-484,486-490,493-494,500-501,515-518,526-529,569-588,594-595,597,605,607,612,618,620,649,651,688,692-718,720,724-726,730,734-735,747-755,757,760-768,770-785,787,794-798,825,832
+src/dashboard-front/src/services/types/gateway/backend.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-186
+src/dashboard-front/.gitignore
+  s_a8186a58c4428c::t_7144002a54950b 15
+src/dashboard-front/src/views/stage-management/overview/detail-mode/Index.vue
+  s_a8186a58c4428c::t_7144002a54950b 61,269,307,346-349,624
+src/dashboard-front/src/views/online-debugging/utils.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-65
+src/dashboard-front/src/components/plugin/plugin-form/response-rewrite/components/RemoveHeaders.vue
+  s_a8186a58c4428c::t_7144002a54950b 1-193
+src/operator/pkg/core/agent/timer/timer_test.go
+  s_a8186a58c4428c::t_7144002a54950b 28,30,35-96,127
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/24-switch-off-app-token.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-32
+src/dashboard/apigateway/apigateway/tests/apps/rbac/test_commands.py
+  s_a8186a58c4428c::t_7144002a54950b 297-298,372,430-431,661-731
+  s_a8186a58c4428c::t_88bdc9bbd9a8ef 732-733
+src/dashboard-front/package.json
+  s_a8186a58c4428c::t_7144002a54950b 6,14-20,22-23,25-26,35,39-51,54,57-59,61-62,64-65,68-69,76-84,86-89,91-102,104-111,114,119
+src/dashboard/apigateway/apigateway/tests/apis/v2/inner/test_oauth2_client_scope_views.py
+  s_a8186a58c4428c::t_7144002a54950b 92-121
+src/dashboard-front/src/components/mcp/trace-view/hooks/index.ts
+  s_a8186a58c4428c::t_7144002a54950b 1-45
+test/cases/apisix/08-plugins/023-bk-oauth2-app-access/26-personal-app-no-credential.bru
+  s_a8186a58c4428c::t_7144002a54950b 1-23
+src/dashboard-front/src/views/api-docs/components/DocSdkSection.vue
+  s_a8186a58c4428c::t_7144002a54950b 43,54,113,116
+src/dashboard/apigateway/apigateway/tests/apis/web/metrics/test_time_range.py
+  s_a8186a58c4428c::t_7144002a54950b 1-166
+src/dashboard/apigateway/apigateway/biz/openapi/schema.py
+  s_a8186a58c4428c::t_7144002a54950b 278-281,283-284,286-289,295-298
+src/dashboard/apigateway/apigateway/conf/.env.tpl
+  s_a8186a58c4428c::t_7144002a54950b 34-41
+src/dashboard-front/src/components/mcp/trace-view/utils/draggable-manager/draggable-manager.tsx
+  s_a8186a58c4428c::t_7144002a54950b 1-233
+src/dashboard/apigateway/apigateway/core/managers.py
+  s_a8186a58c4428c::t_7144002a54950b 26-27,29,62,222,227,230-236,245-279,305,317-318
+src/dashboard/apigateway/apigateway/biz/mcp_server/mcp_server.py
+  s_a8186a58c4428c::t_7144002a54950b 35,307-310,318-321,695,709,711-714,717-723,727-739,786
+src/dashboard-front/src/views/mcp-server/components/CreateSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 70-71,79-80,98-101,174,185,188,200,214,236,243,254,345,352,354,357-358,366,373,376-377,380,382,384,390,413,418,446,508-509,513-514,526-535,569-578,581,649,653,679-680,683,685,691,707,712,734-735,737,746,759-760,762,775,800,820,826,845,890,909,913,933-934,953,958,973-974,1115-1117,1170-1173,1175-1178,1292-1298,1301-1303,1305-1309,1311-1314,1375,1439,1456-1457,1466,1474-1475,1494,1501,1590,1735-1752,1765-1776,1835,1846,1859-1863,1866,1871-1873,1876-1877,1880,1898-1902,1984,2015,2093
+src/dashboard-front/src/views/resource-management/components/ResourceDocSlider.vue
+  s_a8186a58c4428c::t_7144002a54950b 128,212-214,277,401,403-417,425-433,435-444,447,453-454,456-466,468-473
+src/dashboard-front/package-lock.json
+  s_a8186a58c4428c::t_b333d41b9b7a42 16,20-32,35,38-40,42-43,45-46,49-50,57-65,67-70,72-83,85-92,99-101,105-106,113-115,119,128-130,138-140,144-153,179-181,185-186,196-198,202,209-211,215-216,226-228,236-238,242-247,268-270,278-280,284-285,292-294,298-299,306-308,312-314,324-326,330,337-339,347-349,353-355,365-367,371-372,379-381,388-390,397-399,407-409,413-414,421-423,426,515-517,521,531-533,537-541,560-562,566-568,575-577,581-586,594-596,599-600,606-622,680,691-694,696,751-753,770,774-776,780,787-789,798-800,804-809,811,817,821-823,827-828,831,835-837,841,845,849-851,855-856,859,863-865,869,873-875,879-880,883,887-889,893,897,901-903,907-910,913,917-919,923-931,934,938-940,944,948-950,954-956,959,963-965,969-971,975,979-981,985-988,992,996-998,1002-1005,1008,1012-1014,1018,1022-1024,1028,1031,1035-1051,1055-1064,1066-1100,1102-1106,1110-1112,1126,1129,1133-1135,1158-1160,1174,1178-1180,1194,1197-1198,1201-1204,1206-1221,1224-1227,1229-1244,1247-1250,1254-1257,1260-1263,1267-1276,1279-1282,1284,1286-1289,1303-1305,1309,1311,1314,1318-1320,1324,1327,1331-1333,1335-1337,1339-1340,1344-1346,1350,1354-1356,1360,1364,1368-1370,1373-1375,1381-1383,1387-1389,1395-1398,1402,1441-1443,1447,1453-1455,1458-1460,1470-1472,1475-1476,1486-1488,1491,1502-1504,1543-1545,1549-1551,1558-1562,1564-1566,1569,1572,1620-1626,1628-1630,1645-1647,1662-1664,1679-1681,1696-1698,1713-1715,1730-1732,1747-1749,1754-1756,1767-1769,1774-1776,1787-1789,1794-1796,1807-1809,1814-1816,1827-1829,1834-1836,1847-1849,1854-1856,1867-1869,1874-1876,1887-1889,1894-1896,1907-1909,1924-1926,1941-1943,1958-1960,1975-1977,1981,1985-1987,2002-2004,2019-2021,2036-2038,2053-2055,2070-2072,2087-2089,2104-2106,2111-2113,2124-2126,2131-2133,2144-2146,2151-2153,2164-2166,2171-2173,2184-2186,2191-2193,2204-2206,2211-2213,2224-2226,2231-2233,2244-2246,2251-2253,2264-2266,2281-2283,2298-2300,2315-2317,2645-2647,2657-2660,2668-2671,2673-2676,2684-2687,2689-2692,2700-2703,2705-2708,2717-2719,2721-2724,2733-2735,2737-2740,2748-2751,2753-2756,2760-2762,2767-2770,2772-2775,2779-2781,2786-2789,2791-2794,2796-2799,2805-2808,2810-2813,2815-2818,2824-2827,2829-2832,2834-2837,2843-2846,2848-2851,2853-2856,2862-2865,2867-2870,2872,2877-2881,2883-2886,2888,2893-2897,2899-2902,2909,2911-2924,2927-2935,2937-2940,2943-2948,2950-2953,2956-2961,2991-2994,2998-2999,3002-3005,3007,3009-3012,3014,3062,3069-3071,3091-3092,3106-3122,3124-3126,3131-3134,3147,3153-3155,3163-3165,3169-3172,3188-3190,3194-3195,3210-3212,3216-3217,3228-3230,3245-3247,3251-3253,3270-3272,3284-3286,3290-3293,3312-3314,3319-3321,3336-3338,3342,3366-3389,3391-3393,3398-3403,3407,3410-3411,3416-3440,3446-3459,3463,3465-3482,3485,3488-3491,3493-3499,3501-3504,3507-3510,3513,3516-3519,3523-3525,3527-3538,3544-3558,3561-3564,3569-3572,3576-3577,3583-3705,3709-3711,3717-3720,3724,3730-3733,3737-3739,3742-3745,3749,3755-3758,3762-3770,3774-3776,3779-3782,3786,3789-3792,3795-3796,3798-3799,3802-3805,3809,3811-3816,3819-3822,3826-3830,3832-3837,3840-3850,3854-3862,3864-3870,3873-3876,3880-3884,3887-3890,3893-3897,3899-3909,3911-3914,3917-3920,3924-3926,3929-3938,3941-3944,3948,3951-3954,3958-3965,3968-3977,3980-3997,4000-4001,4004-4007,4011,4013-4014,4017-4020,4024-4027,4030,4033-4042,4045-4048,4052,4055-4058,4061-4072,4075,4078-4081,4084-4085,4088-4091,4095-4100,4102-4103,4106,4109-4112,4116-4118,4120-4121,4125-4127,4131,4135-4137,4142-4144,4148,4153-4179,4234-4236,4239-4240,4243,4259-4261,4264-4265,4269-4271,4274-4278,4281-4282,4286-4288,4291-4292,4296-4298,4301,4305-4307,4311-4312,4318-4321,4324,4331-4334,4337-4339,4343,4345,4348-4350,4366-4368,4372,4375,4377-4378,4382-4384,4387,4391-4393,4396-4397,4401-4403,4406-4408,4413-4415,4418-4420,4424-4426,4429-4449,4470-4473,4475-4476,4478-4479,4486-4488,4492-4493,4495-4496,4506-4508,4510-4512,4518-4520,4523-4526,4533,4537-4539,4541-4543,4561-4564,4566-4574,4630-4632,4643-4645,4649,4656-4658,4671-4674,4676-4682,4684-4687,4691-4825,4845-4847,4850,4866-4878,4902-4904,4929-4937,4968,4978-4980,4998-5002,5011-5023,5025-5027,5041-5043,5049-5053,5057-5061,5088-5090,5108-5111,5115,5120-5121,5124,5127,5130,5134-5136,5140-5142,5145,5149-5151,5155-5157,5160,5163,5187-5189,5201-5209,5224-5226,5233-5242,5246-5247,5250-5253,5255,5268-5270,5274,5277,5281-5283,5287,5290,5294-5296,5300-5301,5304,5307,5318-5321,5324-5327,5334-5336,5376-5378,5382,5428-5430,5458-5460,5516-5567,5569-5571,5573-5576,5579-5582,5586-5590,5593-5605,5653-5655,5657,5692-5694,5698-5717,5721-5723,5728-5730,5771-5773,5808-5814,5842-5845,5848-5853,5879-5881,5884-5886,5889-5894,5902-5905,5908,5915,5923,5938-5940,5947,5951-5953,5957,5960-5962,5983-5985,5989-5990,5995,6031-6034,6036,6038,6041,6044-6047,6049,6051-6053,6056,6059,6176-6178,6227-6230,6232-6235,6238-6240,6348-6354,6356-6358,6362,6369,6379-6381,6385-6387,6391-6393,6398-6400,6471-6477,6499-6501,6555-6558,6560,6562-6564,6567-6570,6587-6589,6593,6596,6650-6653,6656-6664,6666,6672-6675,6679,6705,6708-6711,6715-6721,6724,6727-6730,6732-6737,6744,6803-6805,6825-6827,6831,6838-6840,6853-6854,6894-6897,6949-6951,6955,6985,6995,7004-7016,7040,7046-7049,7053-7056,7059-7062,7066-7069,7072-7075,7079,7083-7093,7132,7138-7159,7167-7170,7180-7192,7284-7286,7290,7317-7346,7350-7507,7510-7526,7528-7547,7549,7551-7553,7556-7572,7574-7590,7592-7596,7599-7610,7612,7615-7626,7637-7649,7652,7656-7658,7662,7664,7670,7675-7676,7680-7682,7722-7723,7737,7739,7751-7754,7757,7760-7763,7766-7769,7771-7782,7784-7788,7792-7804,7807-7812,7815,7818-7833,7835-7837,7840,7856-7858,7883-7885,7898-7900,7904,7924,7938,7997-8000,8002-8004,8025-8034,8036-8039,8071-8073,8096-8098,8126-8129,8131-8134,8136-8139,8141-8150,8162-8167,8179-8181,8185,8189,8191,8244-8252,8255,8271-8273,8278-8280,8284,8286,8288-8289,8292,8317-8319,8323,8329,8332-8350,8354-8356,8360-8373,8377-8379,8389,8392-8410,8413-8414,8419-8421,8426-8428,8468,8491-8494,8496-8500,8502-8515,8525-8527,8537-8539,8549-8551,8558,8562-8564,8567,8573-8574,8577-8623,8626-8629,8632-8633,8637-8639,8656,8658,8665-8667,8671,8673,8676-8679,8697-8699,8704-8706,8708-8721,8724,8727,8758-8760,8771-8773,8787-8799,8810-8878,8905-8913,8997-8999,9002,9034-9036,9060-9064,9067-9068,9071,9074,9077-9111,9155,9169-9171,9175,9183,9190-9193,9197,9208,9211-9228,9232-9234,9244,9248-9250,9264-9266,9280-9282,9296-9298,9312-9314,9328-9330,9344-9346,9350,9361-9363,9367,9378-9380,9384,9395-9397,9401,9412-9414,9418,9429-9431,9435,9446-9448,9452,9463-9465,9469,9480-9482,9492,9496-9498,9512-9514,9528-9535,9544-9546,9550-9552,9555-9559,9562,9565,9568-9572,9575,9578-9582,9605-9607,9631-9633,9637,9640,9660-9662,9668-9676,9678,9681-9684,9686,9699-9701,9705-9706,9709,9716-9718,9722,9732-9734,9738,9745-9747,9752-9754,9768-9778,9782,9784,9786-9790,9794,9796,9798-9799,9802,9808,9812-9814,9828,9831,9835-9837,9842-9843,9850,9859-9861,9875,9880-9881,9884-9887,9891-9892,9895-9904,9907-9911,9914-9915,9918-9921,9924-9928,9931-9941,9944,9946-9947,9950-9954,9957,9964,9977-9979,9983-9984,9987,9993-9996,9999-10000,10002-10011,10013-10016,10026-10028,10043,10056,10207-10210,10214,10224-10226,10228-10231,10234-10236,10249-10256,10263,10329-10331,10335-10338,10353-10355,10399,10403-10405,10409,10416-10418,10422,10425-10427,10429-10430,10432-10435,10439-10450,10476-10479,10483,10497-10520,10526-10528,10543-10545,10549-10550,10554-10598,10602-10604,10608-10613,10616,10634-10643,10645-10647,10651-10652,10655,10657,10659,10662,10706-10708,10723-10725,10740-10742,10757-10759,10774-10776,10791-10793,10808-10810,10825-10827,10832-10834,10845-10847,10852-10854,10865-10867,10872-10874,10885-10887,10892-10894,10905-10907,10912-10914,10925-10927,10932-10934,10945-10947,10952-10954,10965-10967,10972-10974,10985-10987,11002-11004,11019-11021,11036-11038,11053-11055,11059,11072-11081,11083-11085,11089,11095,11098-11116,11120-11122,11126,11136-11138,11196,11199-11202,11205-11217,11219-11223,11239-11240,11255,11258,11261-11264,11291-11293,11297-11298,11304-11314,11331-11333,11337,11339,11341-11345,11354,11363-11365,11369-11371,11404-11487,11489-11531,11536-11538,11541-11545,11556-11562,11588-11590,11593-11595,11662-11664,11667-11682,11688-11706,11709-11716,11719-11721,11725-11726,11758-11767,11784-11796,11808-11810,11825-11855,11857-11859,11866-11888,11892-11894,11898-11899,11902,11909-11911,11915,11958-11960,11967-11969,11973-11975,11979,11982,11984,11987,11991-11993,11997,12001-12003
+src/dashboard-front/pnpm-lock.yaml
+  s_a8186a58c4428c::t_2c9f2a4d7839c5 25,31,33-34,40,43,45-46,48-52,54-55,57-58,60-61,63-64,66-67,69-70,72-73,75-76,78-79,81-82,90-91,99-100,102-103,105-106,109,111-112,114-115,118,120-124,127-128,130-131,134,151-152,154-155,157-158,160-161,163-170,172-176,179,181-182,184-185,187-191,196-197,199-200,202-203,205-209,211-212,214-215,217-218,220-221,223-224,226-227,229-230,235-236,238-239,241-242,244-245,247-254,256-257,261-262,268-269,284-287,292-293,300-301,316-317,324-325,342-343,350-351,360-365,370-373,378-379,382-385,390-391,394-399,406-407,416-420,456-457,468-473,486-487,494-495,502-516,545-551,553,570-571,576-577,579-580,582-584,587-589,591-593,595-597,599-601,603-605,607-609,611-613,615-617,619-621,623-625,627-629,631-633,635-637,639-641,643-645,647-649,651-653,655-656,658-660,663-665,667-669,671-672,674-676,678,680-686,688-690,692-697,699-703,705-709,711-712,714,726-728,730-732,734-736,738-740,742-744,746-748,750-751,754-755,769-770,772-773,776-777,780-781,784-785,798-799,825-829,834-835,840-841,846-847,852-853,858-859,864-865,870-871,876-877,882-883,888-889,894-895,900-901,906-907,912-913,919-920,926-927,933-934,940-941,947-948,954-955,961-962,968-969,975-976,982-983,989-990,996-997,1003-1004,1010-1011,1017-1018,1024-1025,1030-1031,1036-1037,1042-1043,1048-1049,1054-1055,1060-1061,1066-1067,1072-1073,1075-1076,1078-1082,1087-1088,1093-1094,1099-1100,1105-1106,1111-1112,1117-1118,1123-1124,1130-1131,1137-1138,1144-1145,1151-1152,1158-1159,1165-1166,1172-1173,1179-1180,1185-1186,1191-1192,1197-1198,1300-1302,1306-1308,1312-1314,1318-1320,1324-1326,1330-1332,1336-1338,1343-1447,1537-1548,1558-1559,1561-1562,1591-1592,1615-1622,1625,1629-1630,1636-1637,1642-1643,1646-1647,1652-1653,1663-1668,1673-1674,1680-1681,1684-1688,1691-1692,1694-1695,1697-1698,1700-1701,1703-1704,1706-1707,1709-1710,1712-1713,1715-1716,1718-1719,1721-1722,1724-1725,1727-1728,1730-1731,1733-1734,1736-1748,1750-1751,1753-1754,1756-1757,1759-1760,1762-1763,1765,1767-1768,1771,1773-1774,1777,1780-1781,1784-1835,1837-1838,1840-1841,1843-1847,1854-1861,1866-1867,1877-1878,1881-1883,1890-1893,1898-1899,1904-1905,1907-1908,1910-1911,1916-1917,1919-1920,1924-1925,1927-1928,1930-1931,1933,1942-1943,1945-1946,1948-1949,1951-1952,1954-1955,1960-1972,1984-1986,1990-1992,1996-1998,2000-2002,2005,2007-2009,2017-2019,2036-2040,2062-2065,2074-2077,2085-2086,2088-2109,2118-2119,2137-2141,2163-2166,2171-2172,2175-2176,2189-2191,2197-2199,2208-2209,2214-2215,2221-2222,2234-2239,2244-2246,2248-2250,2252-2254,2264-2265,2277-2283,2285-2287,2306-2307,2309-2310,2333-2334,2355-2365,2380-2382,2390-2391,2393-2396,2415-2418,2441-2443,2452-2453,2467-2468,2470,2472-2473,2502-2504,2542-2544,2549-2551,2584-2585,2587-2588,2598-2599,2604-2605,2629-2631,2644-2647,2667-2673,2683-2685,2697-2708,2710-2712,2718-2721,2738-2739,2751-2753,2755-2756,2762-2765,2774-2777,2782-2783,2799-2801,2823-2826,2836-2838,2840-2842,2844-2846,2871-2875,2879-2883,2891-2892,2947-2949,2956-2960,2962-2966,2968-2972,2974-2978,2980-2984,2986-2991,2993-2998,3000-3005,3007-3012,3014-3018,3020-3024,3026-3028,3030-3031,3033-3034,3036-3039,3041-3047,3049-3050,3061-3063,3068-3070,3075-3083,3085-3086,3093-3094,3102-3103,3109-3111,3138-3140,3161-3162,3169-3173,3188-3192,3197-3199,3204-3205,3212-3218,3226-3228,3234-3235,3238-3239,3242-3243,3245,3247-3254,3256-3257,3261-3262,3266-3267,3277-3278,3303-3305,3324-3325,3328-3330,3333-3334,3336-3337,3349-3350,3352-3360,3362-3364,3366-3368,3370-3376,3390-3391,3393,3395-3396,3403-3404,3407-3409,3415-3420,3428-3431,3465-3466,3480-3483,3490-3493,3507-3508,3511-3512,3517-3518,3523-3524,3529-3530,3535-3536,3541-3542,3547-3548,3554-3555,3561-3562,3568-3569,3575-3576,3582-3583,3589-3590,3596-3597,3603-3604,3607-3608,3613-3614,3619-3621,3624-3626,3639-3640,3652-3653,3660-3661,3668-3670,3679-3680,3687-3690,3692-3693,3707-3710,3719-3721,3723-3724,3726-3727,3731,3736-3738,3740,3742-3743,3747,3752-3754,3756,3758-3759,3762,3764-3766,3768,3770-3772,3775-3777,3783-3785,3790-3791,3828-3830,3835-3836,3839-3840,3843-3848,3874-3875,3886-3887,3901-3903,3905-3906,3908-3915,3921-3922,3924-3926,3935-3937,3947-3949,3980-3981,3984-3985,3988-4018,4039-4044,4046,4053-4054,4058,4063-4064,4075-4076,4081-4082,4095-4098,4118-4164,4168-4170,4188-4189,4204-4205,4207-4220,4222-4223,4237-4238,4248-4251,4266-4270,4279-4281,4283-4293,4295-4301,4315-4316,4320-4322,4324-4326,4332-4333,4337,4339-4340,4342,4344,4348,4350,4356,4361,4365,4369,4376,4378-4381,4384,4386-4387,4394,4396,4398,4408,4410-4416,4421,4423,4425,4427-4429,4436,4438,4440-4441,4445,4447-4448,4452,4454-4455,4459,4461-4462,4464,4470,4472-4474,4478-4480,4482-4483,4485-4494,4498,4500-4501,4505,4507-4508,4514-4516,4520,4522-4524,4529,4531,4533,4537,4539,4541-4546,4548,4552,4554,4557,4559,4562,4564,4567,4569,4572,4574-4575,4577,4579-4580,4582,4584,4586-4589,4593,4595-4600,4611-4612,4614,4616-4618,4620,4625,4627-4628,4632,4634-4642,4649-4662,4673,4675,4678-4680,4684,4686-4687,4689,4691-4693,4695,4697,4699,4701,4703,4705-4707,4709,4721-4722,4725,4727,4734,4736,4741,4746,4748-4755,4757-4758,4761,4763-4764,4766,4768,4771,4773-4774,4776,4778,4780-4781,4783,4785-4786,4788,4790-4793,4795,4797-4805,4809,4811,4813-4815,4817,4819-4825,4827,4829-4832,4835,4837-4840,4842,4844,4846,4848,4850-4851,4853,4855-4857,4859,4861,4863,4865-4866,4868,4870,4872-4874,4876,4878,4880-4881,4883,4885,4887-4889,4891,4893-4894,4896,4898,4903,4905-4907,4911,4913,4915,4919,4921,4923,4926-4928,4930,4932-4934,4936,4938,4944,4946,4950,4952-4954,4956,4958-4959,4961,4963-4964,4966,4970,4980,4985,5007,5009,5012,5015,5018,5021,5024,5027,5030,5033,5036,5039,5042,5045,5048,5051,5054,5057,5060,5063,5066,5069,5072,5075,5078,5081,5084,5087,5090,5093,5096,5099,5102,5105,5108,5111,5114,5117,5120,5123,5125,5127,5129,5132,5135,5138,5141,5144,5147,5150,5153,5156,5159,5162,5165,5168,5171,5174,5177,5180,5183,5230,5255-5300,5377-5385,5387,5389,5397,5399-5400,5402,5406-5407,5427,5435-5436,5444-5450,5453-5458,5466,5468-5473,5478,5480-5482,5487,5489-5490,5492,5496,5498-5502,5510-5512,5514-5518,5520-5521,5527,5529-5533,5538,5540,5543-5548,5551-5556,5560,5563-5564,5566,5568,5573,5575,5577,5579,5581-5592,5594,5596,5598,5600-5601,5604,5606-5608,5610,5612,5614,5616-5617,5619,5621-5622,5624,5626,5629,5631-5633,5635,5637-5639,5641,5643-5644,5646,5648,5650-5665,5667,5669-5671,5673-5674,5676,5678,5680,5682-5683,5686-5781,5783-5788,5790,5792,5794,5796,5798-5804,5806,5808-5810,5812,5814,5816,5818,5820,5826-5834,5838,5840,5842,5844,5846,5849,5852,5856,5858-5868,5872,5875-5876,5878-5879,5883,5885-5892,5896,5900,5902,5904-5908,5915,5917-5918,5920,5922-5926,5929-5930,5932,5934-5935,5939,5941,5943,5945-5947,5949,5951,5956,5958,5960-5962,5964-5965,5971,5973-5976,5979,5981,5983,5985,5987-5988,5990,5992-5994,5997,5999-6001,6005,6007,6009-6014,6016-6019,6021,6023-6025,6027,6029-6032,6034,6036,6038-6040,6042,6044,6048,6062-6064,6066,6090-6091,6098-6099,6104,6106-6131,6137,6139,6141,6157-6159,6161,6165,6170-6171,6191-6194,6199,6201,6203-6204,6218,6224,6227-6228,6236,6240,6246,6254-6260,6263,6265,6267,6269,6271,6273-6274,6282,6286,6297-6299,6301,6306,6314,6318,6320,6324-6325,6327,6331,6337,6350,6352,6354-6362,6380-6383,6396,6399,6401-6406,6418,6420,6437-6438,6448,6450,6458,6461,6463,6465-6466,6469-6472,6474-6475,6490-6498,6501,6504,6506-6509,6512,6519,6553,6557,6561-6562,6585,6587,6589,6591,6593,6604,6606,6612,6614,6635-6636,6643-6644,6655,6673,6675-6681,6693,6695,6697-6701,6709,6711-6714,6716,6718-6727,6731-6732,6747,6755,6757,6764,6766-6767,6771-6775,6783,6785,6787,6800,6814-6815,6822,6824,6826,6842-6849,6852-6854,6860,6900,6902,6907,6910,6912-6913,6920-6921,6923-6924,6926-6927,6929-6930,6932-6942,6944-6953,6955-6967,6969-6971,6973,6975,6977-6981,6983,6985,6995-6996,7002,7008,7012,7014,7016,7018,7020,7022-7026,7029,7031-7036,7040,7048,7052,7074,7080,7093,7097-7105,7119-7122,7125-7126,7129,7131,7134-7135,7137,7144-7146,7156,7158,7160,7162-7163,7174,7176,7178-7222,7224-7228,7230-7248,7258,7266,7279-7282,7294,7296,7298,7300-7302,7309,7318,7320-7322,7324,7326,7328,7330-7332,7334-7337,7339-7343,7345,7347,7349,7351,7355,7357,7361,7363,7365,7367,7371-7380,7386-7387,7414,7422-7441,7473-7475,7490,7492,7495,7498,7501,7504,7507,7510,7513,7516,7519,7522,7525,7528,7531,7534,7537,7539,7542,7545,7548,7551-7552,7558-7581,7593,7601,7605,7613,7623,7628,7630,7646-7650,7659-7661,7663,7665,7667,7669-7672,7674,7676,7678,7680,7682-7684,7686,7688,7690-7691,7693,7695-7697,7699,7701-7707,7709-7710,7712-7727,7730,7732,7734-7738,7742-7744,7746-7747,7750,7755,7761,7763-7764,7768,7787,7790,7792,7795,7797,7805,7809,7812,7814,7822,7826,7829,7831,7835,7837,7839-7842,7844,7846,7866,7868-7872,7879,7898,7900,7902,7905-7906,7909-7910,7912-7928,7932-7951,7953-7959,7962,7964-7969,7971-7983,7985,7987-7988,7991,7993,7995,7998-8011,8014,8016,8019-8020,8022-8025,8043-8045,8047-8049,8051,8053,8055,8059,8061,8064-8066,8068,8070-8072,8074-8077,8082,8084-8089,8093,8097,8099-8103,8108-8145,8149-8151,8153,8155,8157-8158,8163,8167,8169-8171,8173,8175,8177-8178,8180,8182-8217,8220,8222,8224,8226-8230,8236-8237,8250,8252,8260,8264-8266,8269,8271,8282,8284,8286,8288,8291,8293,8297
+src/dashboard-front/src/types/auto-imports.d.ts
+  s_a8186a58c4428c::t_7621a9d8a27655 3-4
+src/dashboard/uv.lock
+  s_a8186a58c4428c::t_aa4582f9c920ac 69,178,860-868,1022-1034,3024-3032
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "117171750b745a35e2ddcc03ad81871af48ad0f3",
+  "prompts": {},
+  "sessions": {
+    "s_a8186a58c4428c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8ed11e6e-3dbe-444c-b727-3d62ecdacb7a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Zach <cszmzh@gmail.com>"
+    }
+  }
+}
