@@ -39,7 +39,7 @@ class Migration(migrations.Migration):
                 ('display_name_en', models.CharField(default=None, help_text='Skill 展示名', max_length=64, null=True)),
                 ('description', models.CharField(help_text='Skill 描述', max_length=1024)),
                 ('metadata', models.JSONField(blank=True, default=dict, help_text='扩展元数据')),
-                ('status', models.CharField(choices=[('unpublished', '未发布'), ('published', '已发布'), ('offline', '已下架')], default='unpublished', help_text='Skill 状态', max_length=16)),
+                ('status', models.CharField(choices=[('unpublished', '未发布'), ('published', '使用中'), ('archived', '已归档')], default='unpublished', help_text='Skill 状态', max_length=16)),
                 ('download_count', models.PositiveIntegerField(default=0, help_text='下载数')),
                 ('gateway', models.ForeignKey(blank=True, help_text='所属网关，内置 Skill 为空', null=True, on_delete=django.db.models.deletion.CASCADE, to='core.gateway')),
                 ('tags', models.ManyToManyField(blank=True, help_text='Skill 标签', related_name='metadata_set', to='skill.skilltag')),

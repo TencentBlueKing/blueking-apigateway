@@ -33,6 +33,7 @@ from apigateway.apps.metrics.models import StatisticsAppRequestByDay, Statistics
 from apigateway.apps.plugin.models import PluginBinding
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
+from apigateway.apps.skill.models import SkillMetadata
 from apigateway.apps.support.models import ReleasedResourceDoc
 from apigateway.biz.iam import (
     apply_gateway_member_snapshots_to_iam,
@@ -369,7 +370,10 @@ class GatewayHandler:
         StatisticsGatewayRequestByDay.objects.filter(gateway_id=gateway_id).delete()
         StatisticsAppRequestByDay.objects.filter(gateway_id=gateway_id).delete()
 
-        # 10. revoke IAM authorizations and delete gateway
+        # 10. gateway skills are deleted by cascade below; current_version is PROTECT, clear it first
+        SkillMetadata.objects.filter(gateway_id=gateway_id).update(current_version=None)
+
+        # 11. revoke IAM authorizations and delete gateway
         iam_operator = None
         if settings.BK_IAM_V4_ENABLED:
             iam_operator = operated_by or BK_IAM_V4_SYSTEM_ID

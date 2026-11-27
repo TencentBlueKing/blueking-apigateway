@@ -48,6 +48,7 @@ class OpObjectTypeEnum(StructuredEnum):
     MCP_SERVER = EnumField("mcp_server", label=_("MCPServer"))
     MCP_SERVER_PERMISSION = EnumField("mcp_server_permission", label=_("MCPServer 应用权限"))
     PERMISSION = EnumField("permission", label=_("应用权限"))
+    SKILL = EnumField("skill", label=_("Skill"))
 
 
 # for translation only
@@ -87,6 +88,15 @@ COMMENTS = (
     _("创建 MCPServer 应用权限"),
     _("更新 MCPServer 应用权限"),
     _("删除 MCPServer 应用权限"),
+    # Skill
+    _("创建 Skill"),
+    _("发布 Skill 新版本"),
+    _("覆盖 Skill 版本"),
+    _("更新 Skill 基本信息"),
+    _("切换 Skill 线上版本"),
+    _("归档 Skill"),
+    _("恢复 Skill"),
+    _("删除 Skill"),
     # extras
     _("环境状态变更"),
     _("更新环境变量"),

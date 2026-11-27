@@ -25,6 +25,7 @@
 
 import datetime
 import re
+from dataclasses import dataclass
 from typing import Annotated, Any, Dict, List, Optional, Tuple, Union
 
 import yaml
@@ -48,16 +49,14 @@ from apigateway.apps.skill.constants import (
     SKILL_DISPLAY_NAME_MAX_LENGTH,
     SKILL_NAME_MAX_LENGTH,
     SKILL_TAG_NAME_MAX_LENGTH,
+    SKILL_TAGS_MAX_COUNT,
     SKILL_VERSION_MAX_LENGTH,
     SKILL_VERSION_PATTERN,
 )
 from apigateway.common.constants import GATEWAY_NAME_PATTERN
 from apigateway.core.constants import RESOURCE_NAME_PATTERN, STAGE_NAME_PATTERN
 
-from .constants import (
-    SKILL_NAME_PATTERN,
-    SKILL_STEP_NAME_PATTERN,
-)
+from .constants import SKILL_NAME_PATTERN
 from .refs import INPUT_NAME, parse_ref
 from .schema_converter import TYPE_NAMES, SchemaType
 
@@ -73,10 +72,51 @@ _ERROR_MESSAGES = {
 }
 
 
+@dataclass(frozen=True)
+class DeclarationFieldError:
+    """声明的一条错误；loc 为 pydantic 的错误位置，YAML 解析失败等不对应字段的错误为空"""
+
+    loc: Tuple[Union[str, int], ...]
+    message: str
+
+    @property
+    def field(self) -> Optional[str]:
+        """字段路径，数组下标写成 [n]；不对应字段时为 None"""
+        return _format_loc(self.loc) or None
+
+    def __str__(self) -> str:
+        """「字段路径: 说明」，不对应字段时只有说明；用于日志和内置注入的结果
+
+        例如：
+            loc ("orchestration", "steps", 0, "if")、说明「未知字段」 -> "orchestration.steps[0].if: 未知字段"
+            loc ()、说明「声明应为键值对」 -> "声明应为键值对"
+        """
+        return f"{self.field}: {self.message}" if self.field else self.message
+
+
 class SkillDeclarationError(Exception):
-    def __init__(self, errors: List[str]):
-        super().__init__("\n".join(errors))
-        self.errors = errors
+    def __init__(self, items: List[DeclarationFieldError]):
+        self.items = items
+        super().__init__("\n".join(self.errors))
+
+    @property
+    def errors(self) -> List[str]:
+        """每条错误的文本，见 DeclarationFieldError.__str__"""
+        return [str(item) for item in self.items]
+
+
+class _NoAliasSafeLoader(yaml.SafeLoader):
+    """不允许锚点和别名的 SafeLoader：别名转成 JSON 入库时会展开成多份，几 KB 的声明可以展开成很大的 JSON"""
+
+    def compose_node(self, parent, index):
+        """遇到锚点或别名时报错，其他同 SafeLoader
+
+        例如：合规 "a: 1"；不合规 "a: &x 1\\nb: *x"
+        """
+        event = self.peek_event()
+        if event.anchor:
+            raise yaml.YAMLError(_("声明不允许使用 YAML 锚点和别名"))
+        return super().compose_node(parent, index)
 
 
 _USES_PATTERN = re.compile(r"^([^/@]+)/([^/@]+)@([^/@]+)$")
@@ -174,10 +214,60 @@ def _check_text_not_empty(value: str) -> str:
     return value
 
 
+def check_skill_display_name(value: str) -> str:
+    """展示名、英文名去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH，不能含换行；返回去掉空白后的值
+
+    声明和网关 Skill 页面的基本信息表单共用，页面上能保存的值导出到 declaration.yaml 后能原样上传。
+
+    例如：" 执行作业方案 " -> "执行作业方案"；不合规 "   "、中间有换行的文本
+    """
+    value = value.strip()
+    if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
+        raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
+    # 展示名会写成 SKILL.md 的一级标题，中间换行会拆开这一行
+    if "\n" in value or "\r" in value:
+        raise ValueError(_("不能包含换行"))
+    return value
+
+
+def check_skill_description(value: str) -> str:
+    """描述长度为 1 到 SKILL_DESCRIPTION_MAX_LENGTH；声明和基本信息表单共用
+
+    例如：不合规 ""、超过 1024 个字符的文本
+    """
+    if not 1 <= len(value) <= SKILL_DESCRIPTION_MAX_LENGTH:
+        raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DESCRIPTION_MAX_LENGTH))
+    return value
+
+
+def check_skill_tags(value: List[str]) -> List[str]:
+    """1 到 SKILL_TAGS_MAX_COUNT 个标签；规范化（去首尾空白、转小写）后长度不超限、不重复；声明和基本信息表单共用
+
+    例如：合规 ["job", "写操作"]；不合规 []、11 个标签、["JOB", " job "]（规范化后重复）
+    """
+    if not value:
+        raise ValueError(_("至少需要一个标签"))
+    if len(value) > SKILL_TAGS_MAX_COUNT:
+        raise ValueError(_("标签不能超过 {max_count} 个").format(max_count=SKILL_TAGS_MAX_COUNT))
+    normalized = [normalize_tag_name(tag) for tag in value]
+    for tag, name in zip(value, normalized):
+        if not 1 <= len(name) <= SKILL_TAG_NAME_MAX_LENGTH:
+            raise ValueError(
+                _("标签名长度应为 1–{max_length}：{tag}").format(max_length=SKILL_TAG_NAME_MAX_LENGTH, tag=repr(tag))
+            )
+    for index, name in enumerate(normalized):
+        if name in normalized[:index]:
+            raise ValueError(_("标签规范化后重复：{name}").format(name=name))
+    return value
+
+
 ParamValue = Annotated[Any, AfterValidator(_check_ref)]
 TypeText = Annotated[StrictStr, AfterValidator(_check_type)]
 VersionText = Annotated[StrictStr, AfterValidator(_check_version)]
 DateText = Annotated[StrictStr, BeforeValidator(_date_to_text), AfterValidator(_check_date)]
+DisplayNameText = Annotated[StrictStr, AfterValidator(check_skill_display_name)]
+DescriptionText = Annotated[StrictStr, AfterValidator(check_skill_description)]
+TagList = Annotated[List[StrictStr], AfterValidator(check_skill_tags)]
 
 
 class _DeclarationModel(BaseModel):
@@ -284,7 +374,7 @@ class SkillStep(_DeclarationModel):
 
         例如：合规 "list-tasks"；不合规 "List_Tasks"、"list--tasks"
         """
-        if not SKILL_STEP_NAME_PATTERN.fullmatch(value):
+        if not SKILL_NAME_PATTERN.fullmatch(value):
             raise ValueError(_("步骤 id 不合规：{value}").format(value=value))
         return value
 
@@ -440,10 +530,10 @@ class SkillChangelog(_DeclarationModel):
 
 class SkillDeclaration(_DeclarationModel):
     name: StrictStr
-    display_name: StrictStr
-    display_name_en: Optional[StrictStr] = None
-    description: StrictStr
-    tags: List[StrictStr]
+    display_name: DisplayNameText
+    display_name_en: Optional[DisplayNameText] = None
+    description: DescriptionText
+    tags: TagList
     version: VersionText
     changelog: SkillChangelog
     orchestration: SkillOrchestration
@@ -457,68 +547,6 @@ class SkillDeclaration(_DeclarationModel):
         """
         if len(value) > SKILL_NAME_MAX_LENGTH or not SKILL_NAME_PATTERN.fullmatch(value):
             raise ValueError(_("不合规：{value}").format(value=value))
-        return value
-
-    @field_validator("display_name")
-    @classmethod
-    def _check_display_name(cls, value: str) -> str:
-        """去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH，不能含换行；返回去掉空白后的值
-
-        例如：" 执行作业方案 " -> "执行作业方案"；不合规 "   "、中间有换行的文本
-        """
-        value = value.strip()
-        if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
-            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
-        # 展示名会写成 SKILL.md 的一级标题，中间换行会拆开这一行
-        if "\n" in value or "\r" in value:
-            raise ValueError(_("不能包含换行"))
-        return value
-
-    @field_validator("display_name_en")
-    @classmethod
-    def _check_display_name_en(cls, value: Optional[str]) -> Optional[str]:
-        """可以不写；写了时去掉首尾空白后长度为 1 到 SKILL_DISPLAY_NAME_MAX_LENGTH
-
-        例如：" Run job plan " -> "Run job plan"；不合规 "   "
-        """
-        if value is None:
-            return None
-        value = value.strip()
-        if not 1 <= len(value) <= SKILL_DISPLAY_NAME_MAX_LENGTH:
-            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DISPLAY_NAME_MAX_LENGTH))
-        return value
-
-    @field_validator("description")
-    @classmethod
-    def _check_description(cls, value: str) -> str:
-        """长度为 1 到 SKILL_DESCRIPTION_MAX_LENGTH
-
-        例如：不合规 ""、超过 1024 个字符的文本
-        """
-        if not 1 <= len(value) <= SKILL_DESCRIPTION_MAX_LENGTH:
-            raise ValueError(_("长度应为 1–{max_length}").format(max_length=SKILL_DESCRIPTION_MAX_LENGTH))
-        return value
-
-    @field_validator("tags")
-    @classmethod
-    def _check_tags(cls, value: List[str]) -> List[str]:
-        """至少一个标签；规范化（去首尾空白、转小写）后长度不超限、不重复
-
-        例如：合规 ["job", "写操作"]；不合规 []、["JOB", " job "]（规范化后重复）
-        """
-        if not value:
-            raise ValueError(_("至少需要一个标签"))
-        normalized = [normalize_tag_name(tag) for tag in value]
-        for tag, name in zip(value, normalized):
-            if not 1 <= len(name) <= SKILL_TAG_NAME_MAX_LENGTH:
-                raise ValueError(
-                    _("标签名长度应为 1–{max_length}：{tag}").format(
-                        max_length=SKILL_TAG_NAME_MAX_LENGTH, tag=repr(tag)
-                    )
-                )
-        for index, name in enumerate(normalized):
-            if name in normalized[:index]:
-                raise ValueError(_("标签规范化后重复：{name}").format(name=name))
         return value
 
     def changelog_data(self) -> Dict[str, Any]:
@@ -547,40 +575,51 @@ def normalize_tag_name(name: str) -> str:
     return name.strip().lower()
 
 
+def load_declaration_yaml(text: str) -> Dict[str, Any]:
+    """声明 YAML 文本 -> dict；不是合法 YAML、用了锚点或别名、顶层不是对象时抛 SkillDeclarationError，错误不对应字段
+
+    例如："name: demo" -> {"name": "demo"}；"a: &x 1\\nb: *x"、"- 1"、"d: 2026-99-99"、嵌套过深 -> SkillDeclarationError
+    """
+    try:
+        data = yaml.load(text, Loader=_NoAliasSafeLoader)  # noqa: S506
+    # 非法日期、超长整数在构造值时抛 ValueError，嵌套过深抛 RecursionError，都不是 YAMLError
+    except (yaml.YAMLError, ValueError, RecursionError) as err:
+        message = _("YAML 解析失败：{error}").format(error=" ".join(str(err).split()))
+        raise SkillDeclarationError([DeclarationFieldError((), message)]) from None
+    if not isinstance(data, dict):
+        raise SkillDeclarationError([DeclarationFieldError((), _("声明应为键值对"))])
+    return data
+
+
 def parse_declaration(data: Union[str, Dict[str, Any]]) -> SkillDeclaration:
-    """YAML 文本或 dict -> 声明；不合规时抛 SkillDeclarationError，errors 里每条带字段路径
+    """YAML 文本或 dict -> 声明；不合规时抛 SkillDeclarationError，items 里每条带 pydantic 的错误位置
 
     例如：
         data/skill/declarations/ 下的声明文本 -> SkillDeclaration
         version 写成 "1.0" -> errors 为 ["version: 版本号应为 major.minor.patch，如 1.0.0：1.0"]
     """
     if isinstance(data, str):
-        try:
-            data = yaml.safe_load(data)
-        except yaml.YAMLError as err:
-            raise SkillDeclarationError(
-                [_("YAML 解析失败：{error}").format(error=" ".join(str(err).split()))]
-            ) from None
+        data = load_declaration_yaml(data)
 
     try:
         return SkillDeclaration.model_validate(data)
     except ValidationError as err:
-        raise SkillDeclarationError([_format_error(item) for item in err.errors()]) from None
+        raise SkillDeclarationError([_to_field_error(item) for item in err.errors()]) from None
 
 
-def _format_error(error: Dict[str, Any]) -> str:
-    """pydantic 的一条错误 -> 「字段路径: 说明」；自定义校验取 ValueError 原文，内置错误按 _ERROR_MESSAGES 翻译
+def _to_field_error(error: Dict[str, Any]) -> DeclarationFieldError:
+    """pydantic 的一条错误 -> DeclarationFieldError；自定义校验取 ValueError 原文，内置错误按 _ERROR_MESSAGES 翻译
 
     例如：
-        loc 为 ("orchestration", "steps", 0, "if")、type 为 extra_forbidden -> "orchestration.steps[0].if: 未知字段"
-        模型级校验 loc 为空 -> "声明: <说明>"
+        loc 为 ("orchestration", "steps", 0, "if")、type 为 extra_forbidden
+            -> DeclarationFieldError(("orchestration", "steps", 0, "if"), "未知字段")
+        version 的 ValueError -> DeclarationFieldError(("version",), "版本号应为 major.minor.patch，如 1.0.0：1.0")
     """
-    path = _format_loc(error["loc"]) or _("声明")
     if error["type"] == "value_error":
         message = str(error["ctx"]["error"])
     else:
         message = str(_ERROR_MESSAGES.get(error["type"], error["msg"]))
-    return f"{path}: {message}"
+    return DeclarationFieldError(tuple(error["loc"]), message)
 
 
 def _format_loc(loc: Tuple[Union[str, int], ...]) -> str:

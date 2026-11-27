@@ -17,14 +17,15 @@
 #
 """Skill 发版写库：内置 Skill 注入和网关 Skill 上传共用"""
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from django.db import transaction
 from django.utils.translation import gettext as _
 
-from apigateway.apps.skill.constants import SkillStatusEnum
+from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
+from apigateway.utils.django import get_model_dict
 
 from .constants import SKILL_FILE_NAME
 from .declaration import parse_version
@@ -36,10 +37,16 @@ if TYPE_CHECKING:
 
 
 class SkillVersionExistsError(Exception):
-    pass
+    def __init__(self, message: str, version: SkillVersion):
+        super().__init__(message)
+        self.version = version
 
 
 class SkillVersionNotNewerError(Exception):
+    pass
+
+
+class SkillArchivedError(Exception):
     pass
 
 
@@ -59,12 +66,44 @@ def check_version(metadata: SkillMetadata, version: str, overwrite_existing: boo
     current = metadata.current_version
     if overwrite_existing and current is not None and current.version == version:
         return current
-    if SkillVersion.objects.filter(metadata=metadata, version=version).exists():
-        raise SkillVersionExistsError(_("{name} 已有版本 {version}").format(name=metadata.name, version=version))
+    existing = (
+        SkillVersion.objects.filter(metadata=metadata, version=version).defer("artifact", "orchestration").first()
+    )
+    if existing is not None:
+        raise SkillVersionExistsError(
+            _("{name} 已有版本 {version}").format(name=metadata.name, version=version), version=existing
+        )
     if current and parse_version(version) <= parse_version(current.version):
         raise SkillVersionNotNewerError(
             _("{name} 的版本 {version} 不高于当前版本 {current}").format(
                 name=metadata.name, version=version, current=current.version
+            )
+        )
+    return None
+
+
+def check_gateway_version(metadata: SkillMetadata, version: str, overwrite: bool = False) -> Optional[SkillVersion]:
+    """网关 Skill 的版本规则：返回要覆盖的版本，写入新版本时返回 None，不能写入时抛异常
+
+    已有的版本号带 overwrite 才能写入，可以是任意已有版本（不限线上版本）；新版本号必须大于已有的最高版本，
+    不是只和线上版本比，避免切回旧版本后再传入夹在中间的版本号。
+
+    例如：已有 1.0.0、1.2.0，线上版本切回 1.0.0 时
+        "1.3.0" -> None（写入新版本）
+        "1.0.0"，overwrite=True -> 版本 1.0.0；overwrite=False -> SkillVersionExistsError，带上 1.0.0 这一版
+        "1.1.0" -> SkillVersionNotNewerError（不大于最高版本 1.2.0）
+    """
+    versions = list(SkillVersion.objects.filter(metadata=metadata).defer("artifact", "orchestration"))
+    for item in versions:
+        if item.version == version:
+            if overwrite:
+                return item
+            raise SkillVersionExistsError(_("版本 {version} 已存在").format(version=version), version=item)
+    latest = max((item.version for item in versions), key=parse_version, default=None)
+    if latest is not None and parse_version(version) <= parse_version(latest):
+        raise SkillVersionNotNewerError(
+            _("版本 {version} 需大于已有的最高版本 {latest}，或与已有版本相同（覆盖）").format(
+                version=version, latest=latest
             )
         )
     return None
@@ -75,6 +114,8 @@ class SavedSkillVersion:
     metadata: SkillMetadata
     version: SkillVersion
     created: bool
+    overwritten: bool = False
+    data_before: Dict[str, Any] = field(default_factory=dict)
 
 
 @transaction.atomic
@@ -89,24 +130,31 @@ def save_skill_version(
     """按 (type, gateway, name) 找到或新建 metadata，写入版本并设为当前版本
 
     内置 Skill 的 gateway 为空，唯一约束拦不住同名，同名由这里在事务内先查再建保证；
-    调用方需保证同一来源的写入串行执行。能否写入、是否覆盖当前版本由 check_version 判断，
-    覆盖时更新这一版的 changelog、编排、正文和关联资源，不新增版本行，created_time 保持不变。
+    调用方需保证同一来源的写入串行执行。能否写入、覆盖哪一版：内置 Skill 由 check_version 判断（只能覆盖当前版本），
+    网关 Skill 由 check_gateway_version 判断（可以覆盖任意已有版本），已归档的网关 Skill 抛 SkillArchivedError。
+    覆盖时更新那一版的 changelog、编排、正文和关联资源，不新增版本行，created_by、created_time 保持不变。
+    已有 metadata 时，返回值的 data_before 是加锁后、写入前的审计快照，见 get_skill_audit_data。
 
     例如：
-        首次写入 1.0.0 -> created 为真，新建 metadata、编排、版本和关联资源
-        再写入 1.1.0 -> 新增版本行并设为当前版本，download_count 等统计不变
+        首次写入 1.0.0 -> created 为真，新建 metadata、编排、版本和关联资源，data_before 为空
+        再写入 1.1.0 -> 新增版本行并设为当前版本，download_count 等统计不变，data_before 是 1.0.0 时的 metadata
         overwrite_existing 为真时再写入 1.1.0 -> 版本行和 created_time 不变
     """
-    # 锁住 metadata 行，同一 Skill 的写入在这里串行，check_version 的结论在事务内不会变
+    # 锁住 metadata 行，同一 Skill 的写入在这里串行，版本规则的结论在事务内不会变
     metadata = (
         SkillMetadata.objects.select_for_update()
         .filter(type=skill_type, gateway=gateway, name=declaration.name)
         .first()
     )
     created = metadata is None
+    data_before = {} if metadata is None else get_skill_audit_data(metadata)
     existing_version: Optional[SkillVersion] = None
     if metadata is None:
         metadata = SkillMetadata(type=skill_type, gateway=gateway, name=declaration.name, created_by=operator)
+    elif skill_type == SkillTypeEnum.GATEWAY.value:
+        if metadata.status == SkillStatusEnum.ARCHIVED.value:
+            raise SkillArchivedError(_("Skill {name} 已归档，请先恢复").format(name=metadata.name))
+        existing_version = check_gateway_version(metadata, declaration.version, overwrite_existing)
     else:
         existing_version = check_version(metadata, declaration.version, overwrite_existing)
 
@@ -118,7 +166,7 @@ def save_skill_version(
         metadata.save()
     else:
         metadata.save(update_fields=["display_name", "display_name_en", "description", "updated_by", "updated_time"])
-    metadata.tags.set(_get_or_create_tags(declaration.normalized_tags))
+    metadata.tags.set(get_or_create_tags(declaration.normalized_tags))
 
     orchestration = declaration.orchestration_data()
     _save_config(metadata, orchestration, operator)
@@ -153,15 +201,31 @@ def save_skill_version(
     metadata.current_version = version
     metadata.status = SkillStatusEnum.PUBLISHED.value
     metadata.save(update_fields=["current_version", "status", "updated_time"])
-    return SavedSkillVersion(metadata=metadata, version=version, created=created)
+    return SavedSkillVersion(
+        metadata=metadata,
+        version=version,
+        created=created,
+        overwritten=existing_version is not None,
+        data_before=data_before,
+    )
 
 
-def _get_or_create_tags(names: List[str]) -> List[SkillTag]:
+def get_or_create_tags(names: List[str]) -> List[SkillTag]:
     """按名字取标签，不存在的新建；标签在所有 Skill 之间共用
 
     例如：["运维", "job"]，「运维」已存在 -> 复用它，新建「job」
     """
     return [SkillTag.objects.get_or_create(name=name)[0] for name in names]
+
+
+def get_skill_audit_data(metadata: SkillMetadata) -> Dict[str, Any]:
+    """审计记录里的 Skill 快照：metadata 的字段加上标签名；get_model_dict 不含多对多字段，只改标签时也能看出变化
+
+    例如：带标签「只读」「job」的 Skill -> {"id": 1, "name": "release-check", ..., "tags": ["job", "只读"]}
+    """
+    data = get_model_dict(metadata)
+    data["tags"] = sorted(tag.name for tag in metadata.tags.all())
+    return data
 
 
 def _save_config(metadata: SkillMetadata, orchestration: dict, operator: str) -> None:

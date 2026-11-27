@@ -368,6 +368,37 @@ class Auditor:
         )
 
     @staticmethod
+    def record_skill_op_success(
+        op_type: OpTypeEnum,
+        username: str,
+        gateway_id: int,
+        instance_id: int,
+        instance_name: str,
+        data_before: Union[list, dict, str, None] = None,
+        data_after: Union[list, dict, str, None] = None,
+        comment: Optional[str] = None,
+    ):
+        if comment is None:
+            comment = {
+                OpTypeEnum.CREATE: "创建 Skill",
+                OpTypeEnum.MODIFY: "更新 Skill 基本信息",
+                OpTypeEnum.DELETE: "删除 Skill",
+            }.get(op_type, "-")
+
+        record_audit_log(
+            username=username,
+            op_type=op_type.value,
+            op_status=OpStatusEnum.SUCCESS.value,
+            op_object_group=gateway_id,
+            op_object_type=OpObjectTypeEnum.SKILL.value,
+            op_object_id=instance_id,
+            op_object=instance_name,
+            data_before=data_before,
+            data_after=data_after,
+            comment=comment,
+        )
+
+    @staticmethod
     def record_mcp_server_permission_op_success(
         op_type: OpTypeEnum,
         username: str,

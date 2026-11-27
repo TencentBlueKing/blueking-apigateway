@@ -18,18 +18,22 @@
 import copy
 
 import pytest
+from ddf import G
 from django.db.models import F
 
 from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillConfig, SkillMetadata, SkillTag, SkillVersion, SkillVersionRelation
 from apigateway.biz.skill.declaration import parse_declaration
 from apigateway.biz.skill.writer import (
+    SkillArchivedError,
     SkillVersionExistsError,
     SkillVersionNotNewerError,
+    check_gateway_version,
     check_version,
     save_skill_version,
 )
-from apigateway.tests.biz.skill.conftest import set_version
+from apigateway.core.models import Gateway
+from apigateway.tests.biz.skill.conftest import create_skill, set_version
 
 pytestmark = pytest.mark.django_db
 
@@ -72,12 +76,48 @@ class TestCheckVersion:
             check_version(metadata, version, overwrite_existing=overwrite_existing)
 
 
+class TestCheckGatewayVersion:
+    @pytest.fixture
+    def metadata(self):
+        gateway = G(Gateway, name="demo")
+        create_skill("demo-skill", gateway=gateway, version="1.0.0")
+        metadata = create_skill("demo-skill", gateway=gateway, version="1.2.0")
+        metadata.current_version = metadata.versions.get(version="1.0.0")
+        metadata.save(update_fields=["current_version"])
+        return metadata
+
+    def test_new_version_greater_than_latest(self, metadata):
+        assert check_gateway_version(metadata, "1.3.0") is None
+
+    def test_version_between_current_and_latest(self, metadata):
+        with pytest.raises(SkillVersionNotNewerError, match="1.2.0"):
+            check_gateway_version(metadata, "1.1.0")
+
+    def test_existing_version(self, metadata):
+        with pytest.raises(SkillVersionExistsError) as err:
+            check_gateway_version(metadata, "1.2.0")
+        assert err.value.version.version == "1.2.0"
+
+        assert check_gateway_version(metadata, "1.2.0", overwrite=True).version == "1.2.0"
+        assert check_gateway_version(metadata, "1.0.0", overwrite=True).version == "1.0.0"
+
+    def test_save_rejects_archived(self, metadata):
+        SkillMetadata.objects.filter(id=metadata.id).update(status=SkillStatusEnum.ARCHIVED.value)
+        with pytest.raises(SkillArchivedError):
+            create_skill("demo-skill", gateway=metadata.gateway, version="2.0.0")
+
+    def test_same_name_and_version_in_other_gateway(self, metadata):
+        other = create_skill("demo-skill", gateway=G(Gateway, name="other"), version="1.2.0")
+        assert other.id != metadata.id
+
+
 class TestSaveSkillVersion:
     def test_create(self, job_plan_data):
         saved = _save(job_plan_data)
 
         metadata = SkillMetadata.objects.get(id=saved.metadata.id)
         assert saved.created
+        assert saved.data_before == {}
         assert (metadata.type, metadata.gateway, metadata.name) == (
             SkillTypeEnum.PLATFORM.value,
             None,
@@ -114,12 +154,16 @@ class TestSaveSkillVersion:
     def test_new_version(self, job_plan_data):
         first = _save(job_plan_data)
         SkillMetadata.objects.filter(id=first.metadata.id).update(download_count=F("download_count") + 5)
+        first_tags = sorted(first.metadata.tags.values_list("name", flat=True))
 
         set_version(job_plan_data, "1.1.0").update(display_name="新名字", tags=["job"])
         second = _save(job_plan_data, body="# v2\n")
 
         metadata = SkillMetadata.objects.get(id=first.metadata.id)
         assert not second.created
+        assert second.data_before["display_name"] == first.metadata.display_name
+        assert second.data_before["current_version"] == first.version.id
+        assert second.data_before["tags"] == first_tags
         assert second.metadata.id == first.metadata.id
         assert second.version.version == "1.1.0"
         assert second.version.changelog["version"] == "1.1.0"

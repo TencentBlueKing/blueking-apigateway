@@ -29,4 +29,4 @@ class TestSkillTypeEnum:
 
 class TestSkillStatusEnum:
     def test_values(self):
-        assert SkillStatusEnum.get_values() == ["unpublished", "published", "offline"]
+        assert SkillStatusEnum.get_values() == ["unpublished", "published", "archived"]

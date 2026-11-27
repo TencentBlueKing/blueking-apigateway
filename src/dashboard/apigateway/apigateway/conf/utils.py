@@ -208,6 +208,8 @@ def get_default_feature_flags(
         "ENABLE_MCP_SERVER_PROMPT": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_PROMPT", False),
         # 是否开启 MCP 可观测功能
         "ENABLE_MCP_SERVER_OBSERVABILITY": env.bool("FEATURE_FLAG_ENABLE_MCP_SERVER_OBSERVABILITY", False),
+        # 前端是否展示 Skill 相关功能（网关 Skill 管理、Skill 市场）；不限制后端接口访问
+        "ENABLE_SKILL": env.bool("FEATURE_FLAG_ENABLE_SKILL", False),
         # 前端是否启用资源路径冲突检测；不限制后端检测接口访问
         "ENABLE_RESOURCE_PATH_CONFLICT_CHECK": env.bool("FEATURE_FLAG_ENABLE_RESOURCE_PATH_CONFLICT_CHECK", False),
         # 是否启用健康检查
