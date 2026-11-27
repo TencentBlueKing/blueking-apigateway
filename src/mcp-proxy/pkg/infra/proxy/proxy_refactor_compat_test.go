@@ -151,7 +151,11 @@ var _ = Describe("genToolHandler refactor compatibility", func() {
 
 		Expect(result).NotTo(BeNil())
 		Expect(result.IsError).To(BeTrue())
-		Expect(compatToolResultText(result)).To(ContainSubstring("upstream boom"))
+		Expect(compatToolResultText(result)).To(HaveSuffix(
+			`call tool err (status 500): {"status_code":500,"request_id":"compat-upstream-req",` +
+				`"trace_id":"","x_request_id":"compat-x-request-id",` +
+				`"response_body":{"error":{"code":500,"message":"upstream boom"}}}`,
+		))
 	})
 
 	It("returns IsError and preserves upstream text diagnostics for non-2xx responses", func() {
