@@ -18,14 +18,18 @@
 import io
 import json
 import zipfile
+from types import SimpleNamespace
 
 import pytest
 from ddf import G
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import resolve, reverse
 from django.utils import translation
 
+from apigateway.apis.permissions import GatewayActionPermission
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
+from apigateway.apps.rbac.models import GatewayMember
 from apigateway.apps.skill.constants import SkillStatusEnum
 from apigateway.apps.skill.models import SkillMetadata, SkillVersion
 from apigateway.biz.gateway import replace_gateway_administrators
@@ -537,3 +541,31 @@ class TestSkillFileAndDownloadApi:
         )
 
         assert resp.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "view_name,extra_params",
+    [
+        ("skill.list_create", {}),
+        ("skill.tag.list", {}),
+        ("skill.retrieve_update_destroy", {"skill_id": SKILL_ID}),
+        ("skill.version.list_create", {"skill_id": SKILL_ID}),
+        ("skill.file.list", {"skill_id": SKILL_ID}),
+        ("skill.version.file.list", {"skill_id": SKILL_ID, "version": "1.0.0"}),
+        ("skill.download", {"skill_id": SKILL_ID}),
+        ("skill.version.download", {"skill_id": SKILL_ID, "version": "1.0.0"}),
+    ],
+)
+@pytest.mark.parametrize("role,allowed", [("administrator", True), ("operator", False), (None, False)])
+def test_get_requires_manage_gateway(fake_gateway, fake_request, mocker, view_name, extra_params, role, allowed):
+    mocker.patch("apigateway.apis.permissions.is_iam_auth_active", return_value=False)
+    username = "skill_user"
+    if role:
+        G(GatewayMember, gateway=fake_gateway, username=username, role=role)
+    fake_request.user = SimpleNamespace(username=username)
+    fake_request.method = "GET"
+    match = resolve(reverse(view_name, kwargs={"gateway_id": fake_gateway.id, **extra_params}))
+    view = match.func.view_class()
+    view.kwargs = match.kwargs
+
+    assert GatewayActionPermission().has_permission(fake_request, view) is allowed

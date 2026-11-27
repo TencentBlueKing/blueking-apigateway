@@ -25,7 +25,6 @@ from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import generics, status
 
 from apigateway.apps.audit.constants import OpTypeEnum
-from apigateway.apps.rbac.constants import GatewayActionEnum
 from apigateway.apps.skill.constants import SkillStatusEnum, SkillTypeEnum
 from apigateway.apps.skill.models import SkillMetadata
 from apigateway.biz.audit import Auditor
@@ -165,8 +164,6 @@ def _file_list_response(metadata: SkillMetadata, version_str: Optional[str]):
     ),
 )
 class SkillListCreateApi(generics.ListCreateAPIView):
-    gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
-
     def list(self, request, *args, **kwargs):
         slz = SkillListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
@@ -199,8 +196,6 @@ class SkillListCreateApi(generics.ListCreateAPIView):
     ),
 )
 class SkillTagListApi(generics.ListAPIView):
-    gateway_action = GatewayActionEnum.OPERATE_GATEWAY.value
-
     def list(self, request, *args, **kwargs):
         slz = SkillTagListInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
