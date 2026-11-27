@@ -43,7 +43,7 @@ const RESOURCE_AUTH_FILTER_LABELS: Record<ResourceAuthFilterType, string> = {
   app: '应用认证',
   personal: '用户认证-个人令牌',
   public: '用户认证-公开客户端',
-  oauth: '用户认证-OAuth 授权',
+  oauth: '用户认证-OAuth2 授权',
   none: '不认证',
 };
 
@@ -160,7 +160,7 @@ export const getAuthTypeLabel = (input: ResourceAuthInput, t: Translate, isV2: b
 const USER_AUTH_METHOD_LABELS = {
   personal: '个人令牌',
   public: '公开客户端',
-  oauth: 'OAuth 授权',
+  oauth: 'OAuth2 授权',
 } as const;
 
 export const getUserAuthMethodLabels = (input: ResourceAuthInput, t: Translate): string[] =>

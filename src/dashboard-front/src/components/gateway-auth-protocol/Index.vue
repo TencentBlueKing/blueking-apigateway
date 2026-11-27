@@ -24,6 +24,7 @@
   >
     <BkRadioGroup
       v-model="enabled"
+      :disabled="disabled"
       class="protocol-options"
     >
       <BkRadioButton
@@ -41,24 +42,32 @@
         </BkTag>
       </BkRadioButton>
     </BkRadioGroup>
-    <div
-      v-if="enabled"
-      class="protocol-description"
-    >
-      <p>{{ t('蓝鲸认证 V2 支持 OAuth2 授权、个人令牌等方式。') }}</p>
-      <p class="protocol-warning">
-        <AgIcon
-          name="exclamation-circle-fill"
-          class="color-#ff9c01"
-        />
-        {{ t('使用蓝鲸认证 V2 时，如果 API 本身使用了 Authorization: Bearer 请求头，会被平台覆盖。') }}
+    <div class="protocol-description">
+      <template v-if="enabled">
+        <p>{{ t('蓝鲸认证 V2 支持 OAuth2 授权、个人令牌等方式。目前向前兼容蓝鲸认证 V1 X-Bkapi-Authorization 调用方式。') }}</p>
+        <p class="protocol-warning">
+          <AgIcon
+            name="exclamation-circle-fill"
+            class="color-#ff9c01"
+          />
+          {{ t('使用蓝鲸认证 V2 时，如果 API 本身使用了 Authorization: Bearer 请求头，会被平台覆盖。') }}
+        </p>
+      </template>
+      <p v-else>
+        {{ t('当前仅支持通过 X-Bkapi-Authorization 传递认证票据的调用方式。') }}
       </p>
     </div>
   </BkFormItem>
 </template>
 
 <script lang="ts" setup>
+interface IProps {
+  disabled?: boolean
+}
+
 const enabled = defineModel<boolean>({ required: true });
+
+const { disabled = false } = defineProps<IProps>();
 
 const { t } = useI18n();
 const protocols = [

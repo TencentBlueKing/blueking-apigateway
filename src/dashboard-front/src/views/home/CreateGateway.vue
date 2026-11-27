@@ -345,6 +345,7 @@
         <GatewayAuthProtocol
           v-if="isEdit"
           v-model="formData.oauth2_app_enabled"
+          disabled
         />
 
         <template v-if="featureFlagStore.isTenantMode && !isEdit">

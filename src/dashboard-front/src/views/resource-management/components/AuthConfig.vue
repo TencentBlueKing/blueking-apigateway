@@ -112,7 +112,7 @@ const canUpdateGatewayAuth = computed(() => !!gatewayStore.currentGateway?.allow
 const canAllowApply = computed(() => canAllowApplyPermission(formData.value.is_public, formData.value.auth_config));
 
 const allowApplyHint = computed(() => {
-  if (gatewayStore.isResourceAuthV2) return t('开启后，蓝鲸应用可在开发者中心申请本资源权限；关闭则仅管理员可授权');
+  if (gatewayStore.isResourceAuthV2) return t('开启后，蓝鲸应用可在开发者中心申请本资源权限；关闭则仅网关管理员可主动授权。');
   if (!formData.value.is_public) return t('依赖「是否公开」。资源不公开时，用户无法查看接口文档和申请权限。');
   if (!canAllowApply.value) return t('需要开启「检验应用权限」，才可以配置「允许申请权限」。');
   return t('开启后，其他蓝鲸应用可在开发者中心申请本资源访问权限；关闭则只能由网关管理员主动授权。');

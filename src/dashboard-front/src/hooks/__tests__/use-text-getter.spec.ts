@@ -107,7 +107,7 @@ describe('hooks/use-text-getter', () => {
       resource_perm_required: true,
       oauth2_personal_client_enabled: true,
       oauth2_public_client_enabled: false,
-    })).toBe('用户认证（个人令牌、OAuth 授权）');
+    })).toBe('用户认证（个人令牌、OAuth2 授权）');
 
     expect(api.getAuthConfigText(JSON.stringify({
       auth_verified_required: true,

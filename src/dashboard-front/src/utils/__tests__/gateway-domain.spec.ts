@@ -202,7 +202,7 @@ describe('utils/gateway-form', () => {
     expect(source.extra_info.repository).toBe('https://git.example.com/demo');
   });
 
-  it('toGatewayUpdatePayload 仅在字段变化或满足条件时下发对应字段', () => {
+  it('toGatewayUpdatePayload 仅在字段变化或满足条件时下发对应字段，且不下发 oauth2_app_enabled', () => {
     const saved = toGatewayFormData({
       id: 7,
       name: 'demo',
@@ -221,7 +221,7 @@ describe('utils/gateway-form', () => {
       description: 'new',
     };
 
-    // display_name 与 oauth2_app_enabled 未变化时不发送；appBindingEnabled=false 不发 bk_app_codes；非可编程网关不发 extra_info
+    // display_name 未变化时不发送；appBindingEnabled=false 不发 bk_app_codes；非可编程网关不发 extra_info；始终不发送 oauth2_app_enabled
     const payload = toGatewayUpdatePayload(edited, saved, false);
     expect(payload).toEqual({
       description: 'new',
@@ -235,7 +235,7 @@ describe('utils/gateway-form', () => {
     expect('bk_app_codes' in payload).toBe(false);
     expect('extra_info' in payload).toBe(false);
 
-    // 可编程网关且改动 display_name / oauth2_app_enabled、开启 appBindingEnabled 时全部带上，非法 language 置 undefined
+    // 可编程网关且改动 display_name、开启 appBindingEnabled 时全部带上，非法 language 置 undefined；即便变更 oauth2_app_enabled 也不下发
     const programmablePayload = toGatewayUpdatePayload(
       {
         ...saved,
@@ -251,7 +251,7 @@ describe('utils/gateway-form', () => {
       true,
     );
     expect(programmablePayload.display_name).toBe('Demo Renamed');
-    expect(programmablePayload.oauth2_app_enabled).toBe(true);
+    expect('oauth2_app_enabled' in programmablePayload).toBe(false);
     expect(programmablePayload.bk_app_codes).toEqual(['app-1']);
     expect(programmablePayload.extra_info).toEqual({
       language: undefined,

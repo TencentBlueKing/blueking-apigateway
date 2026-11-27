@@ -36,9 +36,8 @@ export const toGatewayUpdatePayload = (
     repository,
   };
   return {
-    // 未修改时省略，避免覆盖后端返回的默认语言展示名。
+    // 未修改时省略，避免覆盖后端返回的默认语言展示名；认证协议暂不支持前端编辑，不下发 oauth2_app_enabled。
     ...(data.display_name !== saved.display_name && { display_name: data.display_name }),
-    ...(data.oauth2_app_enabled !== saved.oauth2_app_enabled && { oauth2_app_enabled: data.oauth2_app_enabled }),
     description: data.description,
     maintainers: data.maintainers,
     is_public: data.is_public,
