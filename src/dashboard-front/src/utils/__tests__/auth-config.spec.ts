@@ -69,7 +69,7 @@ describe('utils/auth-config', () => {
         app_verified_required: true,
       };
       expect(getUserAuthMethods(config)).toEqual(['personal', 'public', 'oauth']);
-      expect(getUserAuthMethodLabels(config, t)).toEqual(['个人令牌', '公开客户端', 'OAuth 授权']);
+      expect(getUserAuthMethodLabels(config, t)).toEqual(['个人令牌', '公开客户端', 'OAuth2 授权']);
     });
   });
 
@@ -202,7 +202,7 @@ describe('utils/auth-config', () => {
       expect(getAuthTypeLabel({}, t, true)).toBe('--');
       expect(getAuthTypeLabel(null, t, true)).toBe('--');
 
-      expect(getUserAuthMethodsLabel(both, t, true)).toBe('个人令牌、OAuth 授权');
+      expect(getUserAuthMethodsLabel(both, t, true)).toBe('个人令牌、OAuth2 授权');
       expect(getUserAuthMethodsLabel({ auth_verified_required: false }, t, true)).toBe('--');
       expect(getUserAuthMethodsLabel(both, t, false)).toBe('开启');
       expect(getUserAuthMethodsLabel({ oauth2_personal_client_enabled: false }, t, false)).toBe('关闭');
@@ -263,7 +263,7 @@ describe('utils/auth-config', () => {
         },
         {
           id: 'oauth',
-          name: '用户认证-OAuth 授权',
+          name: '用户认证-OAuth2 授权',
         },
         {
           id: 'none',

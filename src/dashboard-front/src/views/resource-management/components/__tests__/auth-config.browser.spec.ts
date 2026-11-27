@@ -210,7 +210,7 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
   });
 
   describe('V2 模式（AuthConfig + ResourceAuthSelector）', () => {
-    it('新建资源默认开启用户认证 + OAuth 授权 + 校验应用权限 + 公开 + 允许申请权限', async () => {
+    it('新建资源默认开启用户认证 + OAuth2 授权 + 校验应用权限 + 公开 + 允许申请权限', async () => {
       const { authConfigRef, screen } = await mountAuthConfig({ isV2: true });
 
       expect(screen.container.textContent).toContain('认证类型');
@@ -220,19 +220,33 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
         allow_apply_permission: true,
       });
 
-      // 用户认证卡片处于激活态，仅勾选 OAuth 授权，不显示不认证告警
+      // 用户认证卡片处于激活态，仅勾选 OAuth2 授权，不显示不认证告警，且已移除卡片查看文档与权限申请指引按钮
       expect(findOptionCard(screen.container, '用户认证')?.classList.contains('is-active')).toBe(true);
-      expect(findCheckboxByLabel(screen.container, 'OAuth 授权')?.classList.contains('is-checked')).toBe(true);
+      expect(findCheckboxByLabel(screen.container, 'OAuth2 授权')?.classList.contains('is-checked')).toBe(true);
       expect(findCheckboxByLabel(screen.container, '个人令牌')?.classList.contains('is-checked')).toBe(false);
       expect(findCheckboxByLabel(screen.container, '公开客户端')?.classList.contains('is-checked')).toBe(false);
       expect(screen.container.querySelector('.bk-alert')).toBeNull();
+      expect(findButtonByText(screen.container, '查看文档')).toBeUndefined();
+      expect(findButtonByText(screen.container, '权限申请指引')).toBeUndefined();
 
-      // 校验应用权限与允许申请权限默认均开启，且权限申请指引按钮可见
+      // 校验更新后的认证类型、子方式与允许申请权限说明文案
+      expect(screen.container.textContent).toContain('适用于需要校验用户身份的接口');
+      expect(screen.container.textContent).toContain('适用于需要校验应用身份的接口');
+      expect(screen.container.textContent).toContain('适用于完全无需校验的接口');
+      expect(screen.container.textContent).toContain('适用于 Agent、脚本、本地工具等，以指定用户身份调用接口。');
+      expect(screen.container.textContent).toContain('适用于移动端 App、桌面客户端及单页应用等调用接口场景。');
+      expect(screen.container.textContent).toContain(
+        '适用于用户委托蓝鲸应用场景，登录用户完成跳转授权后，应用可以使用该用户授权身份调用接口。',
+      );
+      expect(screen.container.textContent).toContain(
+        '开启后，蓝鲸应用可在开发者中心申请本资源权限；关闭则仅网关管理员可主动授权。',
+      );
+
+      // 校验应用权限与允许申请权限默认均开启
       const permSwitcher = findSwitcherInRow(screen.container, '.auth-followup-row', '校验应用权限');
       const allowApplySwitcher = findSwitcherInRow(screen.container, '.public-child-row', '允许申请权限');
       expect(permSwitcher?.classList.contains('is-checked')).toBe(true);
       expect(allowApplySwitcher?.classList.contains('is-checked')).toBe(true);
-      expect(findButtonByText(screen.container, '权限申请指引')).not.toBeUndefined();
       expect(screen.container.querySelector('.public-state')?.textContent?.trim()).toBe('公开');
     });
 
@@ -265,7 +279,6 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
       expect(authConfigRef.value!.formData.allow_apply_permission).toBe(false);
       expect(screen.container.querySelector('.public-child')).toBeNull();
       expect(screen.container.textContent).toContain('关闭后，任意蓝鲸应用都可以调用。');
-      expect(findButtonByText(screen.container, '权限申请指引')).toBeUndefined();
 
       // 重新开启校验应用权限：允许申请权限行恢复显示，但不记忆之前的 true
       appPermSwitcher.click();
@@ -305,7 +318,7 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
         oauth2_public_client_enabled: false,
       });
       expect(screen.container.querySelector('.bk-alert')?.textContent)
-        .toContain('网关不校验调用方身份，请确认接口可以完全公开。');
+        .toContain('网关不校验调用方身份，请确认接口无需提供任何票据可以直接调用。');
 
       // 4. 切回「用户认证」，默认恢复上次子方式（OAuth），勾选个人令牌与公开客户端，并直接取消 OAuth（新建态不弹窗）
       findOptionCard(screen.container, '用户认证')!.click();
@@ -323,8 +336,8 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
       expect(authConfigRef.value!.formData.auth_config.oauth2_personal_client_enabled).toBe(true);
       expect(authConfigRef.value!.formData.auth_config.oauth2_public_client_enabled).toBe(true);
 
-      // 新建态取消 OAuth 授权不弹出确认框，直接关闭 app_verified_required 与 resource_perm_required
-      await clickCheckbox(findCheckboxByLabel(screen.container, 'OAuth 授权')!);
+      // 新建态取消 OAuth2 授权不弹出确认框，直接关闭 app_verified_required 与 resource_perm_required
+      await clickCheckbox(findCheckboxByLabel(screen.container, 'OAuth2 授权')!);
       expect(authConfigRef.value!.formData.auth_config.app_verified_required).toBe(false);
       expect(findVisibleInfoBox()).toBeUndefined();
       expect(authConfigRef.value!.formData.auth_config).toEqual({
@@ -366,7 +379,7 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
       expect(screen.container.querySelector('.bk-alert')).toBeNull();
     });
 
-    it('编辑已保存 OAuth 资源取消 OAuth 授权时弹出确认框，支持取消、右上角关闭、ESC 与确定取消', async () => {
+    it('编辑已保存 OAuth 资源取消 OAuth2 授权时弹出确认框，支持取消、右上角关闭、ESC 与确定取消', async () => {
       const { authConfigRef, screen } = await mountAuthConfig({
         isV2: true,
         editingExisting: true,
@@ -383,12 +396,12 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
         },
       });
 
-      const getOAuthCheckbox = () => findCheckboxByLabel(screen.container, 'OAuth 授权')!;
+      const getOAuthCheckbox = () => findCheckboxByLabel(screen.container, 'OAuth2 授权')!;
 
       // 场景 1：点击取消勾选 → 弹窗出现 → 点击「取消」→ 保持勾选且可再次触发
       getOAuthCheckbox().click();
       await vi.waitFor(() => {
-        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth 授权？');
+        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth2 授权？');
       });
       const cancelBtn = [...findVisibleInfoBox()!.querySelectorAll<HTMLButtonElement>('button')]
         .find(btn => btn.textContent?.trim() === '取消')!;
@@ -404,7 +417,7 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
       // 场景 2：再次点击取消勾选 → 点击右上角关闭图标（bkui InfoBox 将 onClick 绑在子图标元素上）→ 回滚勾选且不卡死
       getOAuthCheckbox().click();
       await vi.waitFor(() => {
-        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth 授权？');
+        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth2 授权？');
       });
       const closeTarget = findVisibleInfoBox()!.querySelector<Element>('.bk-modal-close > *')
         ?? findVisibleInfoBox()!.querySelector<Element>('.bk-modal-close')!;
@@ -419,7 +432,7 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
       // 场景 3：再次点击取消勾选 → 按下 Escape 键后不应导致弹窗关闭但复选框永久卡死
       getOAuthCheckbox().click();
       await vi.waitFor(() => {
-        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth 授权？');
+        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth2 授权？');
       });
       document.dispatchEvent(new KeyboardEvent('keydown', {
         key: 'Escape',
@@ -438,10 +451,10 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
         });
       }
 
-      // 场景 4：点击取消勾选 → 点击「确定取消」→ 取消 OAuth 并联动清零应用权限与允许申请权限
+      // 场景 4：点击取消勾选 → 点击「确定取消」→ 取消 OAuth2 授权并联动清零应用权限与允许申请权限
       getOAuthCheckbox().click();
       await vi.waitFor(() => {
-        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth 授权？');
+        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth2 授权？');
       });
       const confirmBtn = [...findVisibleInfoBox()!.querySelectorAll<HTMLButtonElement>('button')]
         .find(btn => btn.textContent?.trim() === '确定取消')!;
@@ -462,7 +475,7 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
 
     it('新建态取消全部用户认证子方式时，仍保持用户认证大类并清空应用权限与允许申请权限', async () => {
       const fresh = await mountAuthConfig({ isV2: true });
-      await clickCheckbox(findCheckboxByLabel(fresh.screen.container, 'OAuth 授权')!);
+      await clickCheckbox(findCheckboxByLabel(fresh.screen.container, 'OAuth2 授权')!);
       expect(fresh.authConfigRef.value!.formData).toEqual({
         auth_config: {
           auth_verified_required: true,
@@ -488,9 +501,9 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
         },
       });
 
-      findCheckboxByLabel(screen.container, 'OAuth 授权')!.click();
+      findCheckboxByLabel(screen.container, 'OAuth2 授权')!.click();
       await vi.waitFor(() => {
-        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth 授权？');
+        expect(findVisibleInfoBox()?.textContent).toContain('确定取消 OAuth2 授权？');
       });
 
       // 卸载组件（模拟路由跳转/后退/关闭侧栏）：弹窗应随之关闭，不应残留挂在 body 上遮挡新页面
@@ -500,7 +513,7 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
       });
     });
 
-    it('克隆场景或已保存资源原本未开启 OAuth 时，取消勾选 OAuth 不弹出二次确认框', async () => {
+    it('克隆场景或已保存资源原本未开启 OAuth 时，取消勾选 OAuth2 授权不弹出二次确认框', async () => {
       // 克隆场景：editingExisting=false，即便 detail 带有 OAuth 也不弹窗
       const cloneCtx = await mountAuthConfig({
         isV2: true,
@@ -511,12 +524,12 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
           auth_config: { ...DEFAULT_AUTH_CONFIG },
         },
       });
-      await clickCheckbox(findCheckboxByLabel(cloneCtx.screen.container, 'OAuth 授权')!);
+      await clickCheckbox(findCheckboxByLabel(cloneCtx.screen.container, 'OAuth2 授权')!);
       expect(cloneCtx.authConfigRef.value!.formData.auth_config.app_verified_required).toBe(false);
       expect(findVisibleInfoBox()).toBeUndefined();
       cloneCtx.screen.unmount();
 
-      // 已保存资源原本仅开启个人令牌：临时勾选 OAuth 再取消也不弹窗
+      // 已保存资源原本仅开启个人令牌：临时勾选 OAuth2 授权再取消也不弹窗
       const nonOAuthCtx = await mountAuthConfig({
         isV2: true,
         editingExisting: true,
@@ -532,15 +545,15 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
           },
         },
       });
-      await clickCheckbox(findCheckboxByLabel(nonOAuthCtx.screen.container, 'OAuth 授权')!);
+      await clickCheckbox(findCheckboxByLabel(nonOAuthCtx.screen.container, 'OAuth2 授权')!);
       expect(nonOAuthCtx.authConfigRef.value!.formData.auth_config.app_verified_required).toBe(true);
 
-      await clickCheckbox(findCheckboxByLabel(nonOAuthCtx.screen.container, 'OAuth 授权')!);
+      await clickCheckbox(findCheckboxByLabel(nonOAuthCtx.screen.container, 'OAuth2 授权')!);
       expect(nonOAuthCtx.authConfigRef.value!.formData.auth_config.app_verified_required).toBe(false);
       expect(findVisibleInfoBox()).toBeUndefined();
     });
 
-    it('支持 JSON 字符串回显与脏数据归一化，并支持查看文档与权限申请指引外链/路由回退跳转', async () => {
+    it('支持 JSON 字符串回显与脏数据归一化，并在灰色区或告警条下方展示认证详细说明文档入口', async () => {
       const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
 
       const { authConfigRef, envStore, screen } = await mountAuthConfig({
@@ -558,31 +571,44 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
           }),
         },
         docLinks: {
-          AUTH_PERSONAL_TOKEN: 'https://docs.example.com/personal-token',
-          AUTH: 'https://docs.example.com/auth-guide',
+          AUTH: 'https://docs.example.com/authorization.md',
           GUIDE: 'https://docs.example.com/general-guide',
         },
       });
 
       expect(authConfigRef.value!.formData.allow_apply_permission).toBe(true);
 
-      // 点击个人令牌查看文档
-      findButtonByText(screen.container, '查看文档')!.click();
-      expect(openSpy).toHaveBeenLastCalledWith('https://docs.example.com/personal-token', '_blank');
+      // 位于认证展开区/告警条下方，各认证类型下均可见：优先 AUTH → 次选 GUIDE → 均为空时隐藏
+      const docRow = screen.container.querySelector('.auth-doc-row');
+      const userExtra = screen.container.querySelector('.auth-extra');
+      expect(docRow).not.toBeNull();
+      expect(userExtra).not.toBeNull();
+      expect(userExtra!.compareDocumentPosition(docRow!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-      // 权限申请指引：优先 AUTH → 次选 GUIDE → 兜底 PermissionApp 路由
-      findButtonByText(screen.container, '权限申请指引')!.click();
-      expect(openSpy).toHaveBeenLastCalledWith('https://docs.example.com/auth-guide', '_blank');
+      findButtonByText(screen.container, '查看认证详细说明文档')!.click();
+      expect(openSpy).toHaveBeenLastCalledWith('https://docs.example.com/authorization.md', '_blank');
+
+      // 切换到「应用认证」和「不认证」时，认证详细说明文档入口依然位于灰色区 / alert 下方
+      findOptionCard(screen.container, '应用认证')!.click();
+      await nextTick();
+      const appExtra = screen.container.querySelector('.auth-extra');
+      expect(appExtra!.compareDocumentPosition(docRow!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(findButtonByText(screen.container, '查看认证详细说明文档')).not.toBeUndefined();
+
+      findOptionCard(screen.container, '不认证')!.click();
+      await nextTick();
+      const noneAlert = screen.container.querySelector('.bk-alert');
+      expect(noneAlert!.compareDocumentPosition(docRow!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(findButtonByText(screen.container, '查看认证详细说明文档')).not.toBeUndefined();
 
       envStore.env.DOC_LINKS.AUTH = '';
       await nextTick();
-      findButtonByText(screen.container, '权限申请指引')!.click();
+      findButtonByText(screen.container, '查看认证详细说明文档')!.click();
       expect(openSpy).toHaveBeenLastCalledWith('https://docs.example.com/general-guide', '_blank');
 
       envStore.env.DOC_LINKS.GUIDE = '';
       await nextTick();
-      findButtonByText(screen.container, '权限申请指引')!.click();
-      expect(openSpy).toHaveBeenLastCalledWith('/99/permission/app', '_blank');
+      expect(findButtonByText(screen.container, '查看认证详细说明文档')).toBeUndefined();
     });
 
     it('detail 省略 auth_config 或仅含部分字段时，allow_apply_permission 按归一化结果保留为 true', async () => {
@@ -620,9 +646,9 @@ describe('ResourceManagement / AuthConfig 浏览器组件测试', () => {
         },
       });
 
-      // 资源 A：勾选个人令牌、取消 OAuth，然后切换到应用认证
+      // 资源 A：勾选个人令牌、取消 OAuth2 授权，然后切换到应用认证
       await clickCheckbox(findCheckboxByLabel(screen.container, '个人令牌')!);
-      await clickCheckbox(findCheckboxByLabel(screen.container, 'OAuth 授权')!);
+      await clickCheckbox(findCheckboxByLabel(screen.container, 'OAuth2 授权')!);
       expect(authConfigRef.value!.formData.auth_config.app_verified_required).toBe(false);
       findOptionCard(screen.container, '应用认证')!.click();
       await nextTick();

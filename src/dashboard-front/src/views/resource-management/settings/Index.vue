@@ -916,7 +916,7 @@ const columns = computed<ITableColumn<IResourceRow>[]>(() => [
         return (
           <bk-tag
             v-bk-tooltips={{
-              content: t('网关不校验调用方身份，请确认接口可以完全公开。'),
+              content: t('网关不校验调用方身份，请确认接口无需提供任何票据可以直接调用。'),
             }}
             theme="warning"
           >

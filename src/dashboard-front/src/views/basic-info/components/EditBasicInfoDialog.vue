@@ -147,7 +147,10 @@
         }}</span>
       </BkFormItem>
 
-      <GatewayAuthProtocol v-model="formData.oauth2_app_enabled" />
+      <GatewayAuthProtocol
+        v-model="formData.oauth2_app_enabled"
+        disabled
+      />
 
       <BkFormItem
         v-if="featureFlagStore.flags.GATEWAY_APP_BINDING_ENABLED"

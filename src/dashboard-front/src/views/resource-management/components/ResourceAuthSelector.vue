@@ -32,21 +32,6 @@
         />
         <p class="auth-hint">
           {{ resourcePermHint }}
-          <BkButton
-            v-if="resourcePermRequired"
-            size="small"
-            theme="primary"
-            text
-            class="auth-doc-link text-12px! ml-8px"
-            @click.stop="handleViewPermGuide"
-          >
-            {{ t('权限申请指引') }}
-            <AgIcon
-              name="jump"
-              size="12"
-              class="ml-4px"
-            />
-          </BkButton>
         </p>
       </div>
     </DefinePermissionRow>
@@ -61,32 +46,15 @@
           :class="{ 'is-active': selectedAuthKind === 'user' }"
           @click="handleSelectKind('user')"
         >
-          <div class="auth-option-title">
-            <BkRadio label="user">
-              {{ t('用户认证') }}
-            </BkRadio>
-            <BkButton
-              v-if="personalTokenLink"
-              size="small"
-              theme="primary"
-              text
-              class="auth-doc-link text-12px!"
-              @click.stop="handleViewDoc"
-            >
-              {{ t('查看文档') }}
-              <AgIcon
-                name="jump"
-                size="12"
-                class="ml-4px"
-              />
-            </BkButton>
-          </div>
+          <BkRadio label="user">
+            {{ t('用户认证') }}
+          </BkRadio>
           <p class="auth-hint auth-option-hint">
             <span
               v-bk-overflow-tips
               class="auth-option-hint-text"
             >
-              {{ t('适用于需识别调用用户的接口') }}
+              {{ t('适用于需要校验用户身份的接口') }}
             </span>
           </p>
         </div>
@@ -103,7 +71,7 @@
               v-bk-overflow-tips
               class="auth-option-hint-text"
             >
-              {{ t('适用于需校验应用身份的接口') }}
+              {{ t('适用于需要校验应用身份的接口') }}
             </span>
           </p>
         </div>
@@ -130,7 +98,7 @@
               v-bk-overflow-tips
               class="auth-option-hint-text"
             >
-              {{ t('适用于完全公开的接口') }}
+              {{ t('适用于完全无需校验的接口') }}
             </span>
           </p>
         </div>
@@ -185,8 +153,28 @@
     <BkAlert
       v-if="isAuthEmpty"
       theme="warning"
-      :title="t('网关不校验调用方身份，请确认接口可以完全公开。')"
+      :title="t('网关不校验调用方身份，请确认接口无需提供任何票据可以直接调用。')"
     />
+
+    <div
+      v-if="authDocLink"
+      class="auth-doc-row"
+    >
+      <BkButton
+        size="small"
+        theme="primary"
+        text
+        class="auth-doc-link text-12px!"
+        @click.stop="handleViewAuthDoc"
+      >
+        {{ t('查看认证详细说明文档') }}
+        <AgIcon
+          name="jump"
+          size="12"
+          class="ml-4px"
+        />
+      </BkButton>
+    </div>
   </div>
 </template>
 
@@ -223,8 +211,6 @@ const {
 } = defineProps<IProps>();
 
 const { t } = useI18n();
-const route = useRoute();
-const router = useRouter();
 const envStore = useEnv();
 const [DefinePermissionRow, ReusePermissionRow] = createReusableTemplate();
 
@@ -232,17 +218,17 @@ const userAuthOptions = computed(() => [
   {
     value: 'personal' as const,
     label: t('个人令牌'),
-    hint: t('适用于脚本、CI 和本地工具，以指定用户身份调用接口。'),
+    hint: t('适用于 Agent、脚本、本地工具等，以指定用户身份调用接口。'),
   },
   {
     value: 'public' as const,
     label: t('公开客户端'),
-    hint: t('适用于 Cursor 等 MCP 客户端，任意客户端都可以调用，仅建议用于可公开接口。'),
+    hint: t('适用于移动端 App、桌面客户端及单页应用等调用接口场景。'),
   },
   {
     value: 'oauth' as const,
-    label: t('OAuth 授权'),
-    hint: t('适用于蓝鲸应用代用户访问。用户完成登录授权后，应用即可使用该用户身份调用。'),
+    label: t('OAuth2 授权'),
+    hint: t('适用于用户委托蓝鲸应用场景，登录用户完成跳转授权后，应用可以使用该用户授权身份调用接口。'),
   },
 ]);
 
@@ -271,7 +257,7 @@ const selectedAuthOption = computed<AuthKind | 'none'>({
     selectedAuthKind.value = option === 'none' ? '' : option;
   },
 });
-const personalTokenLink = computed(() => envStore.env.DOC_LINKS.AUTH_PERSONAL_TOKEN);
+const authDocLink = computed(() => envStore.env.DOC_LINKS.AUTH || envStore.env.DOC_LINKS.GUIDE);
 const oauthEnabled = computed(() => userAuthMethods.value.includes('oauth'));
 const resourcePermRequired = computed(() => !!authConfig.value.resource_perm_required);
 const isAuthEmpty = computed(() => isAuthConfigEmpty(authConfig.value));
@@ -301,7 +287,7 @@ const finishOAuthRemoval = (confirmed: boolean, hideDialog = false) => {
   resolve?.(confirmed);
 };
 
-// 只有直接取消已保存的 OAuth 授权才需要确认。
+// 只有直接取消已保存的 OAuth2 授权才需要确认。
 const beforeOAuthChange = (checked: boolean | string | number) => {
   if (checked || !hasSavedAuthorization) return true;
   return new Promise<boolean>((resolve) => {
@@ -310,9 +296,9 @@ const beforeOAuthChange = (checked: boolean | string | number) => {
     pendingOAuthInfoBox.value = usePopInfoBox({
       isShow: true,
       type: 'warning',
-      title: t('确定取消 OAuth 授权？'),
+      title: t('确定取消 OAuth2 授权？'),
       subTitle: () => h('div', [
-        h('div', t('取消 OAuth 授权后，网关不再校验应用 ID、应用密钥。')),
+        h('div', t('取消 OAuth2 授权后，网关不再校验应用 ID、应用密钥。')),
         h('div', { class: 'mt-8px' }, t('已按应用配置的频率限制、权限校验都会失效。')),
       ]),
       confirmText: t('确定取消'),
@@ -335,21 +321,10 @@ const setResourcePermRequired = (required: boolean) => {
   };
 };
 
-const handleViewDoc = () => {
-  window.open(personalTokenLink.value, '_blank');
-};
-
-const handleViewPermGuide = () => {
-  const doc = envStore.env.DOC_LINKS.AUTH || envStore.env.DOC_LINKS.GUIDE;
-  if (doc) {
-    window.open(doc, '_blank');
-    return;
+const handleViewAuthDoc = () => {
+  if (authDocLink.value) {
+    window.open(authDocLink.value, '_blank');
   }
-  const { href } = router.resolve({
-    name: 'PermissionApp',
-    params: { id: route.params.id },
-  });
-  window.open(href, '_blank');
 };
 
 onBeforeUnmount(() => finishOAuthRemoval(false, true));
@@ -365,6 +340,11 @@ onBeforeUnmount(() => finishOAuthRemoval(false, true));
   &.is-compact {
     max-width: none;
   }
+}
+
+.auth-doc-row {
+  display: flex;
+  align-items: center;
 }
 
 .auth-doc-link {
@@ -385,10 +365,6 @@ onBeforeUnmount(() => finishOAuthRemoval(false, true));
   white-space: nowrap;
 }
 
-.auth-option-hint .auth-doc-link {
-  flex-shrink: 0;
-}
-
 :deep(.bk-radio-label),
 :deep(.bk-checkbox-label) {
   font-size: 14px;
@@ -404,12 +380,6 @@ onBeforeUnmount(() => finishOAuthRemoval(false, true));
   min-height: 0;
   margin-bottom: 0;
   line-height: 22px;
-}
-
-.auth-option-title {
-  display: flex;
-  gap: 8px;
-  align-items: center;
 }
 
 .auth-options {
