@@ -37,7 +37,7 @@
               {{ t('模型代理 API') }}
             </BkTag>
             <BkTag
-              v-if="basics?.is_deprecated"
+              v-if="deprecation.isDeprecated"
               theme="danger"
               class="font-400"
             >
@@ -71,11 +71,11 @@
           {{ api.description ?? '--' }}
         </p>
         <BkAlert
-          v-if="basics?.deprecated_note"
+          v-if="deprecation.note"
           theme="warning"
           class="mt-16px"
           closable
-          :title="basics?.deprecated_note"
+          :title="deprecation.note"
         />
       </header>
       <main class="detail-main">
@@ -174,7 +174,7 @@
               >
                 {{ resourceUrl || '--' }}
               </code>
-              <CopyButton
+              <AgCopyButton
                 v-if="resourceUrl"
                 v-bk-tooltips="t('复制')"
                 class="url-copy"
@@ -210,11 +210,11 @@
 <script setup lang="ts">
 import DocDetailSideNav, { type INavItem } from './DocDetailSideNav.vue';
 import DocAuthSection from './DocAuthSection.vue';
+import type { IDocsEsbBoardsSystemsComponentsListResponse } from '@/services/types/docs/esb.ts';
 import type {
-  IDocsEsbBoardsSystemsComponentsListResponse,
   IDocsGatewaysResourcesDocReadResponse,
   IDocsGatewaysResourcesListResponse,
-} from '@/services/types/responses/docs';
+} from '@/services/types/docs/gateway.ts';
 import type { IDocBasics } from './DocDetailSideContent.vue';
 import { docTabKey } from '../utils/doc-context';
 import { copy } from '@/utils';
@@ -224,12 +224,11 @@ import { useScroll } from '@vueuse/core';
 export interface IDocApi extends Pick<IDocsGatewaysResourcesListResponse,
   'id' | 'name' | 'description' | 'verified_app_required' | 'verified_user_required'>,
   Partial<Pick<IDocsGatewaysResourcesListResponse,
-    'method' | 'path' | 'resource_perm_required' | 'allow_apply_permission' | 'labels'>>,
+    'method' | 'path' | 'resource_perm_required' | 'allow_apply_permission' | 'labels' | 'is_deprecated' | 'deprecated_note'>>,
   Partial<Pick<IDocsEsbBoardsSystemsComponentsListResponse, 'component_permission_required'>> {}
 
-export type IDocContent = Omit<IDocsGatewaysResourcesDocReadResponse, 'updated_time'> & {
-  updated_time: string | null
-};
+export type IDocContent = Omit<IDocsGatewaysResourcesDocReadResponse, 'is_deprecated' | 'deprecated_note'>
+  & Partial<Pick<IDocsGatewaysResourcesDocReadResponse, 'is_deprecated' | 'deprecated_note'>>;
 
 interface IProps {
   api?: IDocApi | null
@@ -269,7 +268,7 @@ const { t } = useI18n();
 // 注入当前的总 tab 变量
 const curTab = inject(docTabKey);
 
-const detailWrapRef = ref<HTMLElement | null>(null);
+const detailWrapRef = useTemplateRef<HTMLElement>('detailWrapRef');
 // API 文档大标题元素集合
 const docHeadingElements = ref<HTMLElement[]>([]);
 // 当前应该高亮右侧导航的文档标题ID
@@ -316,6 +315,20 @@ const { y } = useScroll(detailWrapRef, {
 const showApplyPermission = computed(() => {
   return curTab?.value === 'gateway'
     && Boolean(api?.verified_app_required && api?.resource_perm_required && api?.allow_apply_permission);
+});
+
+// 弃用状态：网关弃用时覆盖其下所有资源（展示网关的弃用说明），否则取资源自身
+const deprecation = computed(() => {
+  if (basics?.is_deprecated) {
+    return {
+      isDeprecated: true,
+      note: basics?.deprecated_note ?? '',
+    };
+  }
+  return {
+    isDeprecated: Boolean(api?.is_deprecated),
+    note: api?.deprecated_note ?? '',
+  };
 });
 
 const appVerifiedTooltips = computed(() => {

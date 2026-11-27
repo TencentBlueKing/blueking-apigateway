@@ -17,15 +17,32 @@
 # to the current version of the project delivered to anyone in the future.
 #
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from apigateway.apis.v2.sync.serializers import (
     AIBackendConfigSLZ,
     AIBackendSLZ,
+    DocImportByArchiveInputSLZ,
     GatewaySyncInputSLZ,
     SDKGenerateInputSLZ,
     StageSyncInputSLZ,
 )
 from apigateway.core.constants import GatewayKindEnum, GatewayTypeEnum
+
+
+@pytest.mark.parametrize("size", [10 * 1024 * 1024 - 1, 10 * 1024 * 1024, 10 * 1024 * 1024 + 1])
+@pytest.mark.parametrize("filename", ["docs.zip", "docs.tgz"])
+def test_archive_upload_size_limit(size, filename):
+    upload = SimpleUploadedFile(filename, b"x" * size)
+    slz = DocImportByArchiveInputSLZ(data={"file": upload})
+
+    if size > 10 * 1024 * 1024:
+        assert not slz.is_valid()
+        assert "10MB" in str(slz.errors["file"])
+    else:
+        slz.is_valid(raise_exception=True)
+        assert slz.validated_data["file"] is upload
+        assert upload.tell() == 0
 
 
 def _custom_instance(name):
@@ -103,11 +120,17 @@ class TestGatewaySyncInputSLZ:
         ("name", "is_valid"),
         [
             ("bkiam", True),
+            ("bcs-api-gateway", True),
+            ("cw-aitsm", True),
             ("bkpaas3", True),
             ("paasv3", True),
             ("bk-test", True),
             ("bkiam-test", False),
             ("bkiamx", False),
+            ("bcs-api-gateway-test", False),
+            ("bcs-api-gatewayx", False),
+            ("cw-aitsm-test", False),
+            ("cw-aitsmx", False),
         ],
     )
     def test_official_gateway_name_exceptions_are_exact(self, official_config, name, is_valid):

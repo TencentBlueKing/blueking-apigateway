@@ -20,12 +20,13 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import asdict, dataclass
 from typing import Optional
 
-from cachetools import TTLCache, cached
 from django.conf import settings
+from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 
 from apigateway.apps.support.constants import ProgrammingLanguageEnum
 from apigateway.biz.esb import BoardConfigManager
+from apigateway.common.cache import cache_on_arguments
 from apigateway.common.pypi.pip import PipHelper
 from apigateway.common.pypi.registry import SimplePypiRegistry
 
@@ -51,12 +52,17 @@ class PythonSDK:
 
 class ESBSDKFetcher:
     @staticmethod
-    @cached(cache=TTLCache(maxsize=100, ttl=3600))
     def get_sdk(board: str, language: str) -> Optional[PythonSDK]:
         if language == ProgrammingLanguageEnum.PYTHON.value:
-            return PythonSDKManager.get_manager(board).get_sdk()
+            # SDK 的名称、描述已按当前语言翻译，需按语言分别缓存
+            return _get_python_sdk(board, get_language())
 
         raise ValueError(f"unsupported programming language: {language}")
+
+
+@cache_on_arguments(expiration_time=3600)
+def _get_python_sdk(board: str, locale: str) -> Optional[PythonSDK]:
+    return PythonSDKManager.get_manager(board).get_sdk()
 
 
 class PythonSDKManager(metaclass=ABCMeta):

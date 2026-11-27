@@ -58,7 +58,7 @@
                 >
                   {{ getStageAddress(currentStage?.name) || '--' }}
                 </p>
-                <CopyButton
+                <AgCopyButton
                   v-if="getStageAddress(currentStage?.name)"
                   :source="getStageAddress(currentStage?.name)"
                 />
@@ -266,7 +266,7 @@
     />
 
     <!-- 发布普通网关的资源至环境 -->
-    <ReleaseStage
+    <ReleaseStageSlider
       ref="releaseStageRef"
       :current-assets="currentStage"
       @release-success="handleReleaseSuccess"
@@ -304,7 +304,7 @@ import { usePopInfoBox } from '@/hooks';
 import { useTimeoutPoll } from '@vueuse/core';
 import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
 import CreateStage from '../components/CreateStage.vue';
-import ReleaseStage from '@/components/release-stage/Index.vue';
+import ReleaseStageSlider from '@/components/release/release-stage-slider/Index.vue';
 import ResourceInfo from './components/ResourceInfo.vue';
 import PluginManagement from './components/PluginManagement.vue';
 import VarManagement from './components/VarManagement.vue';
@@ -343,9 +343,10 @@ const stageList = ref<ILocalStageItem[]>([]);
 const loadingProgrammableStageIds = ref<number[]>([]);
 // 当前环境信息
 const currentStage = ref<ILocalStageDetail>();
-const releaseStageRef = ref();
-const releaseProgrammableRef = ref();
-const stageSidesliderRef = ref();
+const releaseStageRef = useTemplateRef('releaseStageRef');
+const releaseProgrammableRef = useTemplateRef('releaseProgrammableRef');
+const stageSidesliderRef = useTemplateRef('stageSidesliderRef');
+// eslint-disable-next-line vue/prefer-use-template-ref -- v-for 列表引用保留 ref
 const tabComponentRefs = ref();
 
 const showDropdown = ref(false);
@@ -620,7 +621,7 @@ const handleStageDelete = async () => {
 
 // 编辑环境
 const handleEditStage = () => {
-  stageSidesliderRef.value.handleShowSideslider('edit');
+  stageSidesliderRef.value?.handleShowSideslider('edit');
 };
 
 const handleCreateStageDone = async () => {

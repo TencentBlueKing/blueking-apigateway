@@ -17,20 +17,24 @@
  */
 
 import { Message } from 'bkui-vue';
+import { omit } from 'lodash-es';
 import { t } from '@/locales';
 import type { FilterValue } from '@blueking/tdesign-ui';
+import type {
+  IGatewaysMcpServersPermissionsListQuery,
+  IMCPServerAppPermissionExportInput,
+} from '@/services/types/gateway/mcp-server/permission.ts';
 import type { IDropList } from '@/types/common';
-import type { IGatewaysMcpServersPermissionsListQuery } from '@/services/types/query/gateways';
 import {
-  type IAppPermissionExport,
-  type IExportType,
   deleteMcpAppPermission,
   exportMcpAppPermissions,
 } from '@/services/source/gateway/mcp-server/permission';
 import type { IPermissionApprovalFilterValue } from '@/types/mcp-server';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
 
-const exportType = ref<IExportType>('all');
+type ExportType = IMCPServerAppPermissionExportInput['export_type'];
+
+const exportType = ref<ExportType>('all');
 // 导出下拉
 const exportDropData = shallowRef<IDropList[]>([
   {
@@ -65,11 +69,10 @@ export function useMcpPermission() {
     filterData: Ref<FilterValue | IPermissionApprovalFilterValue | IGatewaysMcpServersPermissionsListQuery>,
   ) => {
     try {
-      const params: IAppPermissionExport = {
-        ...filterSimpleEmpty(filterData.value),
-        export_type: exportData.value as IExportType,
-      };
-      delete params.state;
+      const params = {
+        ...filterSimpleEmpty(omit(filterData.value, 'state')),
+        export_type: exportData.value as ExportType,
+      } satisfies IMCPServerAppPermissionExportInput;
       exportType.value = params.export_type;
       await exportMcpAppPermissions(gatewayId, params);
       Message({

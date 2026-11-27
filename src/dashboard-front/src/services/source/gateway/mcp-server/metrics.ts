@@ -21,11 +21,12 @@
 *  */
 
 import http from '@/services/http';
-import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
 import type {
   IMCPServerMetricInstantOutput,
   IMCPServerMetricRangeOutput,
-} from '@/services/types/responses/gateways.ts';
+  IMCPServerMetricsInstantQuery,
+  IMCPServerMetricsRangeQuery,
+} from '@/services/types/gateway/mcp-server/metrics.ts';
 
 const path = '/gateways';
 
@@ -34,7 +35,7 @@ const path = '/gateways';
  * @param gatewayId 网关id
  * @param params 查询参数
  */
-export const queryMcpMetricsRange = (gatewayId: number, params: IObservabilitySearchParams) =>
+export const queryMcpMetricsRange = (gatewayId: number, params: IMCPServerMetricsRangeQuery) =>
   http.get<IMCPServerMetricRangeOutput>(`${path}/${gatewayId}/mcp-servers/-/metrics/query-range/`, params);
 
 /**
@@ -42,5 +43,5 @@ export const queryMcpMetricsRange = (gatewayId: number, params: IObservabilitySe
  * @param gatewayId 网关id
  * @param params 查询参数
  */
-export const queryMcpMetricsInstant = (gatewayId: number, params: IObservabilitySearchParams) =>
+export const queryMcpMetricsInstant = (gatewayId: number, params: IMCPServerMetricsInstantQuery) =>
   http.get<IMCPServerMetricInstantOutput>(`${path}/${gatewayId}/mcp-servers/-/metrics/query-instant/`, params);

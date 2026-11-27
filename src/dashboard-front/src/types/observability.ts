@@ -20,6 +20,7 @@
 * MCP Server 可观测相关类型（指标图表、日志与调用链）
 *  */
 
+import type { IPagination } from '@/types/common';
 import type { IChartSeries } from '@/types/metrics';
 
 // MCP Server 瞬时值；健康率接口返回保留两位小数的字符串，如 "100.00"
@@ -214,4 +215,23 @@ export interface IMcpSpanDetail {
 }
 
 // trace瀑布图详情组装数据
-export type ITraceDetail = IGatewayLog & IHttpSpanDetail & IMcpSpanDetail & ITraceLog;
+export type ITraceDetail = IGatewayLog & IHttpSpanDetail & IMcpSpanDetail & ITraceLog & {
+  latency?: string
+};
+
+// 查询条件泛型
+export interface IObservabilityBasicForm {
+  time_start?: number
+  time_end?: number
+  time_range?: number
+  app_code?: string
+  request_id?: string
+  status?: string
+  query?: string
+  metrics?: string
+  step?: string
+  mcp_server_name?: string
+}
+
+// 流水日志和仪表盘数据图层请求参数泛型
+export type IObservabilitySearchParams = IObservabilityBasicForm & IPagination;

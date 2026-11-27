@@ -5,6 +5,19 @@
     form-type="vertical"
   >
     <BkFormItem
+      :label="t('名称')"
+      property="name"
+      required
+      :rules="nameRules"
+    >
+      <BkInput
+        v-model="config.name"
+        :maxlength="100"
+        :placeholder="t('用于区分该实例，如 gpt-4o，最长 100 个字符')"
+      />
+    </BkFormItem>
+
+    <BkFormItem
       label="Provider"
       property="provider"
       required
@@ -74,6 +87,12 @@
         :disabled="isBuiltinProvider"
         :placeholder="t('可选，如 https://api.example.com/v1/models，用于拉取可用模型列表')"
       />
+      <p
+        v-if="shouldHintAIBackendModelsEndpoint(config)"
+        class="help-text color-#e38b02!"
+      >
+        {{ t('Endpoint 不以 /chat/completions 结尾，无法自动推导模型列表地址，请填写 Models Endpoint') }}
+      </p>
     </BkFormItem>
 
     <BkFormItem
@@ -86,7 +105,22 @@
       <BkInput
         v-model="config.apiKey"
         :placeholder="t('请输入 API Key')"
+        @mousedown="handleCredentialMousedown"
+        @focus="handleCredentialFocus"
+        @input="config.authError = ''"
       />
+      <p
+        v-if="credentialError"
+        class="form-error-text"
+      >
+        {{ credentialError }}
+      </p>
+      <p
+        v-else-if="credentialWarning"
+        class="help-text color-#e38b02!"
+      >
+        {{ credentialWarning }}
+      </p>
       <p class="help-text">
         {{ t('用于向上游 Provider 鉴权的 API Key') }}
       </p>
@@ -105,14 +139,22 @@
         <BkInput
           v-model="config.authHeaderValue"
           :placeholder="t('Header 值，如 Bearer sk-xxxxxx')"
+          @mousedown="handleCredentialMousedown"
+          @focus="handleCredentialFocus"
           @input="config.authError = ''"
         />
       </div>
       <p
-        v-if="config.authError"
+        v-if="credentialError"
         class="form-error-text"
       >
-        {{ config.authError }}
+        {{ credentialError }}
+      </p>
+      <p
+        v-else-if="credentialWarning"
+        class="help-text color-#e38b02!"
+      >
+        {{ credentialWarning }}
       </p>
       <p class="help-text">
         {{ t('作为请求头透传到模型后端，如 Authorization: Bearer sk-xxx') }}
@@ -122,6 +164,7 @@
     <BkFormItem
       label="Model"
       property="model"
+      :rules="formRules.model"
     >
       <BkSelect
         v-model="config.model"
@@ -222,29 +265,6 @@
       </p>
     </BkFormItem>
 
-    <BkFormItem
-      :label="t('超时时间')"
-      property="timeout"
-      required
-      :rules="formRules.timeout"
-      class="timeout-item"
-    >
-      <BkInput
-        v-model="config.timeout"
-        type="number"
-        :min="1"
-        :max="300"
-        :precision="0"
-      >
-        <template #suffix>
-          <span class="timeout-unit">{{ t('秒') }}</span>
-        </template>
-      </BkInput>
-      <p class="help-text">
-        {{ t('取值范围 1-300 秒，默认 300') }}
-      </p>
-    </BkFormItem>
-
     <div class="test-row">
       <BkButton
         outline
@@ -254,19 +274,35 @@
       >
         {{ t('连通测试') }}
       </BkButton>
-      <span
-        v-if="config.testStatus === 'success'"
-        class="test-tip color-#299e56"
-      ><AgIcon name="check-circle-shape" />{{ t('连通正常') }}</span>
-      <span
-        v-else-if="config.testStatus === 'untested'"
-        class="test-tip color-#979ba5"
-      ><AgIcon name="info" />{{ t('配置变更后需重新测试') }}</span>
+      <span class="test-tip color-#979ba5"><AgIcon name="info" />{{ t('配置变更后需重新测试') }}</span>
     </div>
     <BkAlert
-      v-if="config.testStatus === 'failed'"
+      v-if="testResult === 'success'"
+      theme="success"
+      closable
+      class="mt-12px test-result-alert"
+      @close="() => testResult = ''"
+    >
+      <template #icon>
+        <div class="line-height-20px">
+          <AgIcon
+            name="check-circle-shape"
+            class="color-#2caf5e"
+          />
+        </div>
+      </template>
+      <template #title>
+        <div class="ml-8px line-height-20px">
+          {{ isModelListEmpty ? t('测试成功，但未获取到可选模型，可手动填写 Model') : t('测试成功') }}
+        </div>
+      </template>
+    </BkAlert>
+    <BkAlert
+      v-if="testResult === 'failed'"
       theme="danger"
-      class="mt-12px"
+      closable
+      class="mt-12px test-result-alert"
+      @close="() => testResult = ''"
     >
       <template #icon>
         <div class="line-height-20px">
@@ -277,11 +313,8 @@
         </div>
       </template>
       <template #title>
-        <div class="ml-8px line-height-20px">
-          <div class="color-#ea3636">
-            {{ t('连通失败') }}
-          </div>
-          <div>{{ testFailMessage }}</div>
+        <div class="ml-8px line-height-20px break-all">
+          {{ testFailMessage ? t('测试失败，原因：{reason}', { reason: testFailMessage }) : t('测试失败') }}
         </div>
       </template>
     </BkAlert>
@@ -298,37 +331,49 @@ import {
   Message,
 } from 'bkui-vue';
 import { testBackendServiceConnection } from '@/services/source/gateway/backend';
-import type { IBackendTestConnectionInputSLZ } from '@/services/types/body/post/gateways.ts';
 import type { IFormMethod } from '@/types/common';
 import {
   type AIBackendOptionMode,
+  AI_BACKEND_ENV_VAR_TEXT,
   AI_BACKEND_SCHEME_OPTIONS,
-  type IAIBackendConfigFormData,
-  buildAIBackendConfig,
+  type IAIBackendInstanceFormData,
+  buildAIBackendInstanceSnapshot,
+  buildAIBackendTestParams,
+  getAIBackendCredentialError,
+  getAIBackendCredentialWarning,
+  hasAIBackendEnvVar,
+  isAIBackendSavedCredentialMask,
   isBuiltinAIBackendProvider,
   isValidAIBackendHttpUrl,
   parseAIBackendOptionsTable,
   parseAIBackendOptionsText,
-  validateAIBackendConfigExtra,
+  shouldHintAIBackendModelsEndpoint,
+  validateAIBackendInstanceExtra,
 } from '@/views/model-services/utils/ai-backend-config.ts';
 
 interface IProps {
   apigwId: number
   backendId?: number
   stageId: number
+  siblingNames?: string[]
 }
 
-const config = defineModel<IAIBackendConfigFormData>({ required: true });
+const config = defineModel<IAIBackendInstanceFormData>({ required: true });
 
 const {
   apigwId,
   backendId = 0,
   stageId,
+  siblingNames = [],
 } = defineProps<IProps>();
 
 const { t } = useI18n();
 
 const testFailMessage = ref('');
+// 本次连通测试的结果，用于展示提示条；配置变更导致状态变化后自动隐藏
+const testResult = ref<'' | 'success' | 'failed'>('');
+// Models Endpoint 返回空列表时也算连通成功，但没有可选模型
+const isModelListEmpty = ref(false);
 
 const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 
@@ -363,28 +408,78 @@ const requiredRule = {
   message: t('必填项'),
   trigger: 'blur',
 };
+const envVarRule = {
+  validator: (value: string) => !hasAIBackendEnvVar(value || ''),
+  message: AI_BACKEND_ENV_VAR_TEXT,
+  trigger: 'blur',
+};
+const nameRules = computed(() => [
+  {
+    validator: (value: string) => Boolean(value?.trim()),
+    message: t('必填项'),
+    trigger: 'blur',
+  },
+  {
+    validator: (value: string) => value.trim().length <= 100,
+    message: t('不能超过 {max} 个字符', { max: 100 }),
+    trigger: 'blur',
+  },
+  {
+    validator: (value: string) => {
+      const name = value.trim();
+      return !name || !siblingNames.includes(name);
+    },
+    message: t('同一环境下的实例名称不能重复'),
+    trigger: 'blur',
+  },
+  envVarRule,
+]);
 const formRules = {
   provider: [{
     ...requiredRule,
     trigger: 'change',
   }],
-  apiKey: [requiredRule],
-  modelsEndpoint: [{
-    validator: (value: string) => !value || isValidAIBackendHttpUrl(value.trim()),
-    message: t('请输入合法的 HTTP/HTTPS 地址'),
-    trigger: 'blur',
-  }],
-  timeout: [
-    requiredRule,
+  apiKey: [requiredRule, envVarRule],
+  modelsEndpoint: [
+    envVarRule,
     {
-      validator: (value: number) => Number(value) >= 1 && Number(value) <= 300,
-      message: t('超时时间不能小于1且不能大于300'),
-      trigger: 'change',
+      validator: (value: string) => !value || isValidAIBackendHttpUrl(value.trim()),
+      message: t('请输入合法的 HTTP/HTTPS 地址'),
+      trigger: 'blur',
     },
   ],
+  model: [{
+    ...envVarRule,
+    trigger: 'change',
+  }],
 };
 
 const isBuiltinProvider = computed(() => isBuiltinAIBackendProvider(config.value.provider));
+
+// 掩码被部分修改，或已保存实例改名、改连接身份后原掩码无法恢复时立即提示；改回原值或重新输入后自动消失
+const credentialError = computed(() => config.value.authError || getAIBackendCredentialError(config.value));
+const credentialWarning = computed(() => getAIBackendCredentialWarning(config.value));
+
+// 本次聚焦是否由鼠标点击触发：只有这种情况随后会有 mouseup 把选区还原成光标
+let isPointerFocus = false;
+const handleCredentialMousedown = (event: MouseEvent) => {
+  isPointerFocus = document.activeElement !== event.target;
+};
+
+// 聚焦到接口返回的掩码时整体选中，直接输入即可替换，避免在掩码上增删字符
+const handleCredentialFocus = (event: FocusEvent) => {
+  const fromPointer = isPointerFocus;
+  isPointerFocus = false;
+  const input = event.target as HTMLInputElement | null;
+  if (!input || !isAIBackendSavedCredentialMask(config.value, input.value)) {
+    return;
+  }
+  input.select();
+  // 鼠标点击聚焦时拦截随后的这一次 mouseup，保留选区；键盘聚焦不拦截，以免影响之后的点击
+  if (fromPointer) {
+    input.addEventListener('mouseup', e => e.preventDefault(), { once: true });
+  }
+};
 
 const endpointRules = computed(() => {
   if (isBuiltinProvider.value) {
@@ -392,6 +487,7 @@ const endpointRules = computed(() => {
   }
   return [
     requiredRule,
+    envVarRule,
     {
       validator: (value: string) => isValidAIBackendHttpUrl(
         `${config.value.endpointScheme}://${value.trim()}`,
@@ -411,7 +507,7 @@ watch(config, (value) => {
   if (value.testStatus === 'testing') {
     return;
   }
-  const currentSnapshot = buildAIBackendConfig(value, stageId);
+  const currentSnapshot = buildAIBackendInstanceSnapshot(value);
   const initialSnapshot = value.initialTestConfigSnapshot;
   if (value.testStatus === 'untested' && initialSnapshot && isEqual(initialSnapshot, currentSnapshot)) {
     value.testStatus = 'success';
@@ -423,6 +519,12 @@ watch(config, (value) => {
     value.testConfigSnapshot = undefined;
   }
 }, { deep: true });
+
+watch(() => config.value.testStatus, (status) => {
+  if (status !== testResult.value) {
+    testResult.value = '';
+  }
+});
 
 const formatOptionValue = (value: unknown) => {
   return typeof value === 'string' ? value : JSON.stringify(value) ?? '';
@@ -507,26 +609,23 @@ const validate = async () => {
   catch {
     return false;
   }
-  return validateAIBackendConfigExtra(config.value);
+  return validateAIBackendInstanceExtra(config.value);
 };
 
 const handleTest = async () => {
   if (!await validate()) {
     return;
   }
-  const testSnapshot = cloneDeep(buildAIBackendConfig(config.value, stageId));
+  const testSnapshot = cloneDeep(buildAIBackendInstanceSnapshot(config.value));
   testFailMessage.value = '';
   config.value.testStatus = 'testing';
   config.value.testConfigSnapshot = testSnapshot;
-  const params: IBackendTestConnectionInputSLZ = {
-    config: buildAIBackendConfig(config.value, stageId),
-  };
-  if (backendId && stageId) {
-    params.backend_id = backendId;
-  }
   try {
-    const result = await testBackendServiceConnection(apigwId, params);
-    if (!isEqual(testSnapshot, buildAIBackendConfig(config.value, stageId))) {
+    const result = await testBackendServiceConnection(
+      apigwId,
+      buildAIBackendTestParams(config.value, stageId, backendId),
+    );
+    if (!isEqual(testSnapshot, buildAIBackendInstanceSnapshot(config.value))) {
       config.value.testStatus = 'untested';
       config.value.testConfigSnapshot = undefined;
       Message({
@@ -535,15 +634,14 @@ const handleTest = async () => {
       });
       return;
     }
-    config.value.models = result.models;
+    config.value.models = result.models ?? [];
+    isModelListEmpty.value = !config.value.models.length;
     config.value.testStatus = 'success';
-    Message({
-      message: t('连通测试成功'),
-      theme: 'success',
-    });
+    testResult.value = 'success';
   }
   catch (e) {
     config.value.testStatus = 'failed';
+    testResult.value = 'failed';
     const _e = e as { error: { message: string } };
     testFailMessage.value = _e?.error?.message ?? '';
   }
@@ -620,18 +718,9 @@ defineExpose({ validate });
   color: #F59500;
 }
 
-.timeout-item {
-  width: 180px;
-}
-
-.timeout-unit {
-  padding: 0 8px;
-  border-left: 1px solid #c4c6cc;
-}
-
 .test-row {
   display: flex;
-  margin-top: 24px;
+  margin-top: 8px;
   align-items: center;
   gap: 12px;
 }
@@ -641,5 +730,14 @@ defineExpose({ validate });
   font-size: 12px;
   align-items: center;
   gap: 4px;
+}
+
+// bkui 默认把关闭图标顶在内容顶部，这里让它和 20px 高的首行文字垂直居中
+.test-result-alert :deep(.bk-alert-close) {
+  display: flex;
+  height: 20px;
+  padding-top: 0;
+  margin-top: 0;
+  align-items: center;
 }
 </style>

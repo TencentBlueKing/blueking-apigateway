@@ -20,7 +20,7 @@
   <aside
     class="maintainer-action"
   >
-    <Chat
+    <WecomGroupChat
       v-if="showChat"
       :default-user-list="userList"
       :owner="curUser.username"
@@ -41,7 +41,7 @@
 </template>
 
 <script lang="ts" setup>
-import Chat from '@/components/chat/Index.vue';
+import WecomGroupChat from './WecomGroupChat.vue';
 import type { IDocBasics } from './DocDetailSideContent.vue';
 import { useFeatureFlag, useUserInfo } from '@/stores';
 import { getGatewayDisplayName } from '@/utils/gateway-name';

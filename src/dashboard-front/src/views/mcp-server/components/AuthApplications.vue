@@ -54,6 +54,7 @@
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
+      cache-identifier="MCPServerDetail"
       :api-method="getTableData"
       :columns="tableColumns"
       :filter-value="filterData"
@@ -118,26 +119,27 @@ import {
   PopConfirm,
   Popover,
 } from 'bkui-vue';
-import type {
-  FilterValue,
-  PrimaryTableProps,
-  SortInfo,
-  TableRowData,
-} from '@blueking/tdesign-ui';
 import type { IDropList, IFormMethod } from '@/types/common';
 import { useFeatureFlag, useGateway } from '@/stores';
 import { useMcpPermission } from '@/hooks';
 import { AUTHORIZATION_APPLICATION_OPERATE_TYPE } from '@/constants';
 import { filterSimpleEmpty } from '@/utils/filterEmptyValues';
-import type { IMCPServerAppPermissionListOutput } from '@/services/types/responses/gateways.ts';
-import type { IGatewaysMcpServersPermissionsListQuery } from '@/services/types/query/gateways.ts';
-import type { IMCPServerAppPermissionCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IGatewaysMcpServersPermissionsListQuery,
+  IMCPServerAppPermissionCreateInputSLZ,
+  IMCPServerAppPermissionListOutput,
+} from '@/services/types/gateway/mcp-server/permission.ts';
 import {
   getMcpAppPermissionList,
   grantMcpAppPermission,
 } from '@/services/source/gateway/mcp-server/permission';
-import AgDropdown from '@/components/ag-dropdown/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type TableSort,
+} from '@/components/base/ag-table';
 
 interface IProps { mcpServerId?: number }
 
@@ -153,9 +155,9 @@ const {
   handleExport,
 } = useMcpPermission();
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableRef = useTemplateRef<IAgTableInstance<IMCPServerAppPermissionListOutput>>('tableRef');
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
+const tableColumns = shallowRef<ITableColumn<IMCPServerAppPermissionListOutput>[]>([
   {
     title: t('蓝鲸应用 ID'),
     colKey: 'bk_app_code',
@@ -174,7 +176,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
         value: item.id,
       })),
     },
-    cell: (_: unknown, { row }: { row: TableRowData }) => {
+    cell: (_h, { row }) => {
       const grantTypeText = AUTHORIZATION_APPLICATION_OPERATE_TYPE.find(item => item.id === row.grant_type)?.name ?? '--';
       return (
         <span>
@@ -187,13 +189,13 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('申请人'),
     colKey: 'applied_by',
     ellipsis: true,
-    cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.applied_by),
+    cell: (_h, { row }) => renderDisplayNameColumn(row.applied_by ?? ''),
   },
   {
     title: t('操作人'),
     colKey: 'handled_by',
     ellipsis: true,
-    cell: (_: unknown, { row }: { row: TableRowData }) => renderDisplayNameColumn(row.handled_by),
+    cell: (_h, { row }) => renderDisplayNameColumn(row.handled_by ?? ''),
   },
   {
     title: t('生效时间'),
@@ -205,8 +207,8 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('操作'),
     colKey: 'operate',
-    fixed: 'right' as const,
-    cell: (_: unknown, { row }: { row: TableRowData }) => {
+    fixed: 'right',
+    cell: (_h, { row }) => {
       return (
         <PopConfirm
           placement="top"
@@ -301,7 +303,7 @@ const handleExportApp = (payload: IDropList) => {
   handleExport(gatewayId.value, payload, filterData);
 };
 
-const isDisabledDel = (row: TableRowData) => {
+const isDisabledDel = (row: IMCPServerAppPermissionListOutput) => {
   return ['public', 'personal'].includes(row.bk_app_code);
 };
 
@@ -333,12 +335,12 @@ const submitAuth = async () => {
   }
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   filterData.value = { ...filterItem };
 };
 
-const handleSortChange: PrimaryTableProps['onSortChange'] = (sort) => {
-  const sortData = sort as SortInfo;
+const handleSortChange = (sort: TableSort | null | undefined) => {
+  const sortData = Array.isArray(sort) ? sort[0] : sort;
   if (sortData) {
     const { sortBy: colKey, descending } = sortData;
     filterData.value.order_by = descending ? `-${colKey}` : colKey;

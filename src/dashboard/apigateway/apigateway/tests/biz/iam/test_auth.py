@@ -78,3 +78,17 @@ def test_is_iam_gateway_action_allowed_caches_only_allowed_results(
         },
         tenant_id=expected_tenant_id,
     )
+
+
+def test_clear_gateway_iam_auth_cache(mocker):
+    gateway = G(Gateway, id=8, tenant_mode="single", tenant_id="default")
+    direct_auth = mocker.patch("apigateway.biz.iam.authorization.direct_auth", return_value=True)
+
+    assert is_iam_gateway_action_allowed(gateway, "alice", "manage_gateway")
+    assert is_iam_gateway_action_allowed(gateway, "alice", "manage_gateway")
+    assert direct_auth.call_count == 1
+
+    clear_gateway_iam_auth_cache()
+
+    assert is_iam_gateway_action_allowed(gateway, "alice", "manage_gateway")
+    assert direct_auth.call_count == 2

@@ -352,12 +352,17 @@ msgstr "Unsupported fields: {fields}"
 
 #: apigateway/apis/web/access_log/serializers.py:45
 #: apigateway/apis/web/mcp_server_log/serializers.py:59
-#: apigateway/apis/web/mcp_server_metrics/serializers.py:43
-#: apigateway/apis/web/mcp_server_metrics/serializers.py:60
-#: apigateway/apis/web/metrics/serializers.py:48
-#: apigateway/apis/web/metrics/serializers.py:66
+#: apigateway/apis/web/validators.py:32
 msgid "参数 time_start+time_end, time_range 必须一组有效。"
 msgstr "One of time_start+time_end, time_range must be valid."
+
+#: apigateway/apis/web/validators.py:38
+msgid "参数 time_start 不能晚于 time_end。"
+msgstr "Parameter time_start cannot be later than time_end."
+
+#: apigateway/apis/web/validators.py:40
+msgid "查询时间范围不可超过 180 天。"
+msgstr "The query time range cannot exceed 180 days."
 
 #: apigateway/apis/web/ai_backend/adapter.py:25
 #: apigateway/apis/web/ai_backend/presentation.py:29
@@ -413,6 +418,10 @@ msgstr "The port must be an integer between 1 and 65535."
 #: apigateway/apis/web/ai_backend/serializers.py:51
 msgid "该主机或端口不允许使用。"
 msgstr "This host or port is not allowed."
+
+#: apigateway/apis/web/ai_completion/serializers.py:78
+msgid "文档不存在或不属于当前网关"
+msgstr "The document does not exist or does not belong to the current gateway."
 
 #: apigateway/apis/web/ai_completion/views.py:130
 msgid "网关下未找到需要翻译的文档"
@@ -2727,12 +2736,17 @@ msgstr ""
 #: apigateway/biz/openapi/validate.py:196
 #, python-brace-format
 msgid ""
-"网关下资源名称 {name} 或其同名驼峰名称已被占用（如 get_foo 会与 getFoo 冲"
-"突），请使用其他命名，建议使用统一的命名格式。"
+"网关下资源名称 {name} 已被占用，可能原因："
+"1. 名称与已有资源完全相同；"
+"2. 名称归一化后与已有资源相同（如 get_foo 与 getFoo）；"
+"3. 名称未变，但请求方法（method）或请求路径（path）已修改，导入时被识别为新增资源。"
+"请检查 operationId、method 和 path，确保资源名称及其归一化名称唯一。"
 msgstr ""
-"The resource name \"{name}\" or its camel-case name has already been "
-"occupied (e.g., get_foo conflicts with getFoo), please use another name, and "
-"use a consistent naming format."
+"The resource name {name} is already in use in this gateway. Possible causes: "
+"1. It is identical to an existing resource name; "
+"2. It matches an existing resource name after normalization (e.g., get_foo and getFoo); "
+"3. The name is unchanged, but the request method or path was changed, so it is treated as a new resource during import. "
+"Check operationId, method and path, and ensure that resource names and their normalized forms are unique."
 
 #: apigateway/biz/openapi/validate.py:214
 #, python-brace-format
@@ -3118,6 +3132,11 @@ msgstr ""
 #: apigateway/biz/validators.py:480
 msgid "负载均衡类型为 Weighted-RR 时，Host 权重必填。"
 msgstr "When the loadbalance type is Weighted-RR, the Host weight is required."
+
+#: apigateway/common/django/validators.py:33
+#, python-brace-format
+msgid "文件大小不能超过 {max_size}MB。"
+msgstr "File size cannot exceed {max_size}MB."
 
 #: apigateway/common/django/validators.py:35
 msgid "名称不能以【-】结尾。"

@@ -300,6 +300,9 @@ DEFAULT_STAGE_NAME = "prod"
 DEFAULT_LB_HOST_WEIGHT = 100
 DEFAULT_BACKEND_NAME = "default"
 
+# 与 apps.plugin.constants.PluginTypeCodeEnum.BK_ACCESS_TOKEN_SOURCE 相同；core 不能依赖 apps
+BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE = "bk-access-token-source"
+
 # Stage
 STAGE_NAME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,19}$")
 STAGE_VAR_REFERENCE_PATTERN = re.compile(r"env\.([a-zA-Z][a-zA-Z0-9_]{0,49})")

@@ -35,6 +35,25 @@
     </template>
   </BkCollapsePanel>
 
+  <!-- 认证方式面板 -->
+  <BkCollapsePanel name="authConfig">
+    <template #header>
+      <div class="panel-header">
+        <AngleUpFill :class="getIconClass('authConfig')" />
+        <div class="title">
+          {{ t('认证方式') }}
+        </div>
+      </div>
+    </template>
+    <template #content>
+      <AuthConfig
+        ref="authConfigRef"
+        :detail="resourceDetail"
+        :editing-existing="!!resourceDetail.id && !isClone"
+      />
+    </template>
+  </BkCollapsePanel>
+
   <!-- 请求配置面板 -->
   <BkCollapsePanel name="frontConfig">
     <template #header>
@@ -122,6 +141,7 @@
 <script setup lang="ts">
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { t } from '@/locales';
+import AuthConfig from '@/views/resource-management/components/AuthConfig.vue';
 import BaseInfo from '@/views/resource-management/components/BaseInfo.vue';
 import FrontConfig from '@/views/resource-management/components/FrontConfig.vue';
 import RequestParams from '@/views/resource-management/components/request-params-v2/Index.vue';
@@ -164,11 +184,12 @@ const {
 
 const emits = defineEmits<IEmits>();
 
-const baseInfoRef = ref<InstanceType<typeof BaseInfo>>();
-const frontConfigRef = ref<InstanceType<typeof FrontConfig>>();
-const requestParamsRef = ref<InstanceType<typeof RequestParams>>();
-const backConfigRef = ref<InstanceType<typeof BackConfig>>();
-const responseParamsRef = ref<InstanceType<typeof ResponseParams>>();
+const baseInfoRef = useTemplateRef<InstanceType<typeof BaseInfo>>('baseInfoRef');
+const authConfigRef = useTemplateRef<InstanceType<typeof AuthConfig>>('authConfigRef');
+const frontConfigRef = useTemplateRef<InstanceType<typeof FrontConfig>>('frontConfigRef');
+const requestParamsRef = useTemplateRef<InstanceType<typeof RequestParams>>('requestParamsRef');
+const backConfigRef = useTemplateRef<InstanceType<typeof BackConfig>>('backConfigRef');
+const responseParamsRef = useTemplateRef<InstanceType<typeof ResponseParams>>('responseParamsRef');
 
 const getIconClass = (activeCollapse: string) => {
   return activeIndex?.includes(activeCollapse) ? 'panel-header-show' : 'panel-header-hide';
@@ -183,6 +204,7 @@ const handleFrontConfigChange = (config: typeof frontConfig) => {
 };
 
 defineExpose({
+  authConfigRef,
   baseInfoRef,
   backConfigRef,
   frontConfigRef,

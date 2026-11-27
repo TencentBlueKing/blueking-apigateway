@@ -35,10 +35,10 @@
   </div>
 </template>
 
-<script  lang="ts" setup>
+<script lang="ts" setup>
 import { t } from '@/locales';
 import { usePersonalWorkbench } from '@/hooks';
-import type { ITabKey } from '@/services/types/query/personal-workbench.ts';
+import type { ITabKey } from '@/types/personal-workbench.ts';
 
 interface IEmits { 'tab-change': [tab: ITabKey] }
 

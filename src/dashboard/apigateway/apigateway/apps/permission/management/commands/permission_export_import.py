@@ -45,16 +45,16 @@ def _parse_expire_datetime(value: str | None):
 
 
 def _parse_expires_from_record(s: str):
-    """Parse expires string from JSON record. Returns timezone-aware datetime or None on failure."""
-    parsed = parse_datetime(s)
-    if parsed is not None:
-        return parsed
+    """Parse an expires string, returning None if the date is invalid."""
     try:
+        parsed = parse_datetime(s)
+        if parsed is not None:
+            return parsed
         dt = datetime.datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
         if timezone.is_naive(dt):
             dt = timezone.make_aware(dt, timezone.get_current_timezone())
         return dt
-    except ValueError, TypeError:
+    except ValueError:
         return None
 
 
@@ -68,7 +68,8 @@ class Command(BaseCommand):
             Note: AppResourcePermission records with empty resource.name will be skipped.
 
     Import: Read JSON file and upsert permissions (grant_type=initialize for AppResourcePermission).
-            Skip records with missing gateway/resource and print errors.
+            Each record requires an ISO 8601 expires value or explicit JSON null for permanent access.
+            Skip records with an invalid expiration or missing gateway/resource and print errors.
 
     Examples:
         python manage.py permission_export_import export --file=perms.json
@@ -186,9 +187,9 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            expires = _parse_expires_from_record(expires_str) if expires_str else None
-            if expires_str and expires is None:
-                self.stderr.write(f"error: record at index {i} invalid expires={expires_str!r}, skip")
+            expires = _parse_expires_from_record(expires_str) if isinstance(expires_str, str) else None
+            if "expires" not in rec or (expires_str is not None and expires is None):
+                self.stderr.write(f"error: record at index {i} missing or invalid expires={expires_str!r}, skip")
                 skipped += 1
                 continue
 

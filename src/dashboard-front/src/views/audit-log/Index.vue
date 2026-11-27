@@ -46,14 +46,13 @@
           <BkSearchSelect
             v-if="!featureFlagStore.isTenantMode"
             v-model="searchValue"
-            style="width: 100%"
             unique-select
-            class="audit-log-search"
+            class="audit-log-search w-full"
             :data="searchData"
             :placeholder="t('请输入关键字或选择条件搜索')"
             :clearable="false"
-            :value-split-code="'+'"
-            :value-behavior="'need-key'"
+            value-split-code="+"
+            value-behavior="need-key"
           />
           <BkSearchSelect
             v-else
@@ -62,10 +61,9 @@
             :data="searchData"
             :get-menu-list="getMenuList"
             :placeholder="t('请输入关键字或选择条件搜索')"
-            :value-behavior="'need-key'"
-            :value-split-code="'+'"
-            class="audit-log-search"
-            style="width: 100%"
+            value-behavior="need-key"
+            value-split-code="+"
+            class="audit-log-search w-full"
             unique-select
           />
         </BkFormItem>
@@ -75,10 +73,11 @@
     <AgTable
       ref="tableRef"
       v-model:table-data="tableData"
+      cache-identifier="AuditLog"
       table-row-key="event_id"
+      :is-exist-unique-key="false"
       show-settings
       resizable
-      :max-limit-config="{ allocatedHeight: 260, mode: 'tdesign'}"
       :filter-value="filterData"
       :api-method="getTableData"
       :columns="tableColumns"
@@ -87,19 +86,18 @@
     />
 
     <Detail
-      v-model:is-show="showDetails"
+      v-if="details"
+      v-model="showDetails"
       :data="details"
     />
   </div>
 </template>
 
 <script lang="tsx" setup>
-// @ts-nocheck
 import { cloneDeep } from 'lodash-es';
-import type { ISearchSelect, ITableMethod } from '@/types/common';
-import type { FilterValue, PrimaryTableProps } from '@blueking/tdesign-ui';
+import type { ISearchItem, ISearchValue } from 'bkui-vue/lib/search-select/utils';
 import { useTableFilterChange } from '@/hooks/use-table-filter-change';
-import { useDatePicker } from '@/hooks';
+import { RECENT_DATE_PRESETS, useDatePicker } from '@/hooks';
 import {
   useAccessLog,
   useAuditLog,
@@ -110,8 +108,12 @@ import {
 import { getTenantUsers } from '@/services/source/external/bk-user';
 import { getAuditLogList } from '@/services/source/gateway/audit';
 import type { IAuditLog } from '@/types/audit-log';
-import AgTable from '@/components/ag-table/Index.vue';
-import type { IAuditEventLogOutput } from '@/services/types/responses/gateways.ts';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+} from '@/components/base/ag-table';
+import type { IAuditEventLogOutput } from '@/services/types/gateway/audit.ts';
 import Detail from './detail/Index.vue';
 
 const { t, locale } = useI18n();
@@ -124,8 +126,12 @@ const { handleTableFilterChange } = useTableFilterChange();
 
 const orderBy = ref('');
 const dateKey = ref('dateKey');
-const searchValue = ref([]);
-const defaultSearchData = ref<IAuditLog>({
+const searchValue = ref<ISearchValue[]>([]);
+const tableFilterKeys = ['op_object_type', 'op_type', 'op_status'] as const;
+const searchFilterKeys = [...tableFilterKeys, 'op_object', 'username', 'keyword'] as const;
+// 筛选默认值：普通对象，每次使用时 cloneDeep 出独立副本。
+// 不能用 ref 再 cloneDeep，否则复制出的是 RefImpl，其 value 不具备响应式
+const defaultSearchData: IAuditLog = {
   keyword: '',
   op_type: '',
   op_object: '',
@@ -135,41 +141,17 @@ const defaultSearchData = ref<IAuditLog>({
   time_start: '',
   time_end: '',
   order_by: '',
-});
+};
 
 const showDetails = ref<boolean>(false);
-const details = ref<IAuditEventLogOutput>({});
-const tableData = ref([]);
-const tableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('tableRef');
+const details = ref<IAuditEventLogOutput | null>(null);
+const tableData = ref<IAuditEventLogOutput[]>([]);
+const tableRef = useTemplateRef<IAgTableInstance<IAuditEventLogOutput>>('tableRef');
 const filterData = ref<IAuditLog>(cloneDeep(defaultSearchData));
-const OperateRecordObjectType = ref(
-  accessLogStore.auditOptions.OPObjectType.map((item: Record<string, string>) => {
-    return {
-      ...item,
-      id: item.value,
-    };
-  }),
-);
-const OperateRecordType = ref(
-  accessLogStore.auditOptions.OPType.map((item: Record<string, string>) => {
-    return {
-      ...item,
-      id: item.value,
-    };
-  }),
-);
-const OperateRecordStatus = ref(
-  auditLogStore.operateStatus.map((item: Record<string, string>) => {
-    return {
-      ...item,
-      id: item.value,
-    };
-  }),
-);
 
 const apigwId = computed(() => gatewayStore.apigwId);
 
-const searchData = computed(() => {
+const searchData = computed<ISearchItem[]>(() => {
   const isTenantMode = featureFlagStore.flags?.ENABLE_MULTI_TENANT_MODE || false;
   return [
     {
@@ -183,21 +165,30 @@ const searchData = computed(() => {
       id: 'op_object_type',
       placeholder: t('请选择操作对象'),
       onlyRecommendChildren: true,
-      children: OperateRecordObjectType.value,
+      children: accessLogStore.auditOptions.OPObjectType.map(item => ({
+        id: item.value,
+        name: item.name,
+      })),
     },
     {
       name: t('操作类型'),
       id: 'op_type',
       placeholder: t('请选择操作类型'),
       onlyRecommendChildren: true,
-      children: OperateRecordType.value,
+      children: accessLogStore.auditOptions.OPType.map(item => ({
+        id: item.value,
+        name: item.name,
+      })),
     },
     {
       name: t('操作状态'),
       id: 'op_status',
       placeholder: t('请选择操作状态'),
       onlyRecommendChildren: true,
-      children: OperateRecordStatus.value,
+      children: auditLogStore.operateStatus.map(item => ({
+        id: item.value,
+        name: item.name,
+      })),
     },
     {
       name: t('实例'),
@@ -224,7 +215,7 @@ const {
   handleConfirm,
   handleShortcutChange,
   handleSelectionModeChange,
-} = useDatePicker(filterData);
+} = useDatePicker(filterData, { presets: RECENT_DATE_PRESETS });
 
 const getStatusText = (type: string) => {
   const name = auditLogStore.operateStatus.find((item: Record<string, string>) => item.value === type)?.name;
@@ -243,12 +234,12 @@ const getOpObjectTypeText = (type: string) => {
   return name ?? '--';
 };
 
-const tableColumns = shallowRef<PrimaryTableProps['columns']>([
+const tableColumns = shallowRef<ITableColumn<IAuditEventLogOutput>[]>([
   {
     title: t('操作对象'),
     colKey: 'op_object_type',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
+    cell: (_h, { row }) => {
       return (
         <div class="cell-field">
           <span class="content">{ getOpObjectTypeText(row.op_object_type) }</span>
@@ -269,7 +260,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('实例'),
     colKey: 'op_object',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
+    cell: (_h, { row }) => {
       return (
         <span>{ row.op_object || '--' }</span>
       );
@@ -279,7 +270,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作类型'),
     colKey: 'op_type',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
+    cell: (_h, { row }) => {
       return (
         <span>{ getOpTypeText(row.op_type) || '--' }</span>
       );
@@ -298,7 +289,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作状态'),
     colKey: 'op_status',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditEventLogOutput }) => {
+    cell: (_h, { row }) => {
       return (
         <div class="flex items-center">
           <span class={['mr-5px ag-dot', row.op_status]} />
@@ -320,7 +311,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作人'),
     colKey: 'username',
     ellipsis: true,
-    cell: (h: any, { row }: { row: IAuditEventLogOutput }) =>
+    cell: (_h, { row }) =>
       !featureFlagStore.isEnableDisplayName
         ? <span>{row.username}</span>
         : <span><bk-user-display-name user-id={row.username} /></span>,
@@ -340,7 +331,7 @@ const tableColumns = shallowRef<PrimaryTableProps['columns']>([
     title: t('操作'),
     colKey: 'actions',
     width: 120,
-    cell: (h: any, { row }: any) => (
+    cell: (_h, { row }) => (
       <bk-button text theme="primary" onClick={() => showDiff(row)}>
         {t('查看详情')}
       </bk-button>
@@ -352,11 +343,14 @@ const getList = () => tableRef.value?.fetchData(filterData.value, { resetPage: t
 
 const getTableData = async (params: Record<string, any> = {}) => {
   const results = await getAuditLogList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 const handleClearFilter = () => {
-  filterData.value = cloneDeep(defaultSearchData.value);
+  filterData.value = cloneDeep(defaultSearchData);
   searchValue.value = [];
   handleClear();
   dateKey.value = String(+new Date());
@@ -368,18 +362,34 @@ const showDiff = (row: IAuditEventLogOutput) => {
 };
 
 // 处理表头筛选联动搜索框
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem: FilterValue) => {
+const handleFilterChange = (filterItem: FilterValue) => {
+  const columnFilters: Record<string, string> = {};
+  for (const key of tableFilterKeys) {
+    if (key in filterItem) {
+      const value = filterItem[key];
+      columnFilters[key] = typeof value === 'string' ? value : '';
+    }
+  }
+  const columnFilterData = ref<Record<string, string | string[]>>({});
   handleTableFilterChange({
-    filterItem,
-    filterData,
+    filterItem: columnFilters,
+    filterData: columnFilterData,
     searchOptions: searchData,
     searchParams: searchValue,
   });
+  for (const key of tableFilterKeys) {
+    if (key in columnFilters) {
+      const value = columnFilterData.value[key];
+      filterData.value[key] = typeof value === 'string' ? value : '';
+    }
+  }
   getList();
 };
 
 const handlePickSuccess = () => {
-  handleConfirm();
+  if (!handleConfirm()) {
+    return;
+  }
   getList();
 };
 
@@ -394,42 +404,38 @@ const getMenuList = async (item: { id: string }, keyword: string) => {
   }
 
   if (item.id === 'username' && keyword && featureFlagStore.isEnableDisplayName) {
-    const list = await getTenantUsers({ keyword }, userInfoStore.info.tenant_id);
+    const tenantId = userInfoStore.info.tenant_id;
+    if (!tenantId) {
+      return [];
+    }
+    const list = await getTenantUsers({ keyword }, tenantId);
     return list.map(user => ({
       id: user.bk_username,
       name: user.display_name,
       value: user.bk_username,
     }));
   }
-  return searchData.value.find((set: any) => set.id === item.id)?.children;
+  return searchData.value.find(option => option.id === item.id)?.children;
 };
 
 watch(
-  () => searchValue.value,
-  (newVal: ISearchSelect[]) => {
-    if (!newVal.length) {
-      filterData.value = Object.assign(
-        {},
-        cloneDeep(defaultSearchData.value),
-        {
-          order_by: orderBy.value,
-          time_start: filterData.value.time_start,
-          time_end: filterData.value.time_end,
-        },
-      );
-    }
-    else {
-      const textItem = searchValue.value.find((val: any) => val.type === 'text');
-      if (textItem) {
-        filterData.value.keyword = textItem.name || '';
+  searchValue,
+  () => {
+    const nextFilters = {
+      ...defaultSearchData,
+      keyword: searchValue.value.find(item => item.type === 'text')?.name ?? '',
+      order_by: orderBy.value,
+      time_start: filterData.value.time_start,
+      time_end: filterData.value.time_end,
+    };
+    for (const key of searchFilterKeys) {
+      const item = searchValue.value.find(item => item.id === key);
+      const value = item?.values?.[0]?.id;
+      if (value !== undefined) {
+        nextFilters[key] = value;
       }
-      searchValue.value.forEach((item: any) => {
-        if (item.values) {
-          filterData.value[item.id] = item.values[0].id;
-        }
-      });
     }
-
+    filterData.value = nextFilters;
     getList();
   },
   { deep: true },

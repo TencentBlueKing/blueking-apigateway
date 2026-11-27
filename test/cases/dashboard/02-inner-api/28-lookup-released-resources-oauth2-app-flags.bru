@@ -1,0 +1,50 @@
+meta {
+  name: v2-inner-lookup-released-resources-oauth2-app-flags
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{scheme}}://{{host}}/api/bk-apigateway/prod/api/v2/inner/gateways/oauth2-app/released-resources/-/lookup/?names=ua_p1,app_p1,u_personal,ua_personal,ats_apikey,ats_bearer
+  body: none
+  auth: none
+}
+
+headers {
+  X-Bkapi-Authorization: {"bk_app_code": "{{bk_app_code}}", "bk_app_secret": "{{bk_app_secret}}"}
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  // [oauth2_app_delegated_enabled, oauth2_app_only_enabled, oauth2_personal_client_enabled]
+  function flags(name) {
+    var item = res.getBody().data.find(function(r) { return r.name === name; });
+    expect(item, "resource " + name + " is returned").to.exist;
+    return [item.oauth2_app_delegated_enabled, item.oauth2_app_only_enabled, item.oauth2_personal_client_enabled];
+  }
+
+  test("user and app verified resource accepts delegated tokens", function() {
+    expect(flags("ua_p1")).to.eql([true, false, false]);
+  });
+
+  test("app-only resource accepts app tokens", function() {
+    expect(flags("app_p1")).to.eql([false, true, false]);
+  });
+
+  test("user-only resource keeps only the personal client", function() {
+    expect(flags("u_personal")).to.eql([false, false, true]);
+  });
+
+  test("user and app verified personal resource accepts delegated tokens and the personal client", function() {
+    expect(flags("ua_personal")).to.eql([true, false, true]);
+  });
+
+  test("bk-access-token-source blocks the app channel", function() {
+    expect(flags("ats_apikey")).to.eql([false, false, false]);
+    expect(flags("ats_bearer")).to.eql([false, false, false]);
+  });
+}

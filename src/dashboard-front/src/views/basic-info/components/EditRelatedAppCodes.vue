@@ -88,7 +88,7 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 interface IProps {
   field: string
@@ -113,8 +113,8 @@ const {
 
 const emit = defineEmits<IEmits>();
 
-const tagInputRef = ref();
-const relatedAppCodesEditRef = ref();
+const tagInputRef = useTemplateRef('tagInputRef');
+const relatedAppCodesEditRef = useTemplateRef('relatedAppCodesEditRef');
 const isEditable = ref(false);
 const displayValue = ref<string[]>([]);
 

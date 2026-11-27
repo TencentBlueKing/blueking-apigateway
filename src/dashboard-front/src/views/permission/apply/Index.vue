@@ -80,14 +80,14 @@
         ref="permissionTableRef"
         v-model:table-data="tableData"
         v-model:selected-row-keys="selectedRowKeys"
+        cache-identifier="PermissionApply"
         show-settings
         show-selection
         :expand-icon="false"
         :expandable="expandableConfig"
         :expanded-row-keys="expandableConfig.expandedRowKeys"
         :show-first-full-row="selections.length > 0"
-        :disabled-check-selection="disabledSelection"
-        :max-limit-config="{ allocatedHeight: 240, mode: 'tdesign'}"
+        :disabled-check-selection="isITSMApproval"
         :filter-value="filterValue"
         :api-method="getTableData"
         :columns="getTableColumns"
@@ -98,6 +98,9 @@
         @clear-filter="handleClearFilter"
         @request-done="handleRequestDone"
       >
+        <template #selectionPopoverContent>
+          {{ t('单据接入了 ITSM，ITSM 不支持批量审批') }}
+        </template>
         <template #expandedRow="{row}">
           <AgTable
             v-model:table-data="row.resources"
@@ -136,7 +139,6 @@
 <script lang="tsx" setup>
 import { cloneDeep } from 'lodash-es';
 import { Button, Form, Message, Popover } from 'bkui-vue';
-import type { TableRowData } from '@blueking/tdesign-ui';
 import { getPermissionApplyList, updatePermissionStatus } from '@/services/source/gateway/permission';
 import { getResourceList } from '@/services/source/gateway/resource';
 import {
@@ -145,11 +147,14 @@ import {
   usePermission,
   useUserInfo,
 } from '@/stores';
-import type { IApprovalListItem, IResource } from '@/types/permission';
-import type { ITableMethod } from '@/types/common';
-import type { IApplyStatus, IFomDataQuery } from '@/services/types/query/personal-workbench.ts';
-import type { IAppPermissionApplyApprovalInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type { IResourceListPageOutput } from '@/services/types/responses/gateways.ts';
+import type { IResource } from '@/types/permission';
+import type { IApplyStatus, IFomDataQuery } from '@/types/personal-workbench.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
+import type {
+  IAppPermissionApplyApprovalInputSLZ,
+  IAppPermissionApplyListOutput,
+} from '@/services/types/gateway/permission.ts';
+import type { IResourceListPageOutput } from '@/services/types/gateway/resource.ts';
 import { sortByKey } from '@/utils';
 import { AUTHORIZATION_DIMENSION } from '@/constants';
 import { APPROVAL_STATUS_MAP } from '@/enums';
@@ -157,13 +162,17 @@ import BkUserSelector from '@blueking/bk-user-selector';
 import BatchApproval from '@/views/permission/apply/components/BatchApproval.vue';
 import CustomHeader from '@/views/permission/apply/components/CustomHeader.vue';
 import ApprovalDialog from '@/views/permission/apply/components/ApprovalDialog.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableSelection,
+  type RowEventContext,
+  type TableRow,
+} from '@/components/base/ag-table';
 
-// 扩展 IApprovalListItem，补充运行时动态添加的字段
-interface IApprovalListItemExt extends IApprovalListItem {
-  id: number
-  grant_dimension: string
-  selectionTip: string
+// 扩展申请单 DTO，补充运行时动态添加的展开与资源选择状态
+interface IApprovalListItemExt extends IAppPermissionApplyListOutput {
   isExpand?: boolean
   resources?: IResource[]
   selection?: IResource[]
@@ -180,13 +189,13 @@ const permissionStore = usePermission();
 const featureFlagStore = useFeatureFlag();
 const { t } = useI18n();
 
-const permissionTableRef = useTemplateRef<InstanceType<typeof AgTable> & ITableMethod>('permissionTableRef');
+const permissionTableRef = useTemplateRef<IAgTableInstance<IApprovalListItemExt>>('permissionTableRef');
 const approveForm = ref<InstanceType<typeof Form> & { validate: () => void }>();
-const tableData = ref<any[]>([]);
-const selections = ref<any[]>([]);
-const selectedRowKeys = ref<any[]>([]);
+const tableData = ref<IApprovalListItemExt[]>([]);
+const selections = ref<IApprovalListItemExt[]>([]);
+const selectedRowKeys = ref<Array<string | number>>([]);
 const resourceList = ref<IResourceListPageOutput[]>([]);
-const childrenColumns = shallowRef<any[]>([
+const childrenColumns = shallowRef<ITableColumn<IResource>[]>([
   {
     title: '',
     colKey: 'serial-number',
@@ -234,8 +243,8 @@ const curPermission = ref<{
 });
 const expandableConfig = ref({
   expandColumn: false,
-  expandedRowKeys: [] as any[],
-  canExpand: (row: any) => {
+  expandedRowKeys: [] as number[],
+  canExpand: (row: IApprovalListItemExt) => {
     return ['resource'].includes(row.grant_dimension);
   },
 });
@@ -268,10 +277,10 @@ watch(
 );
 
 const setRowResources = () => {
-  tableData.value.forEach((row: any) => {
+  tableData.value.forEach((row) => {
     row.isSelectAll = true;
     row.selection = [];
-    row.resources = sortByKey(resourceList.value.filter((resource: IResourceListPageOutput) => row.resource_ids.includes(resource.id)), 'path');
+    row.resources = sortByKey(resourceList.value.filter(resource => row.resource_ids.includes(resource.id)), 'path');
   });
 };
 
@@ -294,7 +303,7 @@ function handleSearch() {
   getList();
 }
 
-const getTableColumns = computed((): any[] => {
+const getTableColumns = computed<ITableColumn<IApprovalListItemExt>[]>(() => {
   return [
     {
       colKey: 'bk_app_code',
@@ -314,8 +323,8 @@ const getTableColumns = computed((): any[] => {
           value: id,
         })),
       },
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
-        if (['resource'].includes(row.grant_dimension!)) {
+      cell: (_h, { row }) => {
+        if (['resource'].includes(row.grant_dimension)) {
           return (
             <div class="flex items-center">
               <ag-icon
@@ -334,7 +343,7 @@ const getTableColumns = computed((): any[] => {
       colKey: 'expire_days_display',
       title: t('权限期限'),
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         return row.expire_days_display || '--';
       },
     },
@@ -342,7 +351,7 @@ const getTableColumns = computed((): any[] => {
       colKey: 'reason',
       title: t('申请理由'),
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         return row.reason || '--';
       },
     },
@@ -351,7 +360,7 @@ const getTableColumns = computed((): any[] => {
       title: t('申请人'),
       ellipsis: true,
       width: 160,
-      cell: (_: unknown, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         if (!row?.applied_by) return '--';
 
         return featureFlagStore.isEnableDisplayName
@@ -369,9 +378,9 @@ const getTableColumns = computed((): any[] => {
       colKey: 'status',
       title: t('审批状态'),
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         return (
-          <span class={['ag-tag', { [row.status!]: row.status }]}>
+          <span class={['ag-tag', { [row.status]: row.status }]}>
             {APPROVAL_STATUS_MAP[row.status as keyof typeof APPROVAL_STATUS_MAP]}
           </span>
         );
@@ -382,7 +391,7 @@ const getTableColumns = computed((): any[] => {
       title: t('操作'),
       fixed: 'right',
       ellipsis: true,
-      cell: (h: any, { row }: { row: Partial<IApprovalListItemExt> }) => {
+      cell: (_h, { row }) => {
         if (isITSMApproval(row)) {
           return (
             <Button
@@ -398,9 +407,9 @@ const getTableColumns = computed((): any[] => {
         }
 
         if (
-          expandableConfig.value.expandedRowKeys.includes(row.id!)
+          expandableConfig.value.expandedRowKeys.includes(row.id)
           && !row.selection?.length
-          && !['api'].includes(row.grant_dimension!)
+          && !['api'].includes(row.grant_dimension)
         ) {
           return (
             <div>
@@ -458,9 +467,12 @@ const getTableColumns = computed((): any[] => {
 });
 const isEnabledITSMApply = computed(() => featureFlagStore?.flags?.ENABLE_ITSM4_PERMISSION_APPLY);
 
-const getTableData = async (params: Record<string, any> = {}) => {
+const getTableData = async (params: Record<string, any> = {}): Promise<ICountAndResults<IApprovalListItemExt>> => {
   const results = await getPermissionApplyList(apigwId.value, params);
-  return results ?? [];
+  return results ?? {
+    count: 0,
+    results: [],
+  };
 };
 
 // 获取资源列表数据
@@ -483,14 +495,8 @@ const handleRequestDone = () => {
   fetchResourceList();
 };
 
-const isITSMApproval = (row: TableRowData) => {
-  return isEnabledITSMApply.value && Boolean(row.itsm_ticket_url) && Boolean(row.itsm_ticket_id);
-};
-
-const disabledSelection = (row: TableRowData) => {
-  const isDisabled = isITSMApproval(row);
-  row.selectionTip = isDisabled ? t('单据接入了 ITSM，ITSM 不支持批量审批') : '';
-  return isDisabled;
+const isITSMApproval = (row: IApprovalListItemExt) => {
+  return Boolean(isEnabledITSMApply.value && row.itsm_ticket_url && row.itsm_ticket_id);
 };
 
 // 批量审批
@@ -504,16 +510,18 @@ const handleBatchApply = () => {
   batchApplyDialogConf.isShow = true;
 };
 
-const handleSelectionChange = ({ selections: selected, selectionsRowKeys }: any) => {
+const handleSelectionChange = (
+  { selections: selected, selectionsRowKeys }: ITableSelection<TableRow<IApprovalListItemExt>>,
+) => {
   selections.value = selected;
   selectedRowKeys.value = selectionsRowKeys;
 };
 
 // 折叠table 多选发生变化触发
-const handleRowSelectionChange = (row: any, rowSelections: any) => {
-  const { selections } = rowSelections;
-  const isSelectAll = row.resources.length === selections.length;
-  row.selection = selections;
+const handleRowSelectionChange = (row: IApprovalListItemExt, rowSelections: ITableSelection<TableRow<IResource>>) => {
+  const { selections: selectedResources } = rowSelections;
+  const isSelectAll = (row.resources?.length ?? 0) === selectedResources.length;
+  row.selection = selectedResources;
   row.isSelectAll = isSelectAll;
   curPermission.value = Object.assign(curPermission.value, {
     selection: row.selection,
@@ -522,7 +530,7 @@ const handleRowSelectionChange = (row: any, rowSelections: any) => {
 };
 
 // 处理表头筛选联动搜索框
-const handleFilterChange = (filterItem: any) => {
+const handleFilterChange = (filterItem: FilterValue) => {
   filterData.value = Object.assign(filterData.value, filterItem);
   filterValue.value = Object.assign({}, filterItem);
   fetchResourceList();
@@ -534,7 +542,7 @@ const updateStatus = async () => {
   const { isSelectAll, selection } = curPermission.value;
   await approveForm.value?.validate();
   // 部分通过
-  const id = params?.ids?.[0] || '';
+  const id = params?.ids?.[0] || 0;
   if (
     ['approved'].includes(params.status as IApplyStatus)
     && expandableConfig.value.expandedRowKeys.includes(id)
@@ -543,7 +551,7 @@ const updateStatus = async () => {
   ) {
     params = Object.assign(params, {
       status: 'partial_approved',
-      part_resource_ids: { [id]: selection.map((item: any) => item.id) },
+      part_resource_ids: { [id]: selection.map(item => item.id) },
     });
   }
   await updatePermissionStatus(apigwId.value, params as IAppPermissionApplyApprovalInputSLZ);
@@ -562,7 +570,7 @@ const updateStatus = async () => {
 const handleApprovedPermission = () => {
   curAction.value = Object.assign(curAction.value, {
     status: 'approved',
-    ids: selections.value.map((permission: any) => permission.id),
+    ids: selections.value.map(permission => permission.id),
   });
   updateStatus();
 };
@@ -571,7 +579,7 @@ const handleApprovedPermission = () => {
 const handleRejectedPermission = () => {
   curAction.value = Object.assign(curAction.value, {
     status: 'rejected',
-    ids: selections.value.map((permission: any) => permission.id),
+    ids: selections.value.map(permission => permission.id),
   });
   updateStatus();
 };
@@ -582,11 +590,11 @@ const handlePrevent = (e: Event) => {
 };
 
 // 全部通过/部分通过
-const handleApplyApprove = (e: Event, row: Partial<IApprovalListItemExt>) => {
+const handleApplyApprove = (e: Event, row: IApprovalListItemExt) => {
   e.stopPropagation();
   curPermission.value = row as any;
   curAction.value = {
-    ids: [row.id!],
+    ids: [row.id],
     status: 'approved',
     comment: t('全部通过'),
     part_resource_ids: {},
@@ -601,11 +609,11 @@ const handleApplyApprove = (e: Event, row: Partial<IApprovalListItemExt>) => {
 };
 
 // 全部驳回
-const handleApplyReject = (e: Event, row: Partial<IApprovalListItemExt>) => {
+const handleApplyReject = (e: Event, row: IApprovalListItemExt) => {
   e.stopPropagation();
   curPermission.value = row as any;
   curAction.value = {
-    ids: [row.id!],
+    ids: [row.id],
     status: 'rejected',
     comment: t('全部驳回'),
     part_resource_ids: {},
@@ -621,35 +629,32 @@ const handleSubmitApprove = () => {
   updateStatus();
 };
 
-const handleSetRowClass = ({ row }: { row: any }) => {
+const handleSetRowClass = ({ row }: { row: IApprovalListItemExt }) => {
   if (row.grant_dimension.includes('resource')) {
     return 'cursor-pointer';
   }
   return '';
 };
 
-const handleRowClick = ({ e, row }: {
-  e: Event
-  row: IApprovalListItemExt
-}) => {
+const handleRowClick = ({ e, row }: RowEventContext<TableRow<IApprovalListItemExt>>) => {
   e.stopPropagation();
   if (row.grant_dimension.includes('resource')) {
     row.isExpand = !row.isExpand;
     expandableConfig.value.expandedRowKeys
-      = expandableConfig.value.expandedRowKeys.filter((item: any) => item === row.id);
-    const curExpandRow = row.isExpand ? row : {} as any;
+      = expandableConfig.value.expandedRowKeys.filter(item => item === row.id);
+    const curExpandRow = row.isExpand ? row : null;
     if (row.isExpand) {
-      expandableConfig.value.expandedRowKeys.push(row.id as any);
+      expandableConfig.value.expandedRowKeys.push(row.id);
     }
     else {
       expandableConfig.value.expandedRowKeys
-        = expandableConfig.value.expandedRowKeys.filter((item: any) => item !== row.id);
+        = expandableConfig.value.expandedRowKeys.filter(item => item !== row.id);
     }
-    tableData.value.forEach((item: any) => {
-      const isExpand = item.id === curExpandRow.id;
+    tableData.value.forEach((item) => {
+      const isExpand = item.id === curExpandRow?.id;
       item.isExpand = isExpand;
       if (!isExpand) {
-        item = Object.assign(item, {
+        Object.assign(item, {
           isExpand: false,
           selection: [],
           isSelectAll: true,
@@ -709,9 +714,9 @@ const handleClearSelection = () => {
 
       .bk-form-label {
         width: auto;
+        padding-right: 8px !important;
         text-align: right;
         white-space: nowrap;
-        padding-right: 8px !important;
       }
 
       .bk-form-content {

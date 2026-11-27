@@ -17,7 +17,7 @@
 -->
 
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="visible"
     :scrollbar="false"
     :title="title"
@@ -25,13 +25,13 @@
   >
     <div class="request-params-json-slider">
       <div class="request-params-json-slider__actions">
-        <IconButton
+        <AgIconButton
           icon="upload"
           theme="primary"
           @click="handleImportJSON"
         >
           {{ t('导入 JSON') }}
-        </IconButton>
+        </AgIconButton>
         <BkButton
           text
           theme="primary"
@@ -75,7 +75,7 @@
           </BkButton>
         </header>
         <main class="editor-main-content">
-          <EditorMonaco
+          <AgCodeEditor
             ref="editorRef"
             :minimap="false"
             :model-value="source"
@@ -103,12 +103,12 @@
         </BkButton>
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script lang="ts" setup>
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
-import EditorMonaco from '@/components/ag-editor/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 import { useFileSystemAccess } from '@vueuse/core';
 import { Message } from 'bkui-vue';
 import type { RequestParamsImportMode } from '../types';
@@ -135,7 +135,7 @@ const { t } = useI18n();
 
 const syntaxError = ref('');
 
-const editorRef = useTemplateRef<InstanceType<typeof EditorMonaco>>('editorRef');
+const editorRef = useTemplateRef<InstanceType<typeof AgCodeEditor>>('editorRef');
 
 const {
   data: importedJsonText,

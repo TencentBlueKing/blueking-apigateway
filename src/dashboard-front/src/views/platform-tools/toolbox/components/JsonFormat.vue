@@ -94,9 +94,9 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { copy as copyToClipboard } from '@/utils';
-import highlightJs from 'highlight.js';
+import highlightJs from 'highlight.js/lib/common';
 
 const { t } = useI18n();
 
@@ -104,7 +104,7 @@ const jsonString = ref<string>('');
 const result = ref<string>('');
 const errorMsg = ref<string>('');
 
-const jsonInputRef = ref();
+const jsonInputRef = useTemplateRef('jsonInputRef');
 
 const handleInputClick = () => {
   jsonInputRef.value?.focus();

@@ -83,8 +83,6 @@
             :immediate="false"
             :show-pagination="false"
             :show-settings="false"
-            :cache-identifier="TABLE_CACHE_IDENTIFIER"
-            :cache-settings-in-local-storage="false"
             expand-on-row-click
             :expanded-row-keys="expandedRowKeys"
             @expand-change="handleExpandChange"
@@ -140,14 +138,13 @@
 </template>
 
 <script lang="tsx" setup>
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import type { IResourcePathConflictGroupOutput } from '@/services/types/responses/gateways.ts';
+import type { IResourcePathConflictGroupOutput } from '@/services/types/gateway/resource.ts';
 import { getResourcePathConflicts } from '@/services/source/gateway/resource';
 import { useEnv } from '@/stores';
 import { useFeatureFlag } from '@/stores/useFeatureFlag';
 import { METHOD_THEMES } from '@/enums';
-import AgTable from '@/components/ag-table/Index.vue';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgTable, { type ExpandOptions, type ITableColumn } from '@/components/base/ag-table';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 interface IConflictPartner {
   id: number
@@ -203,9 +200,6 @@ const detailOverflow = ref<Record<number, Partial<Record<IDetailField, boolean>>
 const DEFAULT_VISIBLE_CARDS = 12;
 // 紧凑表最大高度，超出后表格内部滚动
 const TABLE_MAX_HEIGHT = 360;
-// 与主表同处一个路由，表格设置的缓存 key 会退化成路由名而互相串用，
-// 主表隐藏的列会把紧凑表的列一起隐藏掉，因此这里单独给一个标识
-const TABLE_CACHE_IDENTIFIER = 'resource-path-conflicts';
 // 冲突资源不超过该数量时不收起，直接展示明细
 const COLLAPSE_THRESHOLD = 3;
 // 明细卡片 tooltip 的最大宽度
@@ -219,7 +213,7 @@ const showTips = computed(() => !hidden && (needNewVersion || showConflictTips.v
 const maxConflictCount = computed(
   () => conflictRows.value.reduce((max, row) => Math.max(max, row.conflicts.length), 0),
 );
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<ITableColumn<IConflictRow>[]>(() => [
   {
     colKey: 'name',
     title: t('资源'),
@@ -230,7 +224,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'method',
     title: t('请求方法'),
     width: 140,
-    cell: (_h: unknown, { row }: { row: TableRowData }) => (
+    cell: (_h, { row }) => (
       <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
         {row.method}
       </bk-tag>
@@ -246,7 +240,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     colKey: 'conflicts',
     title: t('冲突数'),
     width: 200,
-    cell: (_h: unknown, { row }: { row: TableRowData }) => (
+    cell: (_h, { row }) => (
       <span class="conflict-count">{t('与 {count} 个资源冲突', { count: row.conflicts.length })}</span>
     ),
   },
@@ -366,7 +360,7 @@ const showAllDetail = () => {
 // 一次只保留一行明细展开
 const handleExpandChange = (
   expandedKeys: Array<string | number>,
-  { currentRowData }: { currentRowData: TableRowData },
+  { currentRowData }: ExpandOptions<IConflictRow>,
 ) => {
   expandedRowKeys.value = expandedKeys.includes(currentRowData.id) ? [currentRowData.id] : [];
   // 切换展开行时，明细卡片回到默认展示的数量
@@ -448,16 +442,6 @@ defineExpose({ refresh: fetchConflicts });
     overflow: hidden;
     background-color: #FFF;
     border-radius: 2px;
-
-    :deep([data-colkey='__col_setting__']),
-    :deep(.t-table__cell--fixed-right) {
-      display: none;
-    }
-
-    :deep(colgroup col:last-child) {
-      width: 0 !important;
-      min-width: 0 !important;
-    }
   }
 
   :deep(.conflict-count) {

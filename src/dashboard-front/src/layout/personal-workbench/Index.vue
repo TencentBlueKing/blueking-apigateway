@@ -88,7 +88,7 @@ import { t } from '@/locales';
 import { useFeatureFlag } from '@/stores';
 import type { IMenu } from '@/types/common';
 import { usePersonalWorkbench } from '@/hooks';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 const route = useRoute();
 const router = useRouter();

@@ -23,6 +23,8 @@ from types import SimpleNamespace
 import pytest
 from ddf import G
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.translation import override
 
 from apigateway.apps.audit.constants import OpObjectTypeEnum, OpTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
@@ -61,6 +63,42 @@ def disable_app_permission(mocker):
         "apigateway.apis.v2.permissions.OpenAPIV2GatewayRelatedAppPermission.has_permission",
         return_value=True,
     )
+
+
+@pytest.mark.parametrize("size", [10 * 1024 * 1024 - 1, 10 * 1024 * 1024, 10 * 1024 * 1024 + 1])
+@pytest.mark.parametrize("filename", ["docs.zip", "docs.tgz"])
+@pytest.mark.parametrize(
+    "language, expected_message",
+    [("zh-hans", "文件大小不能超过 10MB。"), ("en", "File size cannot exceed 10MB.")],
+)
+def test_archive_upload_size_limit(
+    request_view, fake_gateway, disable_app_permission, mocker, size, filename, language, expected_message
+):
+    parser = mocker.patch("apigateway.apis.v2.sync.views.ArchiveParser.parse", return_value=[])
+    importer = mocker.patch("apigateway.apis.v2.sync.views.DocImporter.import_docs")
+
+    with override(language):
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.resource_doc.import",
+            path_params={"gateway_name": fake_gateway.name},
+            gateway=fake_gateway,
+            format="multipart",
+            data={"file": SimpleUploadedFile(filename, b"x" * size)},
+        )
+
+    if size > 10 * 1024 * 1024:
+        assert response.status_code == 400
+        error = response.json()["error"]
+        assert error["code"] == "INVALID_ARGUMENT"
+        assert "file" in error["message"]
+        assert expected_message in error["message"]
+        parser.assert_not_called()
+        importer.assert_not_called()
+    else:
+        assert response.status_code == 201
+        parser.assert_called_once()
+        importer.assert_called_once_with(docs=[])
 
 
 def _model_backend(name="openai-primary"):
@@ -620,6 +658,66 @@ class TestSyncApi:
         assert response.status_code == 200, response.json()
         assert response.json()["data"]["kind"] == "ai"
         assert Gateway.objects.get(name=gateway_name).kind == GatewayKindEnum.AI.value
+
+    @pytest.mark.parametrize(
+        ("data", "expected"),
+        [
+            ({}, True),
+            ({"oauth2_app_enabled": True}, True),
+            ({"oauth2_app_enabled": False}, False),
+        ],
+    )
+    def test_gateway_sync_creates_gateway_with_oauth2_app_enabled(
+        self, mocker, request_view, unique_gateway_name, disable_app_permission, default_data_plane, data, expected
+    ):
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": unique_gateway_name},
+            data=data,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        assert Gateway.objects.get(name=unique_gateway_name).oauth2_app_enabled is expected
+
+    @pytest.mark.parametrize(
+        ("data", "expected"),
+        [
+            # 未传时保留管理员在页面上关闭的开关
+            ({"description": "updated"}, False),
+            ({"oauth2_app_enabled": True}, True),
+            ({"oauth2_app_enabled": False}, False),
+        ],
+    )
+    def test_gateway_sync_updates_oauth2_app_enabled_only_when_provided(
+        self,
+        mocker,
+        request_view,
+        fake_gateway,
+        unique_gateway_name,
+        disable_app_permission,
+        default_data_plane,
+        data,
+        expected,
+    ):
+        fake_gateway.name = unique_gateway_name
+        fake_gateway.oauth2_app_enabled = False
+        fake_gateway.save(update_fields=["name", "oauth2_app_enabled"])
+        GatewayHandler.save_auth_config(fake_gateway.id, user_auth_type="default")
+
+        response = request_view(
+            method="POST",
+            view_name="openapi.v2.sync.gateway.sync",
+            path_params={"gateway_name": fake_gateway.name},
+            data=data,
+            gateway=fake_gateway,
+            app=mocker.MagicMock(app_code="foo"),
+        )
+
+        assert response.status_code == 200, response.json()
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.oauth2_app_enabled is expected
 
     @pytest.mark.parametrize(
         ("data", "expected_is_official", "expected_api_type"),
@@ -1721,9 +1819,10 @@ class TestSyncApiCategory:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试创建 MCPServer 时同步分类"""
+        """测试官方网关创建 MCPServer 时同步特殊分类"""
         make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
+        fake_gateway.is_official = True
         fake_stage.name = "test"
         fake_gateway.save()
         fake_stage.save()
@@ -1924,7 +2023,7 @@ class TestSyncApiCategory:
         fake_release_v2,
         disable_app_permission,
     ):
-        """测试更新 MCPServer 时同步分类"""
+        """测试更新 MCPServer 时同步分类：以声明为准替换，已绑定的特殊分类也被移除"""
         make_resource_schema_version(fake_release_v2.resource_version)
         fake_gateway.name = "test"
         fake_stage.name = "test"
@@ -1984,9 +2083,7 @@ class TestSyncApiCategory:
 
         # 验证分类已更新
         mcp_server.refresh_from_db()
-        assert mcp_server.categories.count() == 1
-        assert not mcp_server.categories.filter(id=category1.id).exists()
-        assert mcp_server.categories.filter(id=category2.id).exists()
+        assert set(mcp_server.categories.values_list("id", flat=True)) == {category2.id}
 
     def test_mcp_server_sync_update_without_category_names(
         self,
@@ -2097,6 +2194,94 @@ class TestSyncApiCategory:
         assert resp.status_code == 400
         result = resp.json()
         assert "分类不存在" in str(result["error"])
+
+    def test_mcp_server_sync_ignores_special_categories_on_normal_gateway(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """非官方网关传入的 Official/Featured 不生效"""
+        make_resource_schema_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_gateway.is_official = False
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        for name in ["Official", "Featured", "Monitoring"]:
+            MCPServerCategory.objects.get_or_create(name=name, defaults={"display_name": name})
+
+        data = {
+            "mcp_servers": [
+                {
+                    "name": "special-category-server",
+                    "resource_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "special category",
+                    "status": 1,
+                    "category_names": ["Official", "Featured", "Monitoring"],
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 200
+        mcp_server = MCPServer.objects.get(id=resp.json()["data"][0]["id"])
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Monitoring"]
+
+    def test_mcp_server_sync_with_inactive_category_names(
+        self,
+        request_view,
+        fake_gateway,
+        fake_stage,
+        fake_resource,
+        fake_resource_schema_with_body,
+        fake_release_v2,
+        disable_app_permission,
+    ):
+        """传入已停用的分类，返回错误"""
+        make_resource_schema_version(fake_release_v2.resource_version)
+        fake_gateway.name = "test"
+        fake_stage.name = "test"
+        fake_gateway.save()
+        fake_stage.save()
+
+        MCPServerCategory.objects.update_or_create(
+            name="Monitoring", defaults={"display_name": "监控告警", "is_active": False}
+        )
+
+        data = {
+            "mcp_servers": [
+                {
+                    "name": "inactive-category-server",
+                    "resource_names": [fake_resource.name],
+                    "is_public": True,
+                    "description": "inactive category",
+                    "status": 1,
+                    "category_names": ["Monitoring"],
+                }
+            ]
+        }
+        resp = request_view(
+            method="POST",
+            gateway=fake_gateway,
+            view_name="openapi.v2.sync.gateway.stages.mcp_servers.sync",
+            path_params={"gateway_name": fake_gateway.name, "stage_name": fake_stage.name},
+            data=data,
+        )
+        assert resp.status_code == 400
+        assert "已停用" in str(resp.json()["error"])
+        assert not MCPServer.objects.filter(name__endswith="inactive-category-server").exists()
 
 
 class TestSyncApiToolNames:

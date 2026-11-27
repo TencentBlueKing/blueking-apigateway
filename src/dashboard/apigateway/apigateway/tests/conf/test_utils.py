@@ -34,6 +34,14 @@ def test_get_plugin_metadata_config_uses_local_concurrency_policy():
     assert config["bk-concurrency-limit"]["policy"] == "local"
 
 
+def test_get_plugin_metadata_config_includes_request_size_fields():
+    log_format = get_plugin_metadata_config(Env())["file-logger"]["log_format"]
+
+    assert log_format["request_size"] == "$request_length"
+    assert log_format["content_length"] == "$content_length"
+    assert log_format["response_size"] == "$body_bytes_sent"
+
+
 def test_get_default_feature_flags_mcp_server_oauth2_personal_client(monkeypatch):
     env = Env()
     kwargs = {
@@ -102,12 +110,10 @@ def test_get_frontend_env_vars_includes_paas_developer_center_link(monkeypatch):
 def test_get_cli_function_overview_includes_developer_center():
     overview = get_cli_function_overview("ZH")
 
-    assert overview[-1] == {
-        "service": "开发者中心",
-        "title": "创建应用、部署应用、查看访问地址",
-    }
     assert [item["service"] for item in overview] == [
         "API 网关",
+        "监控平台",
+        "AIDev",
         "配置平台",
         "作业平台",
         "标准运维",
@@ -117,10 +123,18 @@ def test_get_cli_function_overview_includes_developer_center():
 
 
 def test_get_cli_function_overview_english():
-    assert get_cli_function_overview("EN")[-1] == {
-        "service": "Developer Center",
-        "title": "Create Application, Deploy Application, View Access Address",
-    }
+    overview = get_cli_function_overview("EN")
+
+    assert [item["service"] for item in overview] == [
+        "API Gateway",
+        "Monitor",
+        "AIDev",
+        "CMDB",
+        "Job",
+        "SOPS",
+        "NodeMan",
+        "Developer Center",
+    ]
 
 
 def test_get_doc_links_includes_personal_token():

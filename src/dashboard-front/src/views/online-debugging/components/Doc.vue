@@ -55,7 +55,7 @@
         class="bk-special-tab"
       >
         <BkTabPanel
-          :name="'doc'"
+          name="doc"
           :label="t('文档')"
         >
           <div class="ag-kv-box mb-30px">
@@ -120,7 +120,7 @@
               >
                 {{ curComponent.resource_url || '--' }}
               </code>
-              <CopyButton
+              <AgCopyButton
                 v-if="curComponent.resource_url"
                 v-bk-tooltips="t('复制')"
                 class="url-copy"
@@ -155,8 +155,10 @@ import {
 import { getReleasedStageResources } from '@/services/source/gateway/release';
 import DocAuthSection from '@/views/api-docs/components/DocAuthSection.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
-import type { IDocsGatewaysSdksUsageExampleReadQuery } from '@/services/types/query/docs.ts';
-import type { IDocsGatewaysResourcesListResponse } from '@/services/types/responses/docs.ts';
+import type {
+  IDocsGatewaysResourcesListResponse,
+  IDocsGatewaysSdksUsageExampleReadQuery,
+} from '@/services/types/docs/gateway.ts';
 
 interface IProps {
   stageName?: string
@@ -205,6 +207,8 @@ const curComponent = ref<IDocCom>({
   markdownHtml: '',
   authMarkdownHtml: '',
   resource_url: '',
+  is_deprecated: false,
+  deprecated_note: '',
 });
 const curApigw = ref<Partial<IGatewayDocsDetail>>({
   name: '',
@@ -213,7 +217,7 @@ const curApigw = ref<Partial<IGatewayDocsDetail>>({
 const curDocUpdated = ref('');
 const sdkMarkdownHtml = ref('');
 const renderHtmlIndex = ref(0);
-const componentContentRef = ref<HTMLElement | null>(null);
+const componentContentRef = useTemplateRef<HTMLElement>('componentContentRef');
 
 // 请求方法统一大写，用于调用地址徽标展示
 const curMethod = computed(() => (curComponent.value.method || '').toUpperCase());
@@ -280,7 +284,7 @@ const getApigwResourceDoc = async () => {
   curComponent.value.authMarkdownHtml = md.render(auth_content || '');
   curComponent.value.markdownHtml = md.render(isSplitDoc ? (body_content || '') : (content || ''));
   renderHtmlIndex.value += 1;
-  curDocUpdated.value = res.updated_time;
+  curDocUpdated.value = res.updated_time ?? '';
 };
 
 const getApigwResourceSDK = async () => {

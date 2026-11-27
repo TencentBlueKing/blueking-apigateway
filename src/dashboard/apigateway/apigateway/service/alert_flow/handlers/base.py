@@ -112,10 +112,10 @@ class RelatedLogRecordsFetcher(AlertHandler):
         return client.search(time_utils.timestamp(event.event_begin_time), event.event_dimensions)
 
     def _filter_request_log_records(self, alarm_type: AlarmTypeEnum, records: Iterable[Dict[str, Any]]) -> list:
-        return [record for record in records if self._is_record_need_alert(alarm_type, record["_source"])]
-
-    def _is_record_need_alert(self, alarm_type: AlarmTypeEnum, record_source: dict):
         filter_conditions = AlarmFilterConfig.objects.get_filter_config(alarm_type.value)
+        return [record for record in records if self._is_record_need_alert(filter_conditions, record["_source"])]
+
+    def _is_record_need_alert(self, filter_conditions: list, record_source: dict):
         if Matcher().is_match(record_source, filter_conditions):
             return False
         return True

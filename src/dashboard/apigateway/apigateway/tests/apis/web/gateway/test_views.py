@@ -418,7 +418,7 @@ class TestGatewayListCreateApi:
                 {
                     "name": "test3",
                     "description": "test description",
-                    "maintainers": ["admin"],
+                    "maintainers": ["alice"],
                     "is_public": False,
                     "bk_app_codes": ["app1"],
                     "tenant_mode": "single",
@@ -479,6 +479,7 @@ class TestGatewayRetrieveUpdateDestroyApi:
 
         assert resp.status_code == 200
         assert result["data"]["id"] == fake_gateway.id
+        assert result["data"]["oauth2_app_enabled"] is True
 
     def test_update(self, request_view, faker, fake_gateway):
         data = {
@@ -519,6 +520,20 @@ class TestGatewayRetrieveUpdateDestroyApi:
         auth_config = GatewayHandler.get_gateway_auth_config(gateway.id)
         assert "allow_auth_from_params" not in auth_config
         assert "allow_delete_sensitive_params" not in auth_config
+        # 未传 oauth2_app_enabled 时保留当前值
+        assert gateway.oauth2_app_enabled is True
+
+    def test_partial_update_oauth2_app_enabled(self, request_view, fake_gateway):
+        resp = request_view(
+            method="PATCH",
+            view_name="gateways.retrieve_update_destroy",
+            path_params={"gateway_id": fake_gateway.id},
+            data={"oauth2_app_enabled": False},
+        )
+
+        assert resp.status_code == 204
+        fake_gateway.refresh_from_db()
+        assert fake_gateway.oauth2_app_enabled is False
 
     def test_destroy(self, request_view, fake_gateway):
         fake_gateway.status = GatewayStatusEnum.INACTIVE.value

@@ -393,9 +393,19 @@ def direct_auth(payload: DirectAuthPayload, tenant_id: str) -> bool:
     return data["allowed"]
 
 
-def add_authorization(authorizations: list[AuthorizationPayload], operator: str, tenant_id: str) -> None:
+def add_authorization(
+    authorizations: list[AuthorizationPayload],
+    operator: str,
+    tenant_id: str,
+    *,
+    skip_missing_users: bool = False,
+    gateway_id: int | None = None,
+    gateway_name: str | None = None,
+) -> int:
     """
     批量授予角色授权。
+
+    返回跳过的 missing 授权项数；对账、自动同步和续期允许跳过全部 missing 的批次。
 
     调用接口: add_authorization (POST)
     路径: /api/v1/open/rbac/mgmt/systems/{system_id}/authorizations/
@@ -445,11 +455,25 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str,
             resp_data.get("status_code") == 400
             and error.get("code") == "INVALID_REQUEST"
             and missing_users
-            and retry_payload
             and len(retry_payload) < len(payload)
         ):
             raise
-        logger.warning("retry bkiam authorizations without missing users, missing_users=%s", missing_users)
+        if not retry_payload:
+            if not skip_missing_users:
+                raise
+            logger.warning(
+                "skip bkiam authorizations: all users are missing, gateway_id=%s gateway_name=%s missing_users=%s",
+                gateway_id,
+                gateway_name,
+                missing_users,
+            )
+            return len(payload)
+        logger.warning(
+            "retry bkiam authorizations without missing users, gateway_id=%s gateway_name=%s missing_users=%s",
+            gateway_id,
+            gateway_name,
+            missing_users,
+        )
         try:
             _call_bkiam_api(
                 post,
@@ -465,6 +489,8 @@ def add_authorization(authorizations: list[AuthorizationPayload], operator: str,
                 operator,
                 missing_users,
             )
+        return len(payload) - len(retry_payload)
+    return 0
 
 
 def revoke_authorization(authorizations: list[RevokeAuthorizationPayload], operator: str, tenant_id: str) -> None:

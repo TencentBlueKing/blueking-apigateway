@@ -42,9 +42,10 @@ def disable_app_permission(mocker):
 
 class TestGatewayListApi:
     def test_list(self, request_view, fake_gateway, mocker):
+        G(Release, gateway=fake_gateway)
         mocker.patch(
-            "apigateway.apis.open.gateway.views.GatewayListApi._filter_list_queryset",
-            return_value=Gateway.objects.filter(id=fake_gateway.id),
+            "apigateway.apis.open.gateway.views.GatewayListApi._filter_list_gateway_ids",
+            return_value=[fake_gateway.id],
         )
 
         resp = request_view(
@@ -59,48 +60,55 @@ class TestGatewayListApi:
         assert result["data"][0]["is_official"] is fake_gateway.is_official
         assert isinstance(result["data"][0]["api_type"], int)
 
-    def test_filter_list_queryset(self, fake_gateway):
+    def test_list_excludes_gateway_no_longer_public(self, request_view, fake_gateway, mocker):
+        G(Release, gateway=fake_gateway)
+        # 网关 id 已在缓存中，之后网关被取消公开
+        mocker.patch(
+            "apigateway.apis.open.gateway.views.GatewayListApi._filter_list_gateway_ids",
+            return_value=[fake_gateway.id],
+        )
+        fake_gateway.is_public = False
+        fake_gateway.save(update_fields=["is_public"])
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.gateway.list",
+            app=mock.MagicMock(app_code="test"),
+        )
+
+        assert resp.json()["data"] == []
+
+    def test_filter_list_gateway_ids(self, fake_gateway):
         G(Release, gateway=fake_gateway)
 
         view = views.GatewayListApi()
 
-        queryset = view._filter_list_queryset()
-        assert queryset.filter(id=fake_gateway.id).exists()
+        assert fake_gateway.id in view._filter_list_gateway_ids()
+        assert view._filter_list_gateway_ids(name=fake_gateway.name, fuzzy=False) == [fake_gateway.id]
+        assert view._filter_list_gateway_ids(user_auth_type="not-exist") == []
 
-        queryset = view._filter_list_queryset(name=fake_gateway.name, fuzzy=False)
-        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
-
-        queryset = view._filter_list_queryset(user_auth_type="not-exist")
-        assert queryset.count() == 0
-
-    def test_filter_list_queryset_by_ai_kind(self, fake_gateway):
+    def test_filter_list_gateway_ids_by_ai_kind(self, fake_gateway):
         fake_gateway.kind = GatewayKindEnum.AI.value
         fake_gateway.save()
         G(Release, gateway=fake_gateway)
 
-        queryset = views.GatewayListApi()._filter_list_queryset(kind="ai")
+        assert views.GatewayListApi()._filter_list_gateway_ids(kind="ai") == [fake_gateway.id]
 
-        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
-
-    def test_filter_list_queryset_by_normal_kind_includes_legacy_null(self, fake_gateway):
+    def test_filter_list_gateway_ids_by_normal_kind_includes_legacy_null(self, fake_gateway):
         fake_gateway.kind = None
         fake_gateway.save(update_fields=["kind"])
         G(Release, gateway=fake_gateway)
 
-        queryset = views.GatewayListApi()._filter_list_queryset(kind="normal")
+        assert views.GatewayListApi()._filter_list_gateway_ids(kind="normal") == [fake_gateway.id]
 
-        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
-
-    def test_filter_list_queryset_by_programmable_kind(self, fake_gateway):
+    def test_filter_list_gateway_ids_by_programmable_kind(self, fake_gateway):
         fake_gateway.kind = GatewayKindEnum.PROGRAMMABLE.value
         fake_gateway.save()
         G(Release, gateway=fake_gateway)
 
-        queryset = views.GatewayListApi()._filter_list_queryset(kind="programmable")
+        assert views.GatewayListApi()._filter_list_gateway_ids(kind="programmable") == [fake_gateway.id]
 
-        assert list(queryset.values_list("id", flat=True)) == [fake_gateway.id]
-
-    def test_filter_list_queryset_without_kind_returns_all_kinds(self, fake_gateway):
+    def test_filter_list_gateway_ids_without_kind_returns_all_kinds(self, fake_gateway):
         G(Release, gateway=fake_gateway)
         gateways = [fake_gateway]
         for kind in [GatewayKindEnum.PROGRAMMABLE.value, GatewayKindEnum.AI.value]:
@@ -115,9 +123,9 @@ class TestGatewayListApi:
             G(Release, gateway=gateway)
             gateways.append(gateway)
 
-        queryset = views.GatewayListApi()._filter_list_queryset()
+        gateway_ids = views.GatewayListApi()._filter_list_gateway_ids()
 
-        assert {gateway.id for gateway in gateways}.issubset(set(queryset.values_list("id", flat=True)))
+        assert {gateway.id for gateway in gateways}.issubset(gateway_ids)
 
 
 class TestGatewayRetrieveApi:

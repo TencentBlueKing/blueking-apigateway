@@ -15,6 +15,7 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from enum import StrEnum
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -22,6 +23,14 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from apigateway.biz.plugin import PluginConfigData
 from apigateway.core.constants import ResourceKindEnum
 from apigateway.core.models import Backend, Resource
+
+
+class ResourceAuthFilterType(StrEnum):
+    NONE = "none"
+    APP = "app"
+    PERSONAL = "personal"
+    PUBLIC = "public"
+    OAUTH = "oauth"
 
 
 class ResourceAuthConfig(BaseModel):
@@ -37,6 +46,13 @@ class ResourceAuthConfig(BaseModel):
             self.oauth2_public_client_enabled or self.oauth2_personal_client_enabled
         ) and not self.auth_verified_required:
             raise ValueError("OAuth2 public/personal clients require user authentication")
+        return self
+
+    @model_validator(mode="after")
+    def normalize_resource_perm_required(self):
+        # 层级约束：校验应用权限依赖应用认证；上层关闭时下层静默写为 false
+        if not self.app_verified_required:
+            self.resource_perm_required = False
         return self
 
 
@@ -91,6 +107,13 @@ class ResourceData(BaseModel):
                 raise ValueError("standard resource requires backend_config")
         else:
             raise ValueError(f"unsupported resource kind: {self.kind}")
+        return self
+
+    @model_validator(mode="after")
+    def normalize_allow_apply_permission(self):
+        # 层级约束：允许申请权限依赖“公开”与“校验应用权限”；不记忆原值
+        if not (self.is_public and self.auth_config.resource_perm_required):
+            self.allow_apply_permission = False
         return self
 
     @model_validator(mode="after")

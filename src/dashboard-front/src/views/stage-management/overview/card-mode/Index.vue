@@ -65,7 +65,7 @@
     />
 
     <!-- 发布普通网关的资源至环境 -->
-    <ReleaseStage
+    <ReleaseStageSlider
       ref="releaseStageRef"
       :current-assets="currentStage"
       @hidden="handleReleaseSuccess"
@@ -83,7 +83,7 @@
     />
 
     <!-- 日志抽屉 -->
-    <ReleaseStageEvent
+    <PublishEventSlider
       ref="logDetailsRef"
       :history-id="historyId"
       @release-doing="handleSliderHideWhenPending"
@@ -110,10 +110,10 @@ import type { IStageListItem } from '@/types/stage';
 import { getGatewayDetail } from '@/services/source/gateway/gateway';
 import { getProgrammableStageDetail } from '@/services/source/gateway/programmable';
 import { useTimeoutPoll } from '@vueuse/core';
-import ReleaseStage from '@/components/release-stage/Index.vue';
+import ReleaseStageSlider from '@/components/release/release-stage-slider/Index.vue';
 import ReleaseProgrammable from '../components/ReleaseProgrammable.vue';
 import CreateStage from '../components/CreateStage.vue';
-import ReleaseStageEvent from '@/components/release-stage-event/Index.vue';
+import PublishEventSlider from '@/components/release/publish-event-slider/Index.vue';
 import ReleaseProgrammableEvent from '../../components/ReleaseProgrammableEvent.vue';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import { usePopInfoBox } from '@/hooks';
@@ -135,16 +135,16 @@ const historyId = ref<number>();
 const deployId = ref<string>();
 const currentStage = ref<IStageListItem>();
 
-const releaseStageRef = ref();
-const releaseProgrammableRef = ref();
-const logDetailsRef = ref();
-const programmableEventSliderRef = ref();
+const releaseStageRef = useTemplateRef('releaseStageRef');
+const releaseProgrammableRef = useTemplateRef('releaseProgrammableRef');
+const logDetailsRef = useTemplateRef('logDetailsRef');
+const programmableEventSliderRef = useTemplateRef('programmableEventSliderRef');
 
 // 当前网关基本信息
 const basicInfoData = ref<IExtractApiReturn<typeof getGatewayDetail>>();
 
 const stageList = ref<ILocalStageItem[]>([]);
-const stageSidesliderRef = ref();
+const stageSidesliderRef = useTemplateRef('stageSidesliderRef');
 const isLoading = ref(false);
 const loadingProgrammableStageIds = ref<number[]>([]);
 

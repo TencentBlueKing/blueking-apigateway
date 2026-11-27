@@ -15,8 +15,22 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
+from typing import TYPE_CHECKING
+
 from django.utils.translation import gettext as _
 from rest_framework import serializers
+
+if TYPE_CHECKING:
+    from django.core.files.uploadedfile import UploadedFile
+
+
+class FileSizeValidator:
+    def __init__(self, max_size_mb: int):
+        self.max_size_mb = max_size_mb
+
+    def __call__(self, value: UploadedFile):
+        if value.size > self.max_size_mb * 1024 * 1024:
+            raise serializers.ValidationError(_("文件大小不能超过 {max_size}MB。").format(max_size=self.max_size_mb))
 
 
 class NameValidator:

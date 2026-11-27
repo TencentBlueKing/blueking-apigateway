@@ -501,7 +501,7 @@ class ProgrammableStageDeployRetrieveApi(StageQuerySetMixin, generics.RetrieveUp
         }
         context_data.update(stage_deploy_result)
         output_slz = self.get_serializer(
-            instance=stage_deploy_result.get("last_deploy_history", ProgrammableGatewayDeployHistory()),
+            instance=stage_deploy_result.get("current_deploy_history", ProgrammableGatewayDeployHistory()),
             context=context_data,
         )
         return OKJsonResponse(data=output_slz.data)

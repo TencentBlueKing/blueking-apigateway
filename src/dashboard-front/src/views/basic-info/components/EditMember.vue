@@ -69,7 +69,7 @@
       class="edit-mode-content"
     >
       <main class="edit-member-wrap">
-        <MemberSelector
+        <StaffSelector
           ref="memberSelectorRef"
           v-model="displayValue"
           class="edit-selector w-500px"
@@ -131,7 +131,7 @@
 </template>
 
 <script lang="ts" setup>
-import MemberSelector from '@/components/member-selector/index.tsx';
+import StaffSelector from '@/components/user/staff-selector';
 import { useFeatureFlag, useUserInfo } from '@/stores';
 
 interface IProps {
@@ -170,8 +170,8 @@ const { t } = useI18n();
 const userInfoStore = useUserInfo();
 const featureFlagStore = useFeatureFlag();
 
-const memberSelectorRef = ref();
-const memberSelectorEditRef = ref();
+const memberSelectorRef = useTemplateRef<{ tagInputRef?: { focusInputTrigger?: () => void } }>('memberSelectorRef');
+const memberSelectorEditRef = useTemplateRef('memberSelectorEditRef');
 const isShowError = ref(false);
 const isEditable = ref(false);
 const errorTips = ref('');
@@ -209,7 +209,7 @@ const handleEdit = () => {
   document.body.click();
   isEditable.value = true;
   nextTick(() => {
-    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger?.();
   });
 };
 
@@ -233,7 +233,7 @@ const handleChange = () => {
   }
   isEditable.value = true;
   nextTick(() => {
-    memberSelectorRef.value?.tagInputRef?.focusInputTrigger();
+    memberSelectorRef.value?.tagInputRef?.focusInputTrigger?.();
   });
   emit('on-change', { [field]: displayValue.value });
 };
@@ -366,6 +366,7 @@ defineExpose({
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖 InfoBox 确认弹窗按钮全局样式 -->
 <style lang="scss">
 .confirm-custom-btn {
 

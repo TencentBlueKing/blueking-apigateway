@@ -16,8 +16,15 @@
  * to the current version of the project delivered to anyone in the future.
  */
 
-import type { IPosition } from 'monaco-editor';
+import type { IRange } from 'monaco-editor';
 import type { GatewayPermissionKey } from '@/constants/gateway-permission';
+import type {
+  IAgTableInstance,
+  ITableEmptyType,
+  ITableSelection,
+  ITableSettings,
+  TableRowData,
+} from '@/components/base/ag-table';
 
 // 导航栏菜单
 export interface IHeaderNav {
@@ -56,6 +63,15 @@ export interface IPagination {
   limitList?: number[]
   // 当前页码
   current?: number
+}
+
+/**
+ * 带时间范围的筛选状态：有效时为 Unix 整数秒，未选择时为空字符串
+ * 发送请求前用 toTimeRangeQuery 转为接口参数（两端成对传或都不传）
+ */
+export interface ITimeRangeFilter {
+  time_start?: number | ''
+  time_end?: number | ''
 }
 
 export interface IDropList {
@@ -106,35 +122,18 @@ export type CodeErrorMsgType = 'All' | 'Error' | 'Warning';
 // 错误原因类型
 export type ErrorReasonType = {
   json_path?: string // JSON路径，可能为空
-  paths?: string[] // 路径数组，可能为空
-  pathValue?: any[] // 路径值数组，可能为空
-  quotedValue?: string // 引用值，可能为空
-  stringToFind?: string // 要查找的字符串，可能为空
   message: string // 错误信息
-  isDecorated?: boolean // 是否装饰，可能为空
   level: CodeErrorMsgType // 错误级别
-  offset?: number // 偏移量，可能为空
-  position?: IPosition | null // 位置，可能为空
-  regex?: RegExp | null // 正则表达式，可能为空
+  range?: IRange // 源码范围，可能为空
 };
 
-// 表格组件导出内容
-export type ITableMethod = {
-  loading: boolean
-  TDesignTableRef: Ref
-  setPagination: () => void
-  getPagination: () => void
-  resetPaginationTheme: () => void
-  setPaginationTheme: () => void
-  fetchData: () => void
-  refresh: () => void
-};
+// 模板 ref 指向的 AgTable 实例（泛型化后通过显式暴露接口推导，避免 InstanceType 失效）。
+export type ITableMethod<TRow extends TableRowData = TableRowData> = IAgTableInstance<TRow>;
 
-// tdesign-table设置
-export type ITableSettings = {
-  columns: string[]
-  fontSize: 'large' | 'medium' | undefined
-  rowSize: 'large' | 'medium' | 'small' | undefined
+export type {
+  ITableEmptyType,
+  ITableSelection,
+  ITableSettings,
 };
 
 // 表单实例函数
@@ -176,8 +175,6 @@ export interface IMavonEditorProps {
   scrollStyle?: boolean
   toolbarsFlag?: boolean
 }
-
-export type ITableEmptyType = 'empty' | 'search-empty' | 'searchEmpty' | 'error';
 
 export type IMethodFilterItem = {
   label: string

@@ -118,6 +118,7 @@ const handleChange = () => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的下拉选项弹层样式 -->
 <style lang="scss">
 .resource-dropdown-wrapper {
 

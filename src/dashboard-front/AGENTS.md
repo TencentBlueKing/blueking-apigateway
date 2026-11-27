@@ -15,33 +15,43 @@
 
 | ID                   | 名称           | 场景               |
 |----------------------|--------------|------------------|
-| `bkui-builder`       | 设计稿还原专家      | UI 开发            |
-| `api-standard`       | 统一网络请求       | HTTP 封装          |
-| `pinia-setup`        | 全局状态管理       | Pinia            |
-| `bkui-cheatsheet`    | BKUI 组件速查    | 快速参考             |
-| `tapd-workitem`      | TAPD 单据查询    | 需求/缺陷/任务详情     |
+| `bkui-builder`       | 设计稿还原专家      | UI 开发与页面搭建       |
+| `bkui-cheatsheet`    | BKUI 组件速查    | BKUI 3.0 属性与避坑  |
+| `i18n-maintainer`    | 国际化词条同步      | 校验并同步中英文词条包     |
+
+### 推荐安装的外部 Vue Skills（可选）
+
+推荐开发者及其 AI Agents 在本机按需安装 [vuejs-ai/skills](https://github.com/vuejs-ai/skills) 中的 Vue 3 技能（非强制），用于补充 Vue 3 最佳实践与问题排查参考：
+
+- 推荐按需选用：`vue-best-practices`、`vue-pinia-best-practices`、`vue-router-best-practices`、`vue-testing-best-practices`、`vue-jsx-best-practices`、`vue-debug-guides`、`create-adaptable-composable`（本项目全面采用 Composition API，无需 `vue-options-api-best-practices`）。
+- 参考安装命令：`npx skills add vuejs-ai/skills`
+- **优先级**：若外部技能与本仓约定存在差异，**以本仓 `AGENTS.md`、`.agents/rules/` 及 ESLint 配置为准**（例如本仓的 `<template>` → `<script>` → `<style>` 块顺序、`unplugin-auto-import` 自动导入、`interface` 强制 `I` 前缀、Pinia 默认 Option Store）。
 
 ## 技术栈
 
 | 分类      | 技术                        | 版本         |
 |---------|---------------------------|------------|
 | 框架      | Vue 3 (Composition API)   | ^3.5       |
-| 构建工具    | Vite                      | 7.3        |
-| 类型系统    | TypeScript                | ~5.8       |
-| 状态管理    | Pinia                     | ^3.0       |
-| 路由      | Vue Router                | ^4.5       |
-| 国际化     | vue-i18n (Composition 模式) | ^11.1      |
-| HTTP 请求 | Axios                     | ^1.11      |
-| 主 UI 库  | bkui-vue (蓝鲸 UI)          | 2.0.2-beta |
+| 构建工具    | Vite (Rolldown)           | 8.3        |
+| 类型系统    | TypeScript                | ^5.9       |
+| 状态管理    | Pinia                     | ^4.1       |
+| 路由      | Vue Router                | ^5.5       |
+| 国际化     | vue-i18n (Composition 模式) | ^11.4      |
+| HTTP 请求 | Axios                     | 1.21.1     |
+| 主 UI 库  | bkui-vue (蓝鲸 UI)          | 3.0.10     |
 | 辅助 UI 库 | tdesign-vue-next（高级表格）    | ^1.18      |
 | 原子化 CSS | UnoCSS + Tailwind v3 预设   | ^66.3      |
 | 代码编辑器   | Monaco Editor             | ^0.52      |
-| 图表      | ECharts                   | ^5.6       |
-| 工具库     | @vueuse/*                 | ^13-14     |
+| 图表      | ECharts（按需引入）            | ^6.1       |
+| 工具库     | @vueuse/*                 | ^15.0      |
+| 自动化测试   | Vitest（happy-dom + Playwright Browser） | ^5.1       |
 
 ## 常用命令
 
-** 注意应首先使用 `pnpm` 执行命令，没有 `pnpm` 再使用 `npm`
+** 优先使用 `pnpm`（版本见 `package.json` 的 `packageManager`），CI 与 Dockerfile 均以 `pnpm-lock.yaml` 为准执行 `pnpm install --frozen-lockfile`；
+也可使用 `npm`（需加 `--force`，bkui-vue 的 peer 依赖与 highlight.js 版本冲突），但 npm 解析出的依赖树与 pnpm 不完全一致，
+排查构建或运行问题时以 pnpm 为准。两份 lockfile 都要提交：改动依赖后执行 `npm install --package-lock-only --force`
+同步 `package-lock.json`，CI 会检查它是否与 `package.json` 同步
 
 ```bash
 # 开发（Vite 开发服务器，端口 8888，启用 SSL）
@@ -50,20 +60,54 @@ pnpm dev
 # 切换到多租户环境开发，根目录要有 `.env.local.tenant` 文件
 pnpm dev:tenant
 
-# 构建（跳过类型检查），这是构建的主要方式，因为项目中有遗留的类型错误，所以跳过类型检查
+# 仅打包构建（跳过类型检查；CI 与 pre-commit 均会独立运行 type-check，提交前须确保 type-check 通过）
 pnpm build-only
 
-# 仅类型检查
+# 类型检查（CI 与 pre-commit 必过门禁）
 pnpm type-check    # vue-tsc --build
 
-# 代码检查
+# 单元测试（unit project，CI 会跑 test:unit，覆盖率报告输出到 coverage/）
+pnpm test:unit
+pnpm test:unit:watch
+pnpm test:unit:coverage
+
+# 浏览器组件测试（browser project，真实无头 Chromium，CI 会跑 test:browser）
+pnpm test:browser
+pnpm test:browser:watch
+pnpm test:ag-table
+
+# 代码检查（CI 会跑 lint:ci 和 lint:ci:oxlint，提交时 lint-staged 也会对暂存文件跑 oxlint 和 eslint）
 pnpm lint:eslint
+pnpm lint:ci          # eslint . --max-warnings 0
+pnpm lint:ci:oxlint   # oxlint（含 typescript/unicorn/oxc/vue 插件及 consistent-type-imports）
+pnpm stylelint        # SCSS/CSS 检查（渐进治理，按改动文件或手动运行 stylelint:fix）
 
 # 预览生产构建
 pnpm preview
 ```
 
-> **注意：项目未配置测试框架，没有单元测试或 E2E 测试。**
+测试配置位于 `vitest.config.ts`，通过 `projects` 拆分为两层，类型检查均由 `tsconfig.vitest.json` 独立承接：
+- **`unit`**：匹配 `src/**/*.{test,spec}.{ts,tsx}`（排除 `*.browser.*`），默认在 `happy-dom` 环境下运行，纯 Node 用例可按文件通过 `// @vitest-environment node` 覆盖。
+- **`browser`**：匹配 `src/**/*.browser.{test,spec}.{ts,tsx}`，使用 `@vitest/browser-playwright` 在真实无头 Chromium（视口 `1280×920`）中运行，覆盖基础组件与核心业务表单（`AgTable` 回归用例位于 `src/components/base/ag-table/__tests__/*.browser.spec.ts`）。执行 `pnpm test:browser` 或 `pnpm test:ag-table` 时，默认优先使用 Playwright Chromium 或自动回退至本机 Chrome，也可通过 `CHROME_BIN` 指定浏览器可执行文件。
+- **浏览器测试挂载辅助**：`src/components/__tests__/browser-render.ts` 提供 `renderWithApp`，统一装配 Pinia、按需 `bkui-vue` 组件（避免全量注册产生重复组件告警）、`i18n`、`BkXssFilterDirective`、自定义指令及全局基础组件（`AgIcon`、`AgIconButton`、`AgCopyButton`）；若新增浏览器组件测试引入了未预构建的新依赖，可同步补充到 `vitest.config.ts` 中 `browser` project 的 `optimizeDeps.include`。
+
+### 暂缓升级的依赖
+
+以下依赖暂不升级或替换，升级前需先确认原因已解决：
+
+- `tdesign-vue-next`（保持 1.18）：项目版本满足 `@blueking/tdesign-ui` 的范围后两者会合并为同一份，
+  合并为 1.20.11 时 `ag-table` 的单选筛选失效（选中不生效、不触发 `filter-change`）。
+  单选确认依赖弹层 DOM 和选中时序，适配集中在 `ag-table/use-tdesign-table-adapter.ts`，升级时运行 `pnpm test:ag-table`
+- `@blueking/bk-user-selector`（保持 0.1.1）：0.1.2 起硬依赖 bkui-vue 2，会把 bkui-vue 2 部分打包进来
+- `@blueking/login-userinfo`（保持 0.0.13）：0.0.14 起内嵌整个 tippy.js，首屏 chunk 增加约 36 KB
+- bkui-vue 在 `lib/tag-input`、`lib/timeline` 内嵌了 DOMPurify 3.2.6，`overrides` 改不了产物，需等 bkui-vue 升级
+- `stylelint`（保持 17）：`stylelint-config-standard-scss` 最新的 17.x 只支持 stylelint 17
+- `vue-tsc`（保持 3.2.9）：3.3.x（验证到 3.3.14）会把模板中的部分属性访问误报为缺少 `.value`
+- `js-yaml`（保持 4.x）：5.0 重写了 API，默认 schema 不再支持 `<<` 合并键，空输入会抛错，
+  会改变 Swagger/OpenAPI 导入的解析结果；4.x 仍在维护
+- `@blueking/date-picker`（保持 2.0.0-beta.48）：4.x 要求 bkui-vue 2，并额外依赖 vue-tippy
+- `mavon-editor`（暂不替换）：md-editor-v3 打开编辑器时需下载约 884 KB（gzip 304 KB），是 mavon 的 2 倍多；
+  如需替换，优先考虑基于项目现有 markdown 渲染器的轻量编辑器
 
 ## 目录结构
 
@@ -74,35 +118,40 @@ src/dashboard-front/
 ├── src/
 │   ├── App.vue                 # 根布局（BkNavigation 导航、菜单、用户信息）
 │   ├── main.ts                 # 应用入口（安装 Pinia、Router、bkui-vue、i18n、指令）
-│   ├── components/             # 60+ 自定义组件
-│   │   ├── ag-*/               # ag- 前缀可复用组件
-│   │   ├── plugin-form/        # 15+ 插件配置表单
-│   │   └── plugin-manage/      # 插件管理 UI
+│   ├── components/             # 跨模块复用的自定义组件
+│   │   ├── base/               # 与业务无关的基础组件（ag- 前缀）
+│   │   ├── user/               # 人员选择与成员编辑
+│   │   ├── ai/                 # AI 助手入口与对话侧栏
+│   │   ├── release/            # 生成资源版本、发布、发布事件与版本对比
+│   │   ├── mcp/                # MCP Server 卡片、接入配置、调用链
+│   │   └── plugin/             # 插件管理（plugin-manage）与插件表单（plugin-form）
 │   ├── constants/              # 常量定义（插件示例、HTTP 头等）
 │   ├── directives/             # 自定义指令（clickOutSide、bkTooltips）
 │   ├── enums/                  # TypeScript 枚举
-│   ├── hooks/                  # 19 个组合式函数
+│   ├── hooks/                  # 共享组合式函数
 │   ├── images/                 # Logo 和图片资源
-│   ├── layout/                 # 5 个布局组件（my-gateway、platform-tools 等）
+│   ├── layout/                 # 布局与头部组件（my-gateway、platform-tools、docs、mcp-market、personal-workbench、app-header）
 │   ├── locales/                # 国际化翻译（cn.json、en.json）
-│   ├── router/                 # 路由定义，15 个功能模块
+│   ├── router/                 # 路由定义与权限守卫
 │   ├── services/
 │   │   ├── http/               # Axios 封装（缓存、CSRF、中间件）
 │   │   ├── source/             # API 接口函数，按作用域分目录（见「API 服务层」）
-│   │   └── types/              # 接口出入参类型（query / body / responses）
-│   ├── stores/                 # 11 个 Pinia Store
+│   │   └── types/              # 按业务模块组织的接口查询、请求体和响应类型
+│   ├── stores/                 # 15 个 Pinia Store
 │   ├── styles/                 # 全局 SCSS 样式
 │   ├── types/                  # 领域类型与视图类型（见「类型系统」）
-│   ├── utils/                  # 26 个工具函数
-│   └── views/                  # 15 个功能视图模块
+│   ├── utils/                  # 纯工具函数（无响应式状态）
+│   └── views/                  # 17 个功能视图模块
 ├── .env                        # 环境变量模板
 ├── .env.local                  # 本地开发环境覆盖
-├── eslint.config.ts            # ESLint 9 扁平化配置
+├── eslint.config.ts            # ESLint 10 扁平化配置
 ├── stylelint.config.js         # SCSS/CSS 检查
 ├── tsconfig.json               # TypeScript 配置入口
+├── tsconfig.vitest.json        # 单元测试 TypeScript 配置
 ├── uno.config.ts               # UnoCSS 配置
 ├── vite.config.ts              # Vite 配置
-├── Dockerfile                  # 多阶段构建（Node 20 → Nginx）
+├── vitest.config.ts            # Vitest 单元测试配置
+├── Dockerfile                  # 多阶段构建（Node 24 + pnpm → Nginx）
 └── package.json                # 依赖与脚本
 ```
 
@@ -111,8 +160,8 @@ src/dashboard-front/
 ### 入口与引导
 
 - **`main.ts`** — 创建 Vue 应用，安装 Pinia、Vue Router、bkui-vue（全量引入）、vue-i18n、XSS 过滤指令，注册全局组件 `AgIcon`、
-  `IconButton`、`CopyButton`、`CardContainer`。
-- **`App.vue`** — 根布局，使用 `BkNavigation`（上下导航），包含顶部菜单、语言切换、用户信息。路由变化时获取环境配置和用户信息，通过
+  `AgIconButton`、`AgCopyButton`。
+- **`App.vue`** — 根布局，使用 `BkNavigation`（上下导航），包含顶部菜单、语言切换、帮助菜单、用户信息（头部组件位于 `src/layout/app-header/`）。路由变化时获取环境配置和用户信息，通过
   Feature Flag 控制菜单显隐。
 
 ### 路由 (`src/router/index.ts`)
@@ -143,19 +192,23 @@ src/dashboard-front/
 
 基于 Pinia，所有 Store 从 `src/stores/index.ts` 统一导出：
 
-| Store                | 说明                           |
-|----------------------|------------------------------|
-| `useGateway`         | 当前网关数据（**核心 Store**，大多数视图依赖） |
-| `useEnv`             | 环境配置（BK_DASHBOARD_URL、站点路径）  |
-| `useUserInfo`        | 当前用户和租户信息                    |
-| `useFeatureFlag`     | 功能开关                         |
-| `useStage`           | 环境/阶段状态                      |
-| `usePermission`      | 权限相关状态                       |
-| `useAccessLog`       | 访问日志                         |
-| `useAuditLog`        | 审计日志                         |
-| `useResourceVersion` | 资源版本                         |
-| `useResourceSetting` | 资源配置                         |
-| `useStaff`           | 人员管理                         |
+| Store                    | 说明                              |
+|--------------------------|---------------------------------|
+| `useGateway`             | 当前网关数据（**核心 Store**，大多数视图依赖）    |
+| `useGatewayRoleStore`    | 当前用户在网关中的角色与缓存（`useGatewayRole.ts`，Setup Store） |
+| `useEnv`                 | 环境配置（BK_DASHBOARD_URL、站点路径）     |
+| `usePlatformConfig`      | 平台级配置（标题、品牌、页脚等）                |
+| `useUserInfo`            | 当前用户和租户信息                       |
+| `useFeatureFlag`         | 功能开关                            |
+| `useStage`               | 环境/阶段状态                         |
+| `usePermission`          | 权限相关状态                          |
+| `useAccessLog`           | 访问日志                            |
+| `useAuditLog`            | 审计日志                            |
+| `useResourceVersion`     | 资源版本                            |
+| `useResourceSetting`     | 资源配置                            |
+| `useResourceDebugging`   | 在线调试状态（`useOnlineDebugging.ts`） |
+| `useTrace`               | MCP 调用链与瀑布图状态（Setup Store）      |
+| `useStaff`               | 人员管理                            |
 
 ### API 服务层 (`src/services/`)
 
@@ -207,34 +260,63 @@ services/source/
 
 ### 组件 (`src/components/`)
 
-- **`ag-*` 前缀组件**：可复用自定义组件（ag-icon、ag-editor、ag-table、ag-dropdown、ag-sideslider、ag-mcp-card 等）
-- **`plugin-form/`**：15+ 插件配置表单（cors、rate-limit、ip-restriction、header-rewrite、api-breaker 等）
-- **`plugin-manage/`**：插件展示与管理 UI
-- **TSX 组件**：`member-selector`、`table-header-filter`、`custom-table-header-filter` 等
-- **全局组件**（在 `main.ts` 注册，无需导入直接使用）：`AgIcon`、`IconButton`、`CopyButton`、`CardContainer`
+- **`base/`**：与业务无关的基础组件，统一使用 `ag-` 前缀，不调用业务接口。包括 `ag-icon`、`ag-icon-button`、
+  `ag-copy-button`、`ag-table`、`ag-table-empty`、`ag-sideslider`、`ag-dropdown`、`ag-code-editor`（Monaco）、
+  `ag-markdown-editor`（mavon-editor 懒加载）、`ag-markdown-viewer`、`ag-expandable-text`、`ag-status-dot`、`ag-overflow-tags`
+- `base/ag-table/` 下的 `use-table-data-source.ts` 统一管理静态数据、本地分页和远程请求。
+  `selection/use-row-selection.ts` 管理行选择，`selection/row-selection-column.tsx` 渲染表头和行复选框。
+  `settings/use-table-settings.ts` 合并页面列定义和用户设置，`settings/table-preferences.ts` 读写偏好并兼容旧版行高。
+  `use-table-layout.ts` 默认根据真实 DOM 剩余高度或外部固定 `maxHeight` 动态计算内容区最大高度并估算首屏条数（传 `:auto-height="false"` 或 `max-height="none"` 可关闭）。
+  `AgTable` 采用 `<script setup generic="TRow extends TableRowData = TableRowData">`，对外统一从 `@/components/base/ag-table` 导入组件与泛型类型（`ITableColumn<TRow>`、`TableRow<TRow>`、`IAgTableInstance<TRow>`、`defineTableColumns` 及筛选/排序/展开/行事件相关类型）：列定义声明为 `ITableColumn<TRow>[]` 或通过 `defineTableColumns<TRow>(...)` 推导 `row` 与 `colKey`，模板引用统一使用 `useTemplateRef<IAgTableInstance<TRow>>('tableRef')`（泛型组件不要使用 `InstanceType<typeof AgTable>`）。完整 Props / Emits / Slots / Expose、类型清单与场景代码示例见 `src/components/base/ag-table/README.md`，新增或改造表格页面前请先阅读该文档。
+  `AgTable` 不直接依赖路由或 Pinia Store（通知栏高度经 `context.ts` 的 `AG_TABLE_CONTEXT_KEY` 在 `main.ts` 注入）；
+  开启 `show-settings` 并需要持久化列偏好时，调用方应显式传入稳定的 `cache-identifier`（键格式为 `table-settings-<cacheIdentifier>`，未传时仅在内存生效）。
+  生产构建经 `vite.config.ts` 注入 `__APP_BUILD_ID__`，应用启动时通过 `pruneTablePreferences` 清空旧构建残留的表格偏好缓存（开发模式固定为 `'dev'`，重启开发服务器不清空）。
+- **命名**：目录名使用 kebab-case 并与组件名一致，入口为 `Index.vue`；私有子组件放在该目录的 `components/` 下，
+  文件名使用 PascalCase。`ag-` 前缀只用于 `base/`，业务组件使用领域名词命名
+- **`user/`**：`user-selector`（人员选择入口，按多租户模式切换 `BkUserSelector` / `staff-selector`，
+  v-model 统一为用户名数组）、`staff-selector`（非多租户人员选择，TSX）、`tenant-user-editor`（多租户成员的展示与行内编辑）。
+  新增人员选择优先使用 `user-selector`，不要在页面里自行判断 `isTenantMode` 切换两种选择器
+- **`ai/`**：`ai-blueking-button`（「问问 AI」入口）、`ai-chat-slider`（AI 对话侧栏）
+- **`release/`**：`create-resource-version-slider`、`release-stage-slider`、`publish-event-slider`、`version-diff`，
+  由资源管理、环境管理和网关布局共用
+- **`mcp/`**：`mcp-server-card`、`mcp-server-toolbar`、`mcp-access-config`、`mcp-access-config-dialog`、
+  `mcp-trace-chain`，以及调用链瀑布图模块 `trace-view`（TSX）。`trace-view` 外部只能引用其入口
+  `@/components/mcp/trace-view`；`useTrace` Store 与页面需要的瀑布树转换、折叠分组、耗时格式化放在 `@/utils/trace`，
+  默认调用链数据 `DEFAULT_TRACE_DATA` 放在 `@/constants/trace`，类型放在 `@/types/trace`，组件内部也从这些位置引用
+- **`plugin/`**：`plugin-manage`（插件展示与管理，结构见其 README）、`plugin-form`（15+ 插件专用表单，按插件 code 分目录）
+- **全局组件**（在 `main.ts` 注册，无需导入直接使用）：`AgIcon`、`AgIconButton`、`AgCopyButton`
+- **放置原则**：`src/components/` 只放被两个及以上功能模块（`views/<模块>`、`layout/<布局>`）复用的组件；
+  只被一个模块使用的组件放在该模块的 `components/` 下，只被 `App.vue` 使用的放在 `src/layout/app-header/`。
 
 ### 组合式函数 (`src/hooks/`)
 
-| Hook                        | 说明              |
-|-----------------------------|-----------------|
-| `use-query-list`            | 分页列表查询（含查询参数管理） |
-| `use-selection-data`        | 表格选择状态          |
-| `use-sidebar`               | 抽屉/侧边栏状态        |
-| `use-gate-way-data`         | 网关列表（含搜索）       |
-| `use-max-table-limit`       | 视窗自适应分页         |
-| `use-date-picker`           | 日期范围选择          |
-| `use-tdesign-selection`     | TDesign 表格选择    |
-| `use-table-filter-change`   | TDesign 筛选逻辑    |
-| `use-table-sort-change`     | TDesign 排序逻辑    |
-| `use-stage-data`            | 环境数据状态          |
-| `use-text-getter`           | 文本内容获取          |
-| `use-table-setting`         | 表格列显隐控制         |
-| `use-sticky-bottom`         | 粘性底部            |
-| `use-operation-lock`        | 防止并发操作          |
-| `use-bk-user-display-name`  | 多租户用户名显示        |
-| `use-chart-interval-option` | 图表时间范围          |
-| `use-pop-info-box`          | 弹出信息框           |
-| `use-bk-user-selector`      | 用户选择器           |
+> 仅存放含响应式状态或生命周期的 Composable；纯无状态计算函数应放在 `src/utils/`（`use-json-transformer` 等为历史遗留，新增纯函数勿放此处）。
+
+| Hook                             | 说明                  |
+|----------------------------------|---------------------|
+| `use-query-list`                 | 分页列表查询（含查询参数管理）     |
+| `use-selection-data`             | 表格选择状态              |
+| `use-sidebar`                    | 抽屉/侧边栏变更检测状态        |
+| `use-gate-way-data`              | 网关列表（含搜索）           |
+| `use-gateway-display-name-check` | 网关展示名查重             |
+| `use-gateway-releasing-status`   | 网关发布状态轮询            |
+| `use-gateway-role`               | 当前网关角色与操作权限         |
+| `use-date-picker`                | 列表日期范围选择            |
+| `use-table-filter-change`        | TDesign 筛选逻辑        |
+| `use-table-sort-change`          | TDesign 排序逻辑        |
+| `use-stage-data`                 | 环境数据状态              |
+| `use-text-getter`                | 认证/权限文案文本转换         |
+| `use-sticky-bottom`              | 粘性底部                |
+| `use-operation-lock`             | 防止并发操作              |
+| `use-bk-user-display-name`       | 多租户用户名显示            |
+| `use-chart-interval-option`      | 图表时间范围              |
+| `use-pop-info-box`               | 弹出确认信息框             |
+| `use-mcp-auth-risk`              | MCP 应用态鉴权风险提示       |
+| `use-mcp-batch-copy-config`      | MCP 批量复制配置          |
+| `use-mcp-config-divide-ratio`    | MCP 配置分栏自适应宽度比例     |
+| `use-mcp-permission`             | MCP 权限管理与已授权应用      |
+| `use-observability-dashboard`    | MCP 可观测仪表盘状态        |
+| `use-personal-workbench`         | 个人工作台状态             |
 
 ### 国际化 (`src/locales/`)
 
@@ -244,13 +326,9 @@ services/source/
 // 语言由 Cookie `blueking_language` 决定，默认 zh-cn
 
 // 使用方式：
-t('key')                    // 直接使用导出的 t 函数
-const { t } = useI18n();   // 组合式 API（自动导入）
-{
-  {
-    t('key')
-  }
-}              // 模板中使用
+t('key');                  // 非组件模块直接使用导出的 t 函数
+const { t } = useI18n();   // 组件内组合式 API（已自动导入）
+// 模板中使用：{{ t('key') }}
 ```
 
 ### 样式系统
@@ -265,9 +343,13 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 
 | 位置                                  | 内容                                                                |
 |-------------------------------------|-------------------------------------------------------------------|
-| `services/source/**`                | 只保留接口签名用到的入参类型（如 `IAuthData`、`IObservabilitySearchParams`）          |
-| `services/types/{query,body,responses}/` | 接口出入参类型，按后端 URL 命名（如 `IGatewaysStagesListQuery`、`IStageListOutput`） |
+| `services/source/**`                | API 服务函数，引用对应业务模块的 DTO                                                |
+| `services/types/**`                 | 按业务模块组织的接口出入参类型（如 `gateway/stage.ts` 中的 `IGatewaysStagesListQuery`、`IStageListOutput`） |
 | `src/types/`                        | 领域类型与视图类型，供多个页面、组件、Store 复用                                       |
+
+DTO 文件路径与对应的 `services/source/` 业务模块一致。将查询参数、请求体和响应声明放入同一模块，类型名保留
+Query、InputSLZ、Output 等用途标识。同一请求结构被多个 HTTP 方法使用时，复用同一个声明。分页等通用类型见
+`services/types/utils.ts`，表单、表格等视图状态放在 `src/types/`。
 
 `src/types/` 文件：
 
@@ -281,52 +363,85 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 - `access-log.ts` / `audit-log.ts` / `monitor.ts` — 流水日志、操作记录、监控告警
 - `metrics.ts` — 指标图表的公共结构（ISeriesItemType、IChartSeries、IInstantValue），以及网关仪表盘、统计报表的类型
 - `observability.ts` — MCP Server 可观测：图表数据，以及日志与调用链（ITraceLog、ISpan、ITraceDetail 等）
+- `trace.ts` — 调用链瀑布图的数据模型（ISpan、ITraceTree、ITraceListItem、ISpanListItem 等），由 `useTrace` 与
+  `components/mcp/trace-view` 共用
 - `mcp-server.ts` / `mcp-marketplace.ts` — MCP Server、MCP 市场
 - `auto-imports.d.ts` — 由 unplugin-auto-import 自动生成
 
 > `metrics.ts` 与 `observability.ts` 都导出 `IStatisticsType`、`IChartDataType`、`IChartDataLoading`，但字段不同：
 > 网关仪表盘用前者，MCP Server 可观测用后者。
+>
+> `observability.ts` 与 `trace.ts` 都导出 `ISpan`：前者是接口返回的 span，后者在其基础上补充瀑布图需要的层级、
+> 折叠、标签等字段。
+
+### 时间与日期
+
+后端时间参数一律是 Unix **整数秒**，前端以后端现有行为为准，各接口的开闭区间、成对规则写在
+`services/types/` 下对应模块的查询类型注释里；前端不对开闭区间做 ±1 秒补偿。
+
+- **转换与校验**：`@/utils/time-range`。`toTimeRangeSeconds` 把 Date、Dayjs、毫秒数或 `YYYY-MM-DD HH:mm:ss` 文本
+  转为秒级区间，无效时返回 `null`；`toTimeRangeQuery` 把筛选状态转为接口参数（两端成对传或都不传）；
+  `getBucketRange` 由柱状图下标计算框选区间。不要用 `new Date(文本)` 解析，也不要从显示文本反推时间。
+- **筛选状态**：时间字段使用 `src/types/common.ts` 的 `ITimeRangeFilter`（秒或空字符串）。
+- **bkui 列表日期选择**：`useDatePicker(filter, { presets, defaultPreset })`。快捷项用稳定 ID（`RECENT_DATE_PRESETS`
+  等）由页面显式声明，不按路由或下标推断；查询前调用 `applySelectedRange()`，快捷项会按当前时间重新计算。
+- **`@blueking/date-picker`**（网关仪表盘、统计报表）：选择值可能是 `now-10m` 这类相对表达式，每轮查询用
+  `@/utils/date-picker-range` 的 `resolveDatePickerRange` 重新解析；不要使用随显示格式变化的 `formatText`。
+- **相对时间**：以客户端时钟在每轮查询开始时解析一次，同一轮的子请求、分页和导出共用这次结果；不要改用后端的
+  `time_range`，它会在每个请求中各自取服务器时间，导致同一轮的请求时间不一致。
+- **统计报表**：后端按 UTC 自然日分桶，起点需对齐到 UTC 0 点，且不得早于服务器时间的半年前。
+- **轮询**：同一份数据只保留一个定时器，由拥有该页面状态的组件启停，并在卸载时清理。
 
 ## 代码风格规范
 
-由 ESLint 9 扁平化配置 + oxlint + stylelint 强制执行：
+由 ESLint 10 扁平化配置 + oxlint + stylelint 强制执行（另见 `./.agents/rules/vue-code-style.md`、`./.agents/rules/ts-style.md`）：
 
 ### 通用规则
 
-| 规则       | 要求                                            |
-|----------|-----------------------------------------------|
-| 分号       | **必须**（`semi: 'always'`）                      |
-| 引号       | **单引号**（`quotes: 'single'`）                   |
-| 缩进       | **2 空格**                                      |
-| 行宽       | **120 字符**（注释、URL、字符串、模板字符串、正则除外）             |
-| 尾逗号      | **多行时必须**（`comma-dangle: 'always-multiline'`） |
-| 导入排序     | **强制**（声明排序忽略，成员排序强制）                         |
-| 重复导入     | **禁止**                                        |
-| `any` 类型 | 允许（`no-explicit-any: 'off'`）                  |
+| 规则          | 要求                                                     |
+|-------------|--------------------------------------------------------|
+| 分号          | **必须**（`semi: 'always'`）                               |
+| 引号          | **单引号**（`quotes: 'single'`）                            |
+| 缩进          | **2 空格**                                               |
+| 行宽          | **120 字符**（注释、URL、字符串、模板字符串、正则除外）                      |
+| 尾逗号         | **多行时必须**（`comma-dangle: 'always-multiline'`）          |
+| 导入排序        | **强制**（声明排序忽略，成员排序强制）；纯类型导入用 `import type`（Oxlint `typescript/consistent-type-imports`） |
+| 重复导入        | **禁止**                                                 |
+| `interface` | **必须以 `I` 开头**（`ts-style.md`）                         |
+| `any` 类型    | ESLint 为兼容存量关闭（`no-explicit-any: 'off'`），**新增代码避免使用** |
 
 ### 对象/数组格式化
 
 - 多行对象属性必须换行（`object-property-newline`）
-- 花括号换行规则（`object-curly-newline: multiline`）
+- 花括号换行保持一致（`object-curly-newline: { consistent: true }`）
 - `curly-newline: 'always'`
 - 数组方括号换行保持一致（`array-bracket-newline: 'consistent'`）
 
 ### Vue 规则
 
-| 规则          | 要求                                                                                                   |
-|-------------|------------------------------------------------------------------------------------------------------|
-| 脚本语法        | 必须使用 `<script lang="ts" setup>`                                                                      |
-| 宏顺序         | `defineOptions` → `defineModel` → `defineProps` → `defineEmits` → `defineSlots`，`defineExpose` 必须在最后 |
-| Emits 声明    | 必须使用**类型字面量** (`type-literal`)                                                                       |
-| Props 解构    | **强制**                                                                                               |
-| 多词组件名       | **已关闭**（`ag-*` 前缀组件不需要）                                                                              |
-| 根级 v-if     | **禁止**                                                                                               |
-| 未使用的 emit   | **禁止**                                                                                               |
-| 未使用的 ref    | **禁止**                                                                                               |
-| 组件标签大小写     | PascalCase（`component-name-in-template-casing`）                                                      |
-| 块间空行        | **必须**（`padding-line-between-blocks`）                                                                |
-| 静态 class 分离 | **强制**（`prefer-separate-static-class`）                                                               |
-| 布尔属性简写      | **强制**（`prefer-true-attribute-shorthand`）                                                            |
+> Oxlint（`.oxlintrc.json`）已启用 `vue` 插件负责 Vue 核心 `correctness` 规则（`no-side-effects-in-computed-properties`、`no-lifecycle-after-await`、`no-watch-after-await`、`no-expose-after-await`、`valid-define-props` 等），ESLint 通过 `pluginOxlint.buildFromOxlintConfigFile('./.oxlintrc.json')` 精准去重，避免两头落空；`lint:ci` 启用 `--max-warnings 0`。
+
+| 规则           | 要求                                                                                                   |
+|--------------|------------------------------------------------------------------------------------------------------|
+| 块顺序          | **`<template>` → `<script>` → `<style>`**（`vue/block-order`，本仓既有约定）                                 |
+| 块语言          | `<script>` 须为 `ts`/`tsx`，`<style>` 须为 `scss`（`vue/block-lang`）                                        |
+| 脚本语法         | 必须使用 `<script setup lang="ts">`（`vue/component-api-style`，禁止 Options API）                             |
+| 样式作用域        | 强制 `<style scoped>`（`vue/enforce-style-attribute`；弹层/全局覆盖须显式注释豁免）                                    |
+| 宏顺序          | `defineOptions` → `defineModel` → `defineProps` → `defineEmits` → `defineSlots`，`defineExpose` 必须在最后 |
+| 逻辑组织         | 允许并推荐按**逻辑关注点**聚合同一功能的 `ref` / `computed` / `watch` / 方法（不强制按语法类别分组）                         |
+| Props 声明     | 必须基于类型声明（`vue/define-props-declaration: 'type-based'`），禁止必填 prop 设默认值（`vue/no-required-prop-with-default`） |
+| Props 解构     | **强制**（Vue 3.5+ 响应式解构，禁止 `withDefaults`；传入 `watch`/composable 须用 getter 包裹）                           |
+| Emits 与事件名   | 类型字面量成员语法（`type-literal`）；自定义事件名须 `kebab-case`（`vue/custom-event-name-casing`，豁免 `update:*`）        |
+| 模板引用         | 强制使用 Vue 3.5+ `useTemplateRef`（`vue/prefer-use-template-ref`；`v-for` 列表引用可注释豁免）                     |
+| 响应式与 v-model | 无初始值 `ref()` 须标泛型（`vue/require-typed-ref`）；优先 `v-model`（`vue/prefer-v-model`）；优先 `defineOptions`（`vue/prefer-define-options`） |
+| 模板与安全        | 禁用 `v-html`（`vue/no-v-html`）、禁用静态行内 `style`（`vue/no-static-inline-styles`）、禁用无效字符串 `:bind`（`vue/no-useless-v-bind`） |
+| 多词组件名        | **已关闭**（兼容 `Index.vue`、`Detail.vue` 等目录入口与单文件页面）                                                     |
+| 根级 v-if      | **禁止**                                                                                               |
+| 未使用检查        | 禁止未使用的 emit / ref / props 属性（`no-unused-emit-declarations`、`no-unused-refs`、`no-unused-properties`） |
+| 组件标签大小写      | PascalCase（`component-name-in-template-casing`）                                                      |
+| 块间空行         | **必须**（`padding-line-between-blocks`）                                                                |
+| 静态 class 分离  | **强制**（`prefer-separate-static-class`）                                                               |
+| 布尔属性简写       | **强制**（`prefer-true-attribute-shorthand`）                                                            |
 
 ## 路径别名
 
@@ -352,50 +467,93 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 ### 新增 Vue 组件
 
 ```vue
-
 <template>
   <div class="my-component">
-    <!-- 使用 PascalCase 引用组件 -->
-    <BkButton theme="primary" @click="handleClick">
-      {{ t('common.confirm') }}
+    <!-- 使用 PascalCase 引用组件，布尔属性使用简写 -->
+    <BkInput
+      ref="inputRef"
+      v-model="keyword"
+      clearable
+    />
+    <BkButton
+      theme="primary"
+      :loading="loading"
+      @click="handleSubmit"
+    >
+      {{ t('确定') }}
     </BkButton>
   </div>
 </template>
 
-<script lang="ts" setup>
-  // ref, computed, useRouter, useI18n 等已自动导入，无需手动引入
-  const { t } = useI18n();
-  const router = useRouter();
+<script setup lang="ts">
+// 1. 类型定义（interface 必须以 I 开头；多行成员不加分号）
+interface IProps {
+  id: number
+  name?: string
+}
 
-  // 宏顺序：defineProps → defineEmits，defineExpose 在最后
-  // 用对象结构式声明 Props 及其默认值
-  const {
-    id,
-    name = 'unknown user'
-  } = defineProps<{
-    id: number;
-    name: stirng;
-  }>();
+// 2. 编译器宏：defineOptions → defineModel → defineProps → defineEmits → defineSlots
+const {
+  id,
+  name = '',
+} = defineProps<IProps>();
 
-  const emit = defineEmits<{
-    update: [value: string];
-  }>();
+const emit = defineEmits<{
+  update: [value: string]
+}>();
 
-  const loading = ref(false);
+// 3. 业务逻辑：按关注点聚合相关状态、计算属性、监听与方法（ref、shallowRef、computed、watch、useTemplateRef、useI18n 等已自动导入）
+const { t } = useI18n();
 
-  const computedData = computed(() => {
-    // ...
+const inputRef = useTemplateRef<{ focus?: () => void }>('inputRef');
+const keyword = shallowRef(name);
+const loading = shallowRef(false);
+
+const displayLabel = computed(() => `${id}-${keyword.value}`);
+
+// 解构的 prop 传入 watch 必须使用 getter；异步 watch 用 onWatcherCleanup 处理竞态（详见 vue-code-style.md）
+watch(() => id, async (nextId) => {
+  const controller = new AbortController();
+  let active = true;
+  onWatcherCleanup(() => {
+    active = false;
+    controller.abort();
   });
+  loading.value = true;
+  try {
+    // 替换为 src/services/source/ 下的实际接口调用
+    const detail = await fetchDetail(nextId, controller.signal);
+    if (active) {
+      keyword.value = detail.name;
+    }
+  }
+  finally {
+    if (active) {
+      loading.value = false;
+    }
+  }
+});
 
-  onMounted(() => {
-    // ...
-  });
+function handleSubmit() {
+  emit('update', displayLabel.value);
+}
+
+function focusInput() {
+  inputRef.value?.focus?.();
+}
+
+// 4. defineExpose 必须在最后
+defineExpose({
+  focusInput,
+});
 </script>
 
 <style lang="scss" scoped>
-  .my-component {
-    // ...
-  }
+.my-component {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 </style>
 ```
 
@@ -417,7 +575,7 @@ const { t } = useI18n();   // 组合式 API（自动导入）
   用 `@/services/http` 导出的 `withExtraQuery(url, extraStr)` 追加，它会在检索串为空时原样返回地址。
   注意 `http.delete` 会把 params 放进请求体；如果后端从查询串读取参数，需要拼在 URL 上（参考 `gateway/permission.ts` 的
   `deleteApiPermission`）。
-- **类型**：接口文件只放接口函数和签名用到的入参类型，其余类型按「类型系统」放到 `services/types/` 或 `src/types/`。
+- **类型**：在 `services/types/` 对应模块中声明接口出入参，并由服务函数引用。领域类型与视图类型放在 `src/types/`。
 - **无副作用**：不要修改调用方传入的对象，也不要在接口函数里触发下载。`application/octet-stream` 响应由
   `http/middleware/response.ts` 统一下载，调用方 `await` 之后提示结果即可。
 
@@ -425,9 +583,11 @@ const { t } = useI18n();   // 组合式 API（自动导入）
 // src/services/source/gateway/xxx.ts
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IXxxListOutput } from '@/services/types/responses/gateways.ts';
-import type { IGatewaysXxxListQuery } from '@/services/types/query/gateways.ts';
-import type { IXxxInputSLZ } from '@/services/types/body/post/gateways.ts';
+import type {
+  IGatewaysXxxListQuery,
+  IXxxInputSLZ,
+  IXxxListOutput,
+} from '@/services/types/gateway/xxx.ts';
 
 const path = '/gateways';
 
@@ -450,62 +610,103 @@ export const createXxx = (gatewayId: number, data: IXxxInputSLZ) =>
 
 ### 新增 Pinia Store
 
-```typescript
-// src/stores/xxx.ts
-import { defineStore } from 'pinia';
+- **默认使用 Option Store**（自动追踪全部 state、自带 `$reset()`，与存量多数 Store 一致）。
+- **复杂场景允许使用 Setup Store**（如需要 `watch` 跨 Store 状态、维护内部非响应式 `Map`/在途请求缓存，参考 `src/stores/useGatewayRole.ts`、`src/stores/useTrace.ts`）。
+- **关键约束**：
+  - 文件放在 `src/stores/useXxx.ts`，并在 `src/stores/index.ts` 统一导出；接口请求调用 `src/services/source/` 封装函数，不在 Store 内手写裸 URL；
+  - 使用 Setup Store 时，**必须 `return` 全部响应式 state**（不得省略“私有” `ref`，否则破坏 DevTools 与插件；非响应式内部缓存如 `Map`/Promise 可不返回）；如需重置需显式实现 `$reset()`；
+  - 组件内解构 state / getters 必须使用 `storeToRefs(store)`，actions 可直接解构；
+  - **禁止在模块顶层调用 `useXxx()`**，仅在组件 setup、函数或路由守卫回调内调用（避免 `getActivePinia()` 错误）。
 
-export const useXxx = defineStore('xxx', {
-  state: () => ({
-    list: [] as XxxItem[],
+```typescript
+// src/stores/useXxx.ts（默认 Option Store）
+import { defineStore } from 'pinia';
+import { getXxxList } from '@/services/source/gateway/xxx';
+import type { IXxxListOutput } from '@/services/types/gateway/xxx';
+
+interface IXxxState {
+  list: IXxxListOutput[]
+}
+
+export const useXxx = defineStore('useXxx', {
+  state: (): IXxxState => ({
+    list: [],
   }),
   getters: {
-    filteredList: (state) => state.list.filter(/* ... */),
+    activeList: state => state.list.filter(item => item.status === 1),
   },
   actions: {
     async fetchList(gatewayId: number) {
-      this.list = await getXxxList(gatewayId, {});
+      const { results } = await getXxxList(gatewayId, {});
+      this.list = results;
     },
   },
 });
 ```
 
-### 新增组合式函数 (Hook)
+### 新增组合式函数 (Composable)
+
+- `src/hooks/` 仅存放**含响应式状态或生命周期**的 Composable；纯无状态计算函数请放 `src/utils/`。
+- 返回包含 `ref` 的普通对象（禁止直接返回 `reactive` 对象）；需保护内部状态时用 `readonly()` 包装；通用复用型入参考虑 `MaybeRefOrGetter<T>` + `toValue()`/`toRef()`。
 
 ```typescript
 // src/hooks/use-xxx.ts
-export const useXxx = (fetchFn: () => Promise<any[]>) => {
-  const list = ref<any[]>([]);
-  const loading = ref(false);
+export function useXxx<T>(fetchFn: () => Promise<T[]>) {
+  const list = shallowRef<T[]>([]);
+  const loading = shallowRef(false);
+  const error = shallowRef<unknown>(null);
+
+  let requestId = 0;
 
   const fetchData = async () => {
+    const currentId = ++requestId;
     loading.value = true;
+    error.value = null;
     try {
-      list.value = await fetchFn();
-    } finally {
-      loading.value = false;
+      const data = await fetchFn();
+      if (currentId === requestId) {
+        list.value = data;
+      }
+    }
+    catch (err) {
+      if (currentId === requestId) {
+        error.value = err;
+      }
+    }
+    finally {
+      if (currentId === requestId) {
+        loading.value = false;
+      }
     }
   };
 
-  return { list, loading, fetchData };
-};
+  return {
+    list: readonly(list),
+    loading: readonly(loading),
+    error: readonly(error),
+    fetchData,
+  };
+}
 ```
 
 ### 新增路由模块
 
 ```typescript
-// src/views/xxx/route.ts
-export function getXxxRoutes() {
+// src/views/xxx/routes.ts
+import type { RouteRecordRaw } from 'vue-router';
+
+export default function getXxxRoutes(): RouteRecordRaw[] {
   return [
     {
       path: 'xxx',
-      name: 'xxx',
-      component: () => import('./index.vue'),
+      name: 'Xxx',
+      component: () => import('./Index.vue'),
     },
   ];
 }
 ```
 
-然后在 `src/router/index.ts` 中引入并注册。
+然后在 `src/router/index.ts` 中默认引入并注册（注意入口文件命名为大写 `Index.vue`）。
 
 ### 新增国际化文本
 
@@ -543,11 +744,11 @@ fix(permission): 修复权限列表分页异常
 refactor(hooks): 重构 use-query-list 支持自定义排序
 ```
 
-Pre-commit 钩子自动对暂存的 `.{js,jsx,ts,tsx,vue}` 文件执行 `eslint --fix`。
+Pre-commit 钩子会自动对暂存的 `.{js,jsx,ts,tsx,vue}` 文件执行 `oxlint` 与 `eslint --fix`，并运行 `npm run type-check`（`vue-tsc --build`）。
 
 ## 应忽视的目录
 
-* `public/bk_icon_font` ，这里防止静态的图标字体文件，不需要做任何分析和变更
+* `src/assets/bk_icon_font`：放置静态图标字体与 SVG 雪碧图文件，不需要做任何分析和变更
 
 ## 注意事项
 
@@ -559,3 +760,10 @@ Pre-commit 钩子自动对暂存的 `.{js,jsx,ts,tsx,vue}` 文件执行 `eslint 
    **文件下载**：后端返回 `application/octet-stream` 时，响应拦截器自动下载文件，此时 `http` 的返回值为 `undefined`；
    导出类接口需传 `responseType: 'blob'`，通常配合 `catchError: true` 由调用方处理错误（错误响应体为 Blob）。
 6. **Feature Flag**：通过 `useFeatureFlag` Store 管理功能开关，控制菜单和功能的显隐。
+7. **ECharts 按需引入**：图表实例通过 `@/utils/echarts` 的 `createChart` 创建，不要 `import * as echarts from 'echarts'`
+   （会打入整包，图表页多约 100 KB gzip）。用到新的图表类型或组件时，需在 `src/utils/echarts.ts` 的 `use()` 中注册。
+   默认使用 v5 主题，保持 ECharts 5 的样式。ECharts 6 会把轴标签收进画布并压缩绘图区，不需要显示的轴标签要显式设置
+   `axisLabel: { show: false }`。
+8. **首屏体积**：`main.ts`、顶部导航和 `utils/index.ts` 统一导出的内容都会进首屏。只在少数场景用到的大组件或大库
+   （如版本日志 `@blueking/release-note`、`js-yaml`）用动态 `import()` 按需加载，或在使用处按文件路径引入。
+   iconcool 的 SVG 雪碧图在空闲时异步加载，`AgIcon` 的 `svg` 模式图标会稍晚出现，首屏立即可见的图标优先用字体模式。

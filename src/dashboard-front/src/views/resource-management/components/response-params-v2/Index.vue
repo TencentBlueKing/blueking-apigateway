@@ -161,12 +161,12 @@
                 application/json
               </span>
             </div>
-            <IconButton
+            <AgIconButton
               theme="primary"
               @click="() => openJsonEditor(response)"
             >
               {{ t('通过 JSON 生成') }}
-            </IconButton>
+            </AgIconButton>
           </div>
 
           <!-- 响应字段树在查看态和编辑态共用同一张原生表格。 -->

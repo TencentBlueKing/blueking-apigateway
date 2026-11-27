@@ -99,12 +99,10 @@ import {
 } from 'bkui-vue';
 import { marketplacePermissionApply } from '@/services/source/mcp-marketplace';
 import { getUserApplicationList } from '@/services/source/me/application';
-import type {
-  IMarketplacePermissionApplyOutput,
-} from '@/services/types/responses/mcp-marketplace.ts';
-import type { IUserApplicationOutput } from '@/services/types/responses/me';
+import type { IMarketplacePermissionApplyOutput } from '@/services/types/mcp-marketplace.ts';
+import type { IUserApplicationOutput } from '@/services/types/me/application.ts';
 import { useEnv } from '@/stores';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 interface IProps {
   mcpId: number
@@ -121,7 +119,7 @@ const {
 const { t } = useI18n();
 const envStore = useEnv();
 
-const formRef = ref<InstanceType<typeof Form>>();
+const formRef = useTemplateRef<InstanceType<typeof Form>>('formRef');
 const applicableApps = ref<IUserApplicationOutput[]>([]);
 const itsmTicketUrl = ref('');
 const isSubmitting = ref(false);

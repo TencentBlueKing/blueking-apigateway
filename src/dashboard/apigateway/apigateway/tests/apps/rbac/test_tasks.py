@@ -101,9 +101,10 @@ def test_renews_due_and_null_expiry_only_after_iam_success(mocker):
     )
     mocker.patch("apigateway.apps.rbac.tasks.timezone.now", return_value=NOW)
 
-    def assert_local_expiry_not_updated(called_gateway, _authorizations, operator):
+    def assert_local_expiry_not_updated(called_gateway, _authorizations, operator, *, skip_missing_users):
         assert called_gateway == gateway
         assert operator == BK_IAM_V4_SYSTEM_ID
+        assert skip_missing_users is True
         due.refresh_from_db()
         no_expiry.refresh_from_db()
         assert due.expires == NOW + timedelta(days=30)
@@ -205,9 +206,10 @@ def test_gateway_row_is_locked_before_members_are_read_and_iam_is_written(mocker
             events.append("member-read")
         return original_filter(*args, **kwargs)
 
-    def grant_authorizations(called_gateway, _authorizations, operator):
+    def grant_authorizations(called_gateway, _authorizations, operator, *, skip_missing_users):
         assert called_gateway == gateway
         assert operator == BK_IAM_V4_SYSTEM_ID
+        assert skip_missing_users is True
         events.append("iam-write")
 
     mocker.patch.object(Gateway.objects, "select_for_update", side_effect=select_for_update)

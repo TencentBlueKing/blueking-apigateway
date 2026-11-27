@@ -18,28 +18,32 @@
 
 <template>
   <div class="resource-config-create-wrapper">
-    <BkCollapse
-      v-model="activeIndex"
-      class="page-wrapper-padding collapse-cls"
-      use-card-theme
-    >
-      <Component
-        :is="compMap[activeComp]"
-        ref="childCompRef"
-        v-model:active-index="activeIndex"
-        v-model:has-no-request-params="hasNoRequestParams"
-        :resource-detail="resourceDetail"
-        :front-config="frontConfig"
-        :is-clone="isClone"
-        @front-config-change="handleFrontConfigChange"
-        @service-init="handleSetFormDataBack"
-      />
-    </BkCollapse>
+    <BkLoading :loading="isDetailLoading">
+      <BkCollapse
+        v-if="resourceReady"
+        v-model="activeIndex"
+        class="page-wrapper-padding collapse-cls"
+        use-card-theme
+      >
+        <Component
+          :is="compMap[activeComp]"
+          ref="childCompRef"
+          v-model:active-index="activeIndex"
+          v-model:has-no-request-params="hasNoRequestParams"
+          :resource-detail="resourceDetail"
+          :front-config="frontConfig"
+          :is-clone="isClone"
+          @front-config-change="handleFrontConfigChange"
+          @service-init="handleSetFormDataBack"
+        />
+      </BkCollapse>
+    </BkLoading>
     <div class="edit-footer">
       <BkButton
         theme="primary"
         class="min-w-88px ml-24px"
         :loading="submitLoading"
+        :disabled="!resourceReady"
         @click="handleSubmit"
       >
         {{ t('提交') }}
@@ -77,13 +81,13 @@ const compMap: Record<string, Component> = {
   modelProxy: ModelProxy,
 };
 
-const childCompRef = ref<ChildCompInstance | null>(null);
+const childCompRef = useTemplateRef<ChildCompInstance>('childCompRef');
 const submitLoading = ref(false);
 const hasNoRequestParams = ref(false);
 const resourceId = ref(0);
-const activeIndex = ref<string[]>(['baseInfo', 'frontConfig', 'backConfig']);
+const activeIndex = ref<string[]>(['baseInfo', 'authConfig', 'frontConfig', 'backConfig']);
 const resourceDetail = ref<Record<string, any>>({});
-const formDataBack = ref<Record<string, any>>({});
+const isDetailLoading = ref(!!route.params.resourceId);
 const frontConfig = ref({
   path: '',
   method: 'GET',
@@ -91,6 +95,8 @@ const frontConfig = ref({
   enable_websocket: false,
 });
 
+const resourceReady = computed(() => !route.params.resourceId
+  || resourceDetail.value.id === Number(route.params.resourceId));
 const isClone = computed(() => route.name === 'ResourceClone');
 const activeComp = computed(() => gatewayStore.isAIGateway && route.query.kind === 'ai' ? 'modelProxy' : 'standard');
 
@@ -98,13 +104,18 @@ const init = async () => {
   const resourceIdParams = route.params.resourceId;
   if (resourceIdParams) {
     resourceId.value = Number(resourceIdParams);
-    await getResourceDetails();
+    try {
+      await getResourceDetails();
+    }
+    finally {
+      isDetailLoading.value = false;
+    }
   }
 };
 
 const getResourceDetails = async () => {
   const res = await getResourceDetail(gatewayId.value, resourceId.value);
-  const { none_schema } = ((res?.schema as unknown) as Record<string, any> | null) ?? {};
+  const { none_schema } = res?.schema ?? {};
 
   // 判断是否无请求参数
   if (none_schema) {
@@ -115,6 +126,7 @@ const getResourceDetails = async () => {
 
 const handleSubmit = async () => {
   const {
+    authConfigRef,
     baseInfoRef,
     backConfigRef,
     frontConfigRef,
@@ -153,6 +165,7 @@ const handleSubmit = async () => {
     submitLoading.value = true;
 
     const baseFormData = baseInfoRef?.formData ?? {};
+    const authFormData = authConfigRef?.formData ?? {};
     const frontFormData = frontConfigRef?.frontConfigData ?? {};
     const backFormData = backConfigRef?.backConfigData ?? {};
     const requestParamsData = hasNoRequestParams.value
@@ -162,6 +175,7 @@ const handleSubmit = async () => {
 
     const params = {
       ...baseFormData,
+      ...authFormData,
       ...frontFormData,
       backend: backFormData,
       openapi_schema: {},
@@ -204,8 +218,6 @@ const handleSubmit = async () => {
       await createResources(gatewayId.value, params);
     }
 
-    formDataBack.value = { ...getFormData };
-
     Message({
       message: t(`${resourceId.value && !unref(isClone) ? '更新' : '新建'}成功`),
       theme: 'success',
@@ -222,7 +234,7 @@ const handleSubmit = async () => {
 };
 
 const handleCancel = async () => {
-  const params = { ...getFormData };
+  const params = getFormData();
   const result = await isSidebarClosed(JSON.stringify(params));
   if (result) {
     router.back();
@@ -231,9 +243,8 @@ const handleCancel = async () => {
 
 // 缓存初始表单数据
 const handleSetFormDataBack = () => {
-  formDataBack.value = { ...getFormData };
   nextTick(() => {
-    initSidebarFormData(formDataBack.value);
+    initSidebarFormData(getFormData());
   });
 };
 
@@ -241,6 +252,7 @@ const handleSetFormDataBack = () => {
 const getFormData = () => {
   return {
     baseFormData: childCompRef.value?.baseInfoRef?.formData,
+    authFormData: childCompRef.value?.authConfigRef?.formData,
     frontFormData: childCompRef.value?.frontConfigRef?.frontConfigData,
     backFormData: childCompRef.value?.backConfigRef?.backConfigData,
   };
@@ -257,6 +269,7 @@ onMounted(async () => {
 });
 </script>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 引入外部表单页共享样式 Index.scss -->
 <style lang="scss">
 @use "./Index.scss" as *;
 </style>

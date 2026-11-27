@@ -67,8 +67,8 @@
                 :is-show="isShowPublicClient"
                 :title="t('OAuth2 公开客户端模式')"
                 :description="t('开启后，用户通过浏览器 OAuth2 授权即可使用，无需手动配置 API 凭证。票据将以 public 公开应用身份签发。')"
-                :icon="'oauth2'"
-                @oauth-change="getSliderContentHeight"
+                icon="oauth2"
+                @oauth-change="updateSliderContentHeight"
               />
               <OAuthSwitcher
                 v-model:form-data="formData"
@@ -76,8 +76,8 @@
                 :is-show="isShowPersonalClient"
                 :title="t('个人令牌')"
                 :description="t('开启后，用户可以使用个人令牌调用该 MCP Server。')"
-                :icon="'user-token'"
-                @oauth-change="getSliderContentHeight"
+                icon="user-token"
+                @oauth-change="updateSliderContentHeight"
               >
                 <template
                   v-if="personalTokenLink"
@@ -95,7 +95,10 @@
                 </template>
               </OAuthSwitcher>
               <!-- 资源选择表格 -->
-              <BkFormItem :class="`resource-table-form-item ${activeTab}`">
+              <BkFormItem
+                class="resource-table-form-item"
+                :class="activeTab"
+              >
                 <template #label>
                   <div class="resource-form-item-label">
                     <div
@@ -168,6 +171,7 @@
                             />
                           </div>
                           <BkLoading
+                            ref="toolTableRegion"
                             :loading="searchLoading"
                             :z-index="99"
                           >
@@ -178,9 +182,10 @@
                               class="mb-16px!"
                               show-selection
                               local-page
+                              :auto-height="false"
                               :show-settings="false"
                               :show-first-full-row="toolSelections.length > 0"
-                              :disabled-check-selection="toolDisabledSelection"
+                              :disabled-check-selection="isToolSelectionDisabled"
                               :columns="toolTableColumns"
                               :table-empty-type="toolTableEmptyType"
                               :filter-value="toolFilterData"
@@ -189,11 +194,10 @@
                               @clear-filter="handleToolClearFilter"
                               @clear-selection="handleToolClearSelection"
                               @selection-change="handleToolSelectionChange"
-                              @page-change="renderPreviewViewWidth"
                             >
                               <template #selectionPopoverContent="row">
                                 <div class="flex items-center">
-                                  <div>{{ row?.selectionTip }}</div>
+                                  <div>{{ getToolSelectionTip(row) }}</div>
                                   <div
                                     v-if="!row.has_openapi_schema && !isProgrammableGateway"
                                     class="ml-16px color-#699df4 cursor-pointer"
@@ -207,7 +211,7 @@
                                     {{ t('去配置') }}
                                   </div>
                                   <div
-                                    v-if="isExceedMaxCharacters(row) && row.has_openapi_schema"
+                                    v-if="requiresShorterToolName(row) && row.has_openapi_schema"
                                     class="font-700"
                                   >
                                     {{ t('请缩短工具名称。') }}
@@ -229,13 +233,14 @@
                                   v-model="filterPromptValues"
                                   :data="filterPromptConditions"
                                   :placeholder="t('搜索中英文名、标签、内容、修改人')"
-                                  :value-split-code="'+'"
+                                  value-split-code="+"
                                   class="mb-16px"
                                   clearable
                                   unique-select
                                   value-behavior="need-key"
                                 />
                                 <BkLoading
+                                  ref="promptTableRegion"
                                   :loading="searchLoading"
                                   :z-index="99"
                                 >
@@ -246,6 +251,7 @@
                                     resizable
                                     local-page
                                     show-selection
+                                    :auto-height="false"
                                     :show-settings="false"
                                     :show-first-full-row="promptSelections.length > 0"
                                     :row-class-name="handleSetPromptRowClass"
@@ -255,7 +261,6 @@
                                     @clear-selection="handlePromptClearSelection"
                                     @selection-change="handlePromptSelectionChange"
                                     @row-click="handlePromptRowClick"
-                                    @page-change="renderPreviewViewWidth"
                                   />
                                 </BkLoading>
                               </div>
@@ -337,20 +342,20 @@
                               <BkButton
                                 text
                                 theme="primary"
-                                :disabled="renderPreviewByTab.length < 1"
+                                :disabled="!activeSelections.length"
                                 @click="handleClearSelections(activeTab)"
                               >
                                 {{ t('清空') }}
                               </BkButton>
                             </div>
                             <div
-                              v-if="renderPreviewByTab.length"
+                              v-if="activeSelections.length"
                               class="sticky top-0 result-preview-list"
-                              :style="renderPreviewViewWidth()"
+                              :style="selectionPreviewStyle"
                             >
                               <div
-                                v-for="(checks, index) in renderPreviewByTab"
-                                :key="index"
+                                v-for="selection in activeSelections"
+                                :key="selection.id ?? selection.name"
                                 class="list-main"
                               >
                                 <div class="flex items-center justify-between list-item">
@@ -358,31 +363,31 @@
                                     <div
                                       v-bk-tooltips="{
                                         placement:'top',
-                                        content: (checks.tool_name || checks.name) ?? '',
+                                        content: selection.tool_name || selection.name,
                                         disabled: !isOverflow
                                       }"
                                       class="min-w-20px color-#4d4f56 text-12px truncate name"
                                       @mouseenter="(e: MouseEvent) => handleMouseenter(e)"
                                       @mouseleave="handleMouseleave"
                                     >
-                                      {{ checks.tool_name || checks.name }}
+                                      {{ selection.tool_name || selection.name }}
                                     </div>
                                     <BkTag
-                                      v-if="!['tool'].includes(checks.mode_type ?? '')"
-                                      :theme="checks?.is_public ? 'success' : 'warning'"
+                                      v-if="activeTab === 'prompt'"
+                                      :theme="selection.is_public ? 'success' : 'warning'"
                                       class="ml-4px"
                                     >
-                                      {{ t(checks?.is_public ? '公开' : '私有') }}
+                                      {{ t(selection.is_public ? '公开' : '私有') }}
                                     </BkTag>
-                                    <template v-if="isEnabledOAuthTag(checks)">
+                                    <template v-if="activeTab === 'tool' && isEnabledOAuth">
                                       <BkTag
-                                        v-if="renderOAuthConfig(checks)?.auth_verified_required"
+                                        v-if="renderOAuthConfig(selection).auth_verified_required"
                                         theme="info"
                                         class="ml-4px"
                                       >
                                         {{ t('用户态') }}
                                       </BkTag>
-                                      <template v-if="renderOAuthConfig(checks)?.app_verified_required">
+                                      <template v-if="renderOAuthConfig(selection).app_verified_required">
                                         <BkTag
                                           theme="warning"
                                           class="ml-4px"
@@ -405,12 +410,12 @@
                                     class="delete-icon"
                                     name="icon-close"
                                     size="20"
-                                    @click="() => handleRemoveResource(checks)"
+                                    @click="removePreviewSelection(selection)"
                                   />
                                 </div>
                               </div>
                             </div>
-                            <TableEmpty
+                            <AgTableEmpty
                               v-else
                               class="h-[calc(100%-50px)]"
                             />
@@ -438,7 +443,7 @@
           :is-enabled-personal-client="isEnabledPersonalClient"
           :is-enabled-public-client="isEnabledPublicClient"
           :app-auth-status-list="appAuthStatusList"
-          @on-expand="getSliderContentHeight"
+          @on-expand="updateSliderContentHeight"
         />
         <BkButton
           :disabled="noValidStage"
@@ -474,14 +479,10 @@ import {
 } from 'bkui-vue';
 import type { ISearchItem } from 'bkui-vue/lib/search-select/utils.d';
 import type { IOptions } from 'bkui-vue/lib/directives';
-import type { TableRowData } from 'tdesign-vue-next';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
 import type {
   IFormMethod,
   IMethodFilterItem,
   ISearchSelectFilter,
-  ITableEmptyType,
-  ITableMethod,
 } from '@/types/common';
 import type { IAuthConfig } from '@/types/resource';
 import { getStageList } from '@/services/source/gateway/stage';
@@ -504,13 +505,13 @@ import type {
   IResourceAuthConfig,
   ToolNameRowType,
 } from '@/types/mcp-server';
-import { refDebounced } from '@vueuse/core';
+import { refDebounced, useElementSize } from '@vueuse/core';
+import type { ComponentPublicInstance } from 'vue';
 import type {
   IMCPServerRemotePromptsOutput,
   IMCPServerRetrieveOutput,
-  IStageListOutput,
-} from '@/services/types/responses/gateways';
-import type { IMCPServerCreateInputSLZ } from '@/services/types/body/post/gateways';
+} from '@/services/types/gateway/mcp-server/server.ts';
+import type { IStageListOutput } from '@/services/types/gateway/stage.ts';
 import { usePopInfoBox, useSidebar } from '@/hooks';
 import { HTTP_METHODS } from '@/constants';
 import {
@@ -522,8 +523,16 @@ import { t } from '@/locales';
 import ServerBasicForm from '@/views/mcp-server/components/ServerBasicForm.vue';
 import OAuthSwitcher from '@/views/mcp-server/components/OAuthSwitcher.vue';
 import OAuthAlert from '@/views/mcp-server/components/OAuthAlert.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableEmptyType,
+  type ITableSelection,
+  type RowEventContext,
+  type TableRow,
+} from '@/components/base/ag-table';
 
 type IResourceTabItem = {
   label: string
@@ -535,8 +544,6 @@ type IResizeLayoutConfig = {
   min: number
   max: number
 };
-
-type IMCPServerResource = Partial<IMCPServerTool> | Partial<IMCPServerPrompt>;
 
 type IMCPSelections = (Partial<IMCPServerTool> | Partial<IMCPServerPrompt>) & IMCPToolSelections;
 
@@ -559,15 +566,19 @@ let clearMapTimer: ReturnType<typeof setTimeout> | null = null;
 const resourceNameToIndexMap = new Map<string, number>();
 const authorizedPromptIds = new Set<number>();
 
-const footerRef = ref<HTMLDivElement | null>(null);
-const resourceRef = ref<HTMLDivElement | null>(null);
-const resizeLayoutRef = ref<InstanceType<typeof ResizeLayout> | null>(null);
-const toolTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
-const promptTableRef = ref<InstanceType<typeof AgTable> & ITableMethod>();
-const formRef = ref<InstanceType<typeof Form> & IFormMethod>();
+const footerRef = useTemplateRef<HTMLDivElement>('footerRef');
+const resourceRef = useTemplateRef<HTMLDivElement>('resourceRef');
+const resizeLayoutRef = useTemplateRef<InstanceType<typeof ResizeLayout>>('resizeLayoutRef');
+const toolTableRef = useTemplateRef<IAgTableInstance<IMCPServerTool>>('toolTableRef');
+const promptTableRef = useTemplateRef<IAgTableInstance<IMCPServerPrompt>>('promptTableRef');
+const toolTableRegion = useTemplateRef<ComponentPublicInstance>('toolTableRegion');
+const promptTableRegion = useTemplateRef<ComponentPublicInstance>('promptTableRegion');
+const { height: toolTableHeight } = useElementSize(toolTableRegion, undefined, { box: 'border-box' });
+const { height: promptTableHeight } = useElementSize(promptTableRegion, undefined, { box: 'border-box' });
+const formRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('formRef');
 const toolNameRef = ref<InstanceType<typeof Form> & IFormMethod>();
 const popoverConfirmRef = ref<InstanceType<typeof PopConfirm>>();
-const serverBasicFormRef = ref<InstanceType<typeof ServerBasicForm>>();
+const serverBasicFormRef = useTemplateRef<InstanceType<typeof ServerBasicForm>>('serverBasicFormRef');
 const toolNameInputRef = ref<InstanceType<typeof Input> & { focus: () => void }>();
 const defaultFormData = ref<IMCPFormData>({
   name: '',
@@ -600,7 +611,6 @@ const resourceList = ref<IMCPServerTool[]>([]);
 const promptTableData = ref<IMCPServerPrompt[]>([]);
 const toolSelections = ref<IMCPSelections[]>([]);
 const promptSelections = ref<IMCPServerPrompt[]>([]);
-const allSelections = ref<IMCPSelections[]>([]);
 const noPermPrompt = ref<IMCPServerPrompt[]>([]);
 const promptLabels = ref<ISearchItem[]>([]);
 const filterPromptValues = ref<ISearchSelectFilter[]>([]);
@@ -636,11 +646,11 @@ const resourceTabList = shallowRef<IResourceTabItem[]>([
     required: false,
   },
 ]);
-const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const toolTableColumns = shallowRef<ITableColumn<IMCPServerTool>[]>([
   {
     title: t('资源名称'),
     colKey: 'name',
-    cell: (_, { row }) => {
+    cell: (_h, { row }) => {
       if (!row.name) {
         return '--';
       };
@@ -664,30 +674,21 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
               toolTableRef.value?.handleCellEnter({
                 e,
                 row,
-              } as {
-                e: MouseEvent
-                row: IMCPServerTool
               });
             }}
-            onMouseleave={(e: MouseEvent) => {
-              toolTableRef.value?.handleCellLeave({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: IMCPServerTool
-              });
+            onMouseleave={() => {
+              toolTableRef.value?.handleCellLeave({ row });
             }}
             onClick={() => {
-              if (toolDisabledSelection(row) && !row.has_openapi_schema) return;
+              if (isToolSelectionDisabled(row) && !row.has_openapi_schema) return;
 
-              handleToolNameClick(row as IMCPServerTool);
+              handleToolNameClick(row);
             }}
           >
             {row.name}
           </div>
 
-          {(toolDisabledSelection(row) && !row.has_openapi_schema) && (
+          {(isToolSelectionDisabled(row) && !row.has_openapi_schema) && (
             <Popover
               trigger="hover"
               placement="top"
@@ -703,12 +704,12 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 content: () => (
                   <div class="flex items-center">
                     <div>
-                      { row.selectionTip }
+                      { getToolSelectionTip(row) }
                     </div>
                     {!isProgrammableGateway.value && (
                       <div
                         class="ml-16px color-#699df4 cursor-pointer"
-                        onClick={() => handleToolNameClick(row as IMCPServerTool)}
+                        onClick={() => handleToolNameClick(row)}
                       >
                         <ag-icon
                           name="jump"
@@ -730,12 +731,10 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
   {
     title: t('工具名称'),
     colKey: 'tool_name',
-    cell: (_, payload) => {
-      const row = payload.row as IMCPServerTool;
+    cell: (_h, { row }) => {
+      const toolName = row.tool_name ?? row.name;
 
-      row.tool_name = row.tool_name ?? row.name;
-
-      if (!row.tool_name) {
+      if (!toolName) {
         return '--';
       }
 
@@ -744,7 +743,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
           <div
             v-bk-tooltips={{
               placement: 'top',
-              content: row.tool_name ?? '',
+              content: toolName,
               disabled: !row.isOverflow,
             }}
             class={[
@@ -756,20 +755,11 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
               toolTableRef.value?.handleCellEnter({
                 e,
                 row,
-              } as {
-                e: MouseEvent
-                row: IMCPServerTool
               })}
-            onMouseleave={(e: MouseEvent) =>
-              toolTableRef.value?.handleCellLeave({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: IMCPServerTool
-              })}
+            onMouseleave={() =>
+              toolTableRef.value?.handleCellLeave({ row })}
           >
-            { row.tool_name }
+            { toolName }
           </div>
           { row.has_openapi_schema && (
             <div class="flex items-center">
@@ -782,7 +772,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                 extCls="tool-name-popover"
                 arrow={false}
                 is-show={toolNameRowData.value.id === row.id && toolNameRowData.value.isShow}
-                onConfirm={() => handleConfirmToolName(row as IMCPServerTool)}
+                onConfirm={() => handleConfirmToolName(row)}
                 onCancel={() => handleCancelToolName()}
               >
                 {{
@@ -807,7 +797,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                           type="solid"
                         />
                         <span class="text-14px color-#979ba5 lh-22px">
-                          { t('资源名称：{value}', { value: row.tool_name }) }
+                          { t('资源名称：{value}', { value: toolName }) }
                         </span>
                       </span>
                       <div class="mt-16px">
@@ -827,13 +817,13 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                               v-model={toolNameRowData.value.tool_name}
                               ref={toolNameInputRef}
                               placeholder={t('请输入工具名称')}
-                              maxlength={toolNameMaxLen.value}
+                              maxlength={toolNameLengthLimit.value}
                               tooltipsOptions={{
                                 content: (
                                   <div>
                                     { t('MCP Server 名称 + 工具名称不得超过 64 字符') }
                                     ，
-                                    { t('剩余可输入 {count} 字符', { count: maxToolNameLen.value }) }
+                                    { t('剩余可输入 {count} 字符', { count: remainingToolNameCharacters.value }) }
                                     <br />
                                     { t('首尾字符：必须以字母或数字开头和结尾（a-z、A-Z、0-9）') }
                                     <br />
@@ -852,7 +842,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
                   ),
                 }}
               </PopConfirm>
-              { isExceedMaxCharacters(row) && (
+              { requiresShorterToolName(row) && (
                 <Popover
                   trigger="hover"
                   placement="top"
@@ -897,7 +887,7 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
       resetValue: [],
       list: customMethodsList.value,
     },
-    cell: (_, { row }) => (
+    cell: (_h, { row }) => (
       <BkTag
         theme={methodTagThemeMap[row.method as keyof typeof methodTagThemeMap]}
       >
@@ -916,11 +906,11 @@ const toolTableColumns = shallowRef<PrimaryTableProps['columns']>([
     ellipsis: true,
   },
 ]);
-const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
+const promptTableColumns = shallowRef<ITableColumn<IMCPServerPrompt>[]>([
   {
     title: t('Prompt 名称'),
     colKey: 'name',
-    cell: (_, { row }) => {
+    cell: (_h, { row }) => {
       if (!row.name) {
         return '--';
       }
@@ -939,18 +929,9 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
               promptTableRef.value?.handleCellEnter({
                 e,
                 row,
-              } as {
-                e: MouseEvent
-                row: IMCPServerPrompt
               })}
-            onMouseleave={(e: MouseEvent) =>
-              promptTableRef.value?.handleCellLeave({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: IMCPServerPrompt
-              })}
+            onMouseleave={() =>
+              promptTableRef.value?.handleCellLeave({ row })}
           >
             { row.name }
           </div>
@@ -969,12 +950,12 @@ const promptTableColumns = shallowRef<PrimaryTableProps['columns']>([
     },
   },
 ]);
-const privatePromptColumns = shallowRef<PrimaryTableProps['columns']>([
+const privatePromptColumns = shallowRef<ITableColumn<IMCPServerPrompt>[]>([
   {
     title: 'Prompt',
     colKey: 'name',
     ellipsis: true,
-    cell: (_, { row }) => {
+    cell: (_h, { row }) => {
       return row.name || '--';
     },
   },
@@ -989,11 +970,8 @@ const toolNameRules = {
       trigger: 'blur',
     },
     {
-      validator: (value: string) => {
-        const results = value?.length > 0 && value?.length <= toolNameMaxLen.value;
-        return results;
-      },
-      message: () => `${t('MCP Server 名称 + 工具名称不得超过 64 字符')}, ${t('剩余可输入 {count} 字符', { count: maxToolNameLen.value })}`,
+      validator: (value: string) => value?.length > 0 && value.length <= toolNameLengthLimit.value,
+      message: () => `${t('MCP Server 名称 + 工具名称不得超过 64 字符')}, ${t('剩余可输入 {count} 字符', { count: remainingToolNameCharacters.value })}`,
       trigger: 'change',
     },
     {
@@ -1134,9 +1112,9 @@ const filteredPromptList = computed<IMCPServerPrompt[]>(() => {
 
   return results;
 });
-const renderPreviewByTab = computed<IMCPSelections[]>(() => {
-  return allSelections.value.filter((item: IMCPSelections) => item.mode_type === activeTab.value);
-});
+// 预览和提交读取同一批选中项，行内编辑工具别名后两处会一起更新。
+const activeSelections = computed<IMCPSelections[]>(() =>
+  activeTab.value === 'tool' ? toolSelections.value : promptSelections.value);
 const filterPromptConditions = computed<ISearchItem[]>(() => [
   {
     name: t('中英文名'),
@@ -1188,23 +1166,16 @@ const isExistOAuthData = computed<boolean>(() =>
     renderOAuthConfig(auth).auth_verified_required || renderOAuthConfig(auth).app_verified_required,
   ),
 );
-// 获取动态的MCP Server 名称
 const mcpServerName = computed(() => isEditMode.value ? formData.value.name : `${serverNamePrefix.value}${formData.value.name}`);
-const toolNameMaxLen = computed(() => 64 - mcpServerName.value.length);
-// 获取动态可输入的最大工具名长度
-const maxToolNameLen = computed(() => {
-  const count = toolNameMaxLen.value - (toolNameRowData.value.tool_name?.length ?? 0);
-  if (count < 0) {
-    return 0;
-  }
-  return count;
-});
+// 服务名称和工具名称共用 64 个字符的限额。
+const toolNameLengthLimit = computed(() => 64 - mcpServerName.value.length);
+const remainingToolNameCharacters = computed(() =>
+  Math.max(0, toolNameLengthLimit.value - (toolNameRowData.value.tool_name?.length ?? 0)));
 const personalTokenLink = computed(() => envStore?.env?.DOC_LINKS?.AUTH_PERSONAL_TOKEN);
-
-// 开启OAuth2 公开客户端模式才展示工具应用态或用户态
-const isEnabledOAuthTag = (payload: IMCPServerResource | IMCPSelections): boolean => {
-  return payload.mode_type === 'tool' && isEnabledOAuth.value;
-};
+// 翻页、加载内容或切换页签后，右侧预览按当前表格容器的高度调整。
+const selectionPreviewStyle = computed(() => ({
+  maxHeight: `${(activeTab.value === 'tool' ? toolTableHeight.value : promptTableHeight.value) + 32}px`,
+}));
 
 // 选择的工具配置解析
 const renderOAuthConfig = (payload: IMCPSelections): IAuthConfig => {
@@ -1234,16 +1205,6 @@ const renderOAuthConfig = (payload: IMCPSelections): IAuthConfig => {
   else {
     return defaultConfig;
   }
-};
-
-// 结果预览高度自适应不同选项表格的高度
-const renderPreviewViewWidth = () => {
-  const initH = 32;
-  const toolClientH = (toolTableRef.value?.TDesignTableRef?.$el?.offsetHeight ?? 0) + initH;
-  const promptClientH = (promptTableRef.value?.TDesignTableRef?.$el?.offsetHeight ?? 0) + initH;
-  return {
-    maxHeight: `${activeTab.value.includes('tool') ? toolClientH : promptClientH}px`,
-  };
 };
 
 /**
@@ -1296,26 +1257,9 @@ const handleIsShowChange = async (isShowVal: boolean) => {
     await fetchServer();
   }
   getCommonListData();
-  renderPreviewViewWidth();
 };
 
 watch(isShow, handleIsShowChange, { immediate: false });
-
-const isExceedMaxCharacters = (row: TableRowData) => {
-  const toolName = row.tool_name ?? row.name;
-  const results = `${mcpServerName.value}${toolName}`.length > 64;
-  // 编辑模式需要过滤掉已选的工具，避免影响旧存量数据
-  if (isEditMode.value) {
-    const isStockResource
-      = toolSelections.value.some(tCheck => tCheck.id === row.id) && resourceNameList.value.includes(row.name);
-
-    if (isStockResource) return false;
-
-    return results;
-  }
-
-  return results;
-};
 
 const getDiffFormData = () => {
   return {
@@ -1345,36 +1289,29 @@ const resetResizeLayout = () => {
   });
 };
 
-// 先判断当前行是否已被勾选（存在于 toolSelections 中）
-const isSelectedTool = (row: TableRowData) => {
-  const isSelected = toolSelections.value.some(toolChecked => toolChecked.id === row.id);
-  return isSelected;
+const isToolSelected = (row: IMCPServerTool) => toolSelections.value.some(tool => tool.id === row.id);
+
+const requiresShorterToolName = (row: IMCPServerTool) => {
+  // 编辑旧配置时允许保留原先选中的工具。
+  if (isEditMode.value && isToolSelected(row) && resourceNameList.value.includes(row.name)) return false;
+  const toolName = row.tool_name ?? row.name ?? '';
+  return toolName.length > toolNameLengthLimit.value;
 };
 
-const toolDisabledSelection = (row: TableRowData): boolean => {
-  // 工具是否已选中
-  const selected = isSelectedTool(row);
-  // 无openapi_schema 优先级最高
-  if (!row.has_openapi_schema) {
-    if (isProgrammableGateway.value) {
-      row.selectionTip = t('可编程网关请参考框架文档，配置资源请求参数声明');
-    }
-    else {
-      row.selectionTip = selected
-        ? t('该资源数据有变更，请确认一下请求参数是否正确配置。')
-        : t('该资源未配置请求参数声明，不能添加到 MCP');
-    }
-    // 未选中才禁用；已选中只是改提示，不禁用
-    return !selected;
-  }
+// 已选工具后来缺失 OpenAPI 声明时，仍要允许用户取消勾选。
+const isToolSelectionDisabled = (row: IMCPServerTool) =>
+  row.has_openapi_schema ? requiresShorterToolName(row) : !isToolSelected(row);
 
-  // 存在 openapi_schema，再判断字符超限逻辑
-  if (isExceedMaxCharacters(row) && row.has_openapi_schema) {
-    row.selectionTip = t('MCP Server 名称 + 工具名称不得超过 64 字符，超限可能导致部分客户端调用失败。');
-    return true;
+const getToolSelectionTip = (row: IMCPServerTool) => {
+  if (row.has_openapi_schema) {
+    return requiresShorterToolName(row)
+      ? t('MCP Server 名称 + 工具名称不得超过 64 字符，超限可能导致部分客户端调用失败。')
+      : '';
   }
-
-  return false;
+  if (isProgrammableGateway.value) return t('可编程网关请参考框架文档，配置资源请求参数声明');
+  return isToolSelected(row)
+    ? t('该资源数据有变更，请确认一下请求参数是否正确配置。')
+    : t('该资源未配置请求参数声明，不能添加到 MCP');
 };
 
 const handleMouseenter = (e: MouseEvent) => {
@@ -1435,7 +1372,7 @@ const isExistPrivatePrompt = (): Promise<boolean> => {
               { t('以下 Prompt 仅在授权空间内可用，添加到 MCP 后，所有经MCP 授权的应用均可访问该 Prompt 信息') }
             </div>
             <AgTable
-              v-model:tableData={privateData}
+              tableData={privateData}
               columns={privatePromptColumns.value}
               resizable
               localPage
@@ -1499,7 +1436,7 @@ const handleSubmit = async (): Promise<void> => {
     if (hiddenCategoriesList.value.length) {
       categoryIds = [...categoryIds, ...hiddenCategoriesList.value.map(item => item.id)];
     }
-    let params: Partial<IMCPServerCreateInputSLZ> = {
+    const config = {
       resource_names: toolSelections.value.map(item => item.name),
       tool_names: toolSelections.value.map(item => item.tool_name ?? item.name),
       prompts: isEnablePrompt.value ? promptSelections.value : undefined,
@@ -1516,7 +1453,8 @@ const handleSubmit = async (): Promise<void> => {
         protocol_type,
         labels,
       } = formData.value;
-      params = Object.assign(params, {
+      const params = {
+        ...config,
         description,
         is_public,
         oauth2_public_client_enabled,
@@ -1525,7 +1463,7 @@ const handleSubmit = async (): Promise<void> => {
         protocol_type,
         labels,
         title,
-      });
+      };
       await patchServer(gatewayId.value!, serverId!, params);
       Message({
         theme: 'success',
@@ -1533,8 +1471,8 @@ const handleSubmit = async (): Promise<void> => {
       });
     }
     else {
-      params = {
-        ...params,
+      const params = {
+        ...config,
         ...formData.value,
         name: mcpServerName.value,
       };
@@ -1553,24 +1491,15 @@ const handleSubmit = async (): Promise<void> => {
   }
 };
 
-const fetchStageList = async () => {
+const fetchStageList = async ({ preserveAliases = false } = {}) => {
   const response = await getStageList(gatewayId.value!);
   stageList.value = response || [];
   if (!formData.value.stage_id) {
     formData.value.stage_id = stageList.value.find(sg => sg.status === 1)?.id ?? 0;
   }
   if (formData.value.stage_id) {
-    await fetchStageResources();
+    await fetchStageResources({ preserveAliases });
   }
-};
-
-/**
- * 统一更新全选数据（确保工具/Prompt 都处理完成）
- */
-const updateAllSelections = () => {
-  setTimeout(() => {
-    allSelections.value = [...toolSelections.value, ...promptSelections.value] as IMCPSelections[];
-  }, 200);
 };
 
 // 兼容旧版浏览器无法识别requestIdleCallback
@@ -1643,7 +1572,6 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
         return {
           name,
           id,
-          mode_type: 'tool',
           tool_name: tool_name || name,
           contexts,
         };
@@ -1655,12 +1583,11 @@ const renderToolResource = (resource_names: string[], tool_names: string[]) => {
           return {
             name,
             id,
-            mode_type: 'tool',
             tool_name: tool_name || name,
             contexts,
           };
         });
-        toolTableRef.value?.setSelectionData(toolSelections.value);
+        toolTableRef.value?.setSelectionData(toolSelections.value as IMCPServerTool[]);
         // 延迟清空Map，确保数据使用完成
         clearMapTimer = setTimeout(() => {
           resourceNameToIndexMap.clear();
@@ -1709,21 +1636,18 @@ const renderPromptResource = (prompts: IMCPServerPrompt[]) => {
           .filter((item: IMCPServerPrompt) => !authorizedPromptIds.has(item.id))
           .map((item: IMCPServerPrompt) => ({
             ...item,
-            mode_type: 'prompt',
             is_no_perm: true,
           }));
 
         // 分片更新
         promptSelections.value = prompts.slice(0, 20).map((item: IMCPServerPrompt) => ({
           ...item,
-          mode_type: 'prompt',
           is_no_perm: !authorizedPromptIds.has(item.id),
         }));
 
         setTimeout(() => {
           promptSelections.value = prompts.map((item: IMCPServerPrompt) => ({
             ...item,
-            mode_type: 'prompt',
             is_no_perm: !authorizedPromptIds.has(item.id),
           }));
 
@@ -1798,8 +1722,6 @@ const fetchServer = async () => {
       // 启动资源渲染（微任务执行，不阻塞主线程）
       queueMicrotask(() => renderToolResource(resource_names, tool_names));
       queueMicrotask(() => renderPromptResource(prompts as IMCPServerPrompt[]));
-      // 统一更新全选数据
-      updateAllSelections();
     }
   }
   catch {
@@ -1810,7 +1732,24 @@ const fetchServer = async () => {
   }
 };
 
-const fetchStageResources = async () => {
+// 收集当前未提交的自定义工具别名（排除与资源原名一致的默认值），刷新候选列表时按资源 ID 保留
+const collectCustomToolAliases = () => {
+  const aliasById = new Map<number, string>();
+  for (const item of resourceList.value) {
+    if (item.id != null && item.tool_name && item.tool_name !== item.name) {
+      aliasById.set(item.id, item.tool_name);
+    }
+  }
+  for (const item of toolSelections.value) {
+    if (item.id != null && item.tool_name && item.tool_name !== item.name && !aliasById.has(item.id)) {
+      aliasById.set(item.id, item.tool_name);
+    }
+  }
+  return aliasById;
+};
+
+const fetchStageResources = async ({ preserveAliases = false } = {}) => {
+  const aliasById = preserveAliases ? collectCustomToolAliases() : undefined;
   try {
     searchLoading.value = true;
     if (stage.value?.resource_version?.id) {
@@ -1823,7 +1762,18 @@ const fetchStageResources = async () => {
           source: 'mcp_server',
         },
       );
-      resourceList.value = response.resources || [];
+      const nextResources = response.resources || [];
+      resourceList.value = aliasById?.size
+        ? nextResources.map((item) => {
+          const alias = aliasById.get(item.id);
+          return alias
+            ? {
+              ...item,
+              tool_name: alias,
+            }
+            : item;
+        })
+        : nextResources;
     }
     else {
       resourceList.value = [];
@@ -1882,13 +1832,7 @@ const fetchCategoryList = async () => {
   });
 };
 
-const handlePromptRowClick = ({
-  e,
-  row,
-}: {
-  e: MouseEvent
-  row: IMCPServerPrompt
-}) => {
+const handlePromptRowClick = ({ e, row }: RowEventContext<TableRow<IMCPServerPrompt>>) => {
   e?.stopPropagation();
   const isCheckbox = (e.target as HTMLElement).closest('.custom-ag-table-checkbox');
   const isRepeat = `${curPromptData.value.id}&${curPromptData.value.code}` === `${row.id}&${row.code}`;
@@ -1899,7 +1843,7 @@ const handlePromptRowClick = ({
   fetchPromptResourcesDetail();
 };
 
-const getSliderContentHeight = () => {
+const updateSliderContentHeight = () => {
   // 动态获取footer高度，计算内容区域最大高度
   setTimeout(() => {
     const modalContentEl = document.querySelector('.create-mcp-slider .bk-modal-content');
@@ -1912,64 +1856,28 @@ const getSliderContentHeight = () => {
   });
 };
 
-const handleRemoveResource = ({
-  name,
-  mode_type,
-  id,
-}: {
-  name?: string
-  mode_type?: IMCPTabType
-  id?: number
-}) => {
-  const removeData = `${mode_type}&${name}&${id}`;
-  if (['tool'].includes(mode_type!)) {
-    toolSelections.value = toolSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
-    toolTableRef.value?.setSelectionData(toolSelections.value);
+const removePreviewSelection = ({ id, name }: IMCPToolSelections) => {
+  const keepOtherItems = (item: IMCPToolSelections) => item.id !== id || item.name !== name;
+  if (activeTab.value === 'tool') {
+    toolSelections.value = toolSelections.value.filter(keepOtherItems);
+    toolTableRef.value?.setSelectionData(toolSelections.value as IMCPServerTool[]);
   }
   else {
-    promptSelections.value = promptSelections.value.filter(item => `${mode_type}&${item.name}&${item.id}` !== removeData);
+    promptSelections.value = promptSelections.value.filter(keepOtherItems);
     promptTableRef.value?.setSelectionData(promptSelections.value);
   }
-  allSelections.value = allSelections.value.filter((item: IMCPSelections) => `${mode_type}&${item.name}&${item.id}` !== removeData);
 };
 
-const handleToolSelectionChange = (payload: {
-  selections: TableRowData[]
-  selectionsRowKeys: string[] | number[]
-}) => {
-  const selections = payload.selections as IMCPServerTool[];
-
-  setTimeout(() => {
-    toolSelections.value = selections;
-    const promptItems = allSelections.value.filter(item => item.mode_type === 'prompt');
-    const toolItems = selections.map(item => ({
-      ...item,
-      mode_type: 'tool',
-    }));
-    allSelections.value = [...promptItems, ...toolItems] as IMCPSelections[];
-    getSliderContentHeight();
-  }, 0);
+const handleToolSelectionChange = ({ selections }: ITableSelection<TableRow<IMCPServerTool>>) => {
+  toolSelections.value = selections;
+  updateSliderContentHeight();
 };
 
-const handlePromptSelectionChange = (payload: {
-  selections: TableRowData[]
-  selectionsRowKeys: string[] | number[]
-}) => {
-  const selections = payload.selections as IMCPServerPrompt[];
-  // 这里把响应式数据数据逻辑放到setTimeout异步执行，避免阻塞主线程
-  setTimeout(() => {
-    promptSelections.value = selections;
-    // 保留工具项，替换 Prompt 项
-    const toolItems = allSelections.value.filter(item => item.mode_type === 'tool');
-    const promptItems = selections.map(item => ({
-      ...item,
-      mode_type: 'prompt',
-    }));
-    allSelections.value = [...toolItems, ...promptItems] as IMCPSelections[];
-  }, 0);
+const handlePromptSelectionChange = ({ selections }: ITableSelection<TableRow<IMCPServerPrompt>>) => {
+  promptSelections.value = selections;
 };
 
-const handleToolFilterChange = (filters: Record<string, unknown>): void => {
+const handleToolFilterChange = (filters: FilterValue): void => {
   toolFilterData.value = { ...filters };
 };
 
@@ -1987,14 +1895,11 @@ const handleEditToolName = (row: IMCPServerTool) => {
 const handleConfirmToolName = async (row: IMCPServerTool) => {
   try {
     await toolNameRef.value?.validate();
-    const toolData: IMCPServerTool | undefined = resourceList.value.find(item => item.id === row.id);
-    if (toolData) {
-      (toolData as IMCPServerTool).tool_name = toolNameRowData.value.tool_name;
-    }
-    const selectData = toolSelections.value.find((item: IMCPSelections) => item.id === toolData?.id);
-    if (selectData) {
-      selectData.tool_name = toolNameRowData.value.tool_name;
-    }
+    const alias = toolNameRowData.value.tool_name;
+    const sourceTool = resourceList.value.find(tool => tool.id === row.id);
+    const selectedTool = toolSelections.value.find(tool => tool.id === row.id);
+    if (sourceTool) sourceTool.tool_name = alias;
+    if (selectedTool) selectedTool.tool_name = alias;
     handleCancelToolName();
   }
   catch {
@@ -2041,7 +1946,6 @@ const handleClearSelections = (type?: string) => {
       promptTableRef.value?.handleResetSelection();
     },
     all: () => {
-      allSelections.value = [];
       toolSelections.value = [];
       promptSelections.value = [];
       toolTableRef.value?.handleResetSelection();
@@ -2053,12 +1957,10 @@ const handleClearSelections = (type?: string) => {
 
 const handleToolClearSelection = () => {
   toolSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'tool');
 };
 
 const handlePromptClearSelection = () => {
   promptSelections.value = [];
-  allSelections.value = allSelections.value.filter(item => item.mode_type !== 'prompt');
 };
 
 const handleToolClearFilter = () => {
@@ -2079,7 +1981,7 @@ const handleRefreshClick = async () => {
   filterKeyword.value = '';
   toolNameRowData.value = {};
   searchLoading.value = true;
-  await fetchStageList();
+  await fetchStageList({ preserveAliases: true });
   toolSelections.value = toolSelections.value.filter(item =>
     resourceList.value.some(resource => resource.id === item.id),
   );
@@ -2110,7 +2012,7 @@ const handleMcpTypeChange = (tab: string) => {
     tool: () => {
       if (toolSelections.value.length) {
         nextTick(() => {
-          toolTableRef.value?.setSelectionData(toolSelections.value);
+          toolTableRef.value?.setSelectionData(toolSelections.value as IMCPServerTool[]);
         });
       }
     },
@@ -2135,7 +2037,6 @@ const resetSliderData = () => {
   resourceList.value = [];
   toolSelections.value = [];
   promptSelections.value = [];
-  allSelections.value = [];
   noPermPrompt.value = [];
   categoriesList.value = [];
   hiddenCategoriesList.value = [];
@@ -2189,6 +2090,7 @@ defineExpose({
 
 </script>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的提示框与气泡弹层样式 -->
 <style lang="scss">
 .prompt-info-box {
 

@@ -294,8 +294,8 @@ def test_sync_gateway_rbac_auth_to_iam_reports_one_readable_line_per_gateway(set
     gateway_lines = [line for line in output.getvalue().splitlines() if "event=iam-rbac-sync-gateway" in line]
     assert gateway_lines == [
         f"event=iam-rbac-sync-gateway run_id=run-readable mode=dry-run gateway_index=1 gateways_total=1 "
-        f"status=success outcome=changed gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} "
-        "grants_planned=1 revokes_planned=0 already_consistent=1 "
+        f"status=success gateway_id={fake_gateway.id} gateway_name={fake_gateway.name} "
+        "grants_planned=1 revokes_planned=0 skipped_missing=0 excluded_members=0 already_consistent=1 "
         'changes="grant(username=user-0,role=operator,reason=missing-in-iam,'
         'expires_at=2030-03-17T17:46:40Z)" changes_logged=1 changes_omitted=0 duration_ms=0'
     ]
@@ -369,7 +369,7 @@ def test_sync_gateway_rbac_auth_to_iam_apply_writes_iam_without_preflight(settin
         "apigateway.biz.iam.authorization.iter_authorization_subjects",
         return_value=iter([]),
     )
-    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization")
+    add = mocker.patch("apigateway.biz.iam.authorization.add_authorization", return_value=0)
     revoke = mocker.patch("apigateway.biz.iam.authorization.revoke_authorization")
 
     call_command(
@@ -427,7 +427,8 @@ def test_sync_gateway_rbac_auth_to_iam_apply_failure_raises_command_error(settin
     assert 'write_result=unknown error="IAM unavailable"' in failure_line
     assert (
         "event=iam-rbac-sync-summary run_id=run-failed mode=apply status=failed gateways_total=1 "
-        "gateways_succeeded=0 gateways_failed=1 grants_processed=0 revokes_processed=0 "
+        "gateways_succeeded=0 gateways_failed=1 grants_planned=0 revokes_planned=0 "
+        "skipped_missing=0 excluded_members=0 "
         "already_consistent=0 failed_gateway_changes=unknown"
     ) in output.getvalue()
 
@@ -655,6 +656,79 @@ def test_add_global_gateway_administrators_rejects_too_long_username(settings):
 
     with pytest.raises(CommandError, match="长度不能超过 64"):
         call_command("add_global_gateway_administrators", username=["a" * 65])
+
+
+def test_remove_excluded_gateway_members_command_dry_run_does_not_delete(settings):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    gateway = G(Gateway, name="gw-cleanup", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=gateway,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    GatewayMember.objects.create(
+        gateway=gateway,
+        username="alice",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    output = StringIO()
+
+    call_command("remove_excluded_gateway_members", stdout=output)
+
+    assert GatewayMember.objects.filter(gateway=gateway, username="admin").exists()
+    assert output.getvalue() == "summary delete=1 apply=false\n"
+
+
+def test_remove_excluded_gateway_members_command_apply_deletes_excluded_usernames(settings):
+    settings.ENABLE_MULTI_TENANT_MODE = True
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    removable = G(Gateway, name="gw-removable", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=removable,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    GatewayMember.objects.create(
+        gateway=removable,
+        username="alice",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    only_excluded = G(Gateway, name="gw-only-excluded", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=only_excluded,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    GatewayMember.objects.create(
+        gateway=only_excluded,
+        username="bk_admin",
+        role=GatewayRoleEnum.OPERATOR.value,
+    )
+    output = StringIO()
+
+    call_command("remove_excluded_gateway_members", apply=True, stdout=output)
+
+    assert GatewayMember.objects.list_gateway_administrators(removable.id) == ["alice"]
+    assert not GatewayMember.objects.filter(gateway=only_excluded).exists()
+    assert output.getvalue() == "summary delete=3 apply=true\n"
+
+
+def test_remove_excluded_gateway_members_command_skips_when_single_tenant(settings):
+    settings.ENABLE_MULTI_TENANT_MODE = False
+    settings.BK_IAM_V4_EXCLUDED_USERNAMES = frozenset({"admin", "bk_admin"})
+    gateway = G(Gateway, name="gw-single", status=1, tenant_mode="single", tenant_id="default")
+    GatewayMember.objects.create(
+        gateway=gateway,
+        username="admin",
+        role=GatewayRoleEnum.ADMINISTRATOR.value,
+    )
+    output = StringIO()
+
+    call_command("remove_excluded_gateway_members", apply=True, stdout=output)
+
+    assert GatewayMember.objects.filter(gateway=gateway, username="admin").exists()
+    assert output.getvalue() == "summary status=skipped reason=multi-tenant-disabled\n"
 
 
 def test_add_global_gateway_administrators_accepts_comma_separated_usernames(settings, mocker):

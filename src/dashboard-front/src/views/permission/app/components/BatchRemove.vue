@@ -16,7 +16,7 @@
  * to the current version of the project delivered to anyone in the future.
  */
 <template>
-  <AgSideSlider
+  <AgSideslider
     v-model="removalSliderConfig.isShow"
     :width="960"
     quick-close
@@ -55,6 +55,7 @@
                 <AgTable
                   v-model:table-data="resourceTableList"
                   local-page
+                  :auto-height="false"
                   :columns="tableColumns"
                   :show-pagination="false"
                 />
@@ -80,6 +81,7 @@
                   v-model:table-data="apiTableList"
                   :columns="tableColumns"
                   local-page
+                  :auto-height="false"
                   :show-pagination="false"
                 />
               </template>
@@ -106,15 +108,15 @@
         </BkButton>
       </div>
     </template>
-  </AgSideSlider>
+  </AgSideslider>
 </template>
 
 <script lang="tsx" setup>
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { usePermission } from '@/stores';
 import { type IPermission } from '@/types/permission';
-import AgTable from '@/components/ag-table/Index.vue';
-import AgSideSlider from '@/components/ag-sideslider/Index.vue';
+import AgTable, { type ITableColumn } from '@/components/base/ag-table';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 
 type ISliderParams = {
   isShow: boolean
@@ -149,7 +151,7 @@ const { t } = useI18n();
 const permissionStore = usePermission();
 
 const activeIndex = ref(['resource', 'gateway']);
-const tableColumns = shallowRef<any[]>([
+const tableColumns = shallowRef<ITableColumn<IPermission>[]>([
   {
     title: t('蓝鲸应用 ID'),
     colKey: 'bk_app_code',
@@ -159,9 +161,9 @@ const tableColumns = shallowRef<any[]>([
     title: t('资源名称'),
     colKey: 'resource_name',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: IPermission }) => {
+    cell: (_h, { row }) => {
       return (
-        <span>{ row!.resource_name || '--' }</span>
+        <span>{ row.resource_name || '--' }</span>
       );
     },
   },
@@ -169,11 +171,11 @@ const tableColumns = shallowRef<any[]>([
     title: t('有效期'),
     colKey: 'expires',
     ellipsis: true,
-    cell: (h: any, { row }: { row?: IPermission }) => {
+    cell: (_h, { row }) => {
       return (
         <div>
-          <span style={{ color: permissionStore.getDurationTextColor(row!.expires ?? null) }}>
-            { permissionStore.getDurationText(row?.expires ?? null) }
+          <span style={{ color: permissionStore.getDurationTextColor(row.expires ?? null) }}>
+            { permissionStore.getDurationText(row.expires ?? null) }
           </span>
         </div>
       );

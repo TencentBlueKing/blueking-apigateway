@@ -16,10 +16,10 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from cachetools import TTLCache, cached
 from django.db import models
 
-from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_5_MINUTES
+from apigateway.common.cache import cache_on_arguments
+from apigateway.common.constants import CACHE_TIME_5_MINUTES
 
 
 class AlarmRecordManager(models.Manager):
@@ -45,7 +45,7 @@ class AlarmRecordManager(models.Manager):
 
 
 class AlarmFilterConfigManager(models.Manager):
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_5_MINUTES))
+    @cache_on_arguments(expiration_time=CACHE_TIME_5_MINUTES)
     def get_filter_config(self, alarm_type: str):
         configs = (x.config for x in self.filter(alarm_type=alarm_type))
         return list(filter(None, configs))

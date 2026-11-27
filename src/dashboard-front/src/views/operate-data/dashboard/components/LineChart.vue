@@ -56,7 +56,7 @@
       v-show="isEmpty"
       class="ap-nodata basic-height"
     >
-      <TableEmpty
+      <AgTableEmpty
         :empty-type="tableEmptyConf.emptyType"
         :abnormal="tableEmptyConf.isAbnormal"
         @refresh="handleInit"
@@ -67,12 +67,12 @@
 </template>
 
 <script lang="ts" setup>
-import * as echarts from 'echarts';
+import { createChart } from '@/utils/echarts';
 import { merge } from 'lodash-es';
 import dayjs from 'dayjs';
 import { useChartIntervalOption } from '@/hooks';
 import type { ISearchParamsType, ISeriesItemType } from '@/types/metrics';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { getColorHue } from '@/utils';
 
 interface IProps {
@@ -120,7 +120,7 @@ const tableEmptyConf = ref<{
 
 onMounted(() => {
   const chartDom = document.getElementById(instanceId);
-  myChart.value = echarts.init(chartDom as HTMLDivElement);
+  myChart.value = createChart(chartDom as HTMLDivElement);
 
   window.addEventListener('resize', chartResize);
 });

@@ -95,7 +95,7 @@
                           />
                         </div>
                         <div class="icon-wrapper">
-                          <CopyButton
+                          <AgCopyButton
                             class="mr-8px"
                             :source="stageDetail.repo_info.repo_url"
                           />
@@ -221,7 +221,6 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import { getStageList } from '@/services/source/gateway/stage';
 import type { IStageListItem } from '@/types/stage';
 import {
   deployReleases,
@@ -278,8 +277,8 @@ const router = useRouter();
 const featureFlagStore = useFeatureFlag();
 
 const isShow = ref(false);
-const formRef = ref();
-const logDetailsRef = ref();
+const formRef = useTemplateRef('formRef');
+const logDetailsRef = useTemplateRef('logDetailsRef');
 
 // 提交数据
 const formData = ref<FormData>({
@@ -315,7 +314,6 @@ const stageDetail = ref<IPaasInfo>({
 });
 
 const deployId = ref('');
-const stageList = ref<IStageListItem[]>([]);
 const semVerType = ref('minor');
 const currentCommitInfo = ref<ICommitInfo>({
   commit_id: '',
@@ -362,7 +360,6 @@ watch(isShow, async (val: boolean) => {
   if (val) {
     try {
       isLoading.value = true;
-      await fetchStageList();
       stageDetail.value = await getProgrammableStageDetail(apigwId.value, currentStage?.id as number);
       const { version } = await getVersion();
       formData.value.version = version;
@@ -392,10 +389,6 @@ watch(isShow, async (val: boolean) => {
 watchEffect(() => {
   localStage.value = cloneDeep(currentStage);
 });
-
-const fetchStageList = async () => {
-  stageList.value = await getStageList(apigwId.value);
-};
 
 const showPublishDia = () => {
   usePopInfoBox({
@@ -427,7 +420,7 @@ const handlePublish = async () => {
     const res = await deployReleases(apigwId.value, params);
     deployId.value = res.deploy_id;
     isShow.value = false;
-    logDetailsRef.value.showSideslider();
+    logDetailsRef.value?.showSideslider();
     emit('closed-on-publishing');
   }
   catch (e: any) {
@@ -684,6 +677,7 @@ defineExpose({ showReleaseSideslider });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的错误消息提示条样式 -->
 <style lang="scss">
 .customize-error-message-cls .bk-message-content .overview .tools {
 

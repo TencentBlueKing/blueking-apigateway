@@ -177,7 +177,7 @@
           <template
             v-if="['searchEmpty', 'error'].includes(emptyType ?? '') && !gatewaysList.length && !loading"
           >
-            <TableEmpty
+            <AgTableEmpty
               background="#f5f7fa"
               :empty-type="emptyType"
               @clear-filter="handleClearFilter"
@@ -245,6 +245,12 @@
                 <BkTag v-if="item.status === 0">
                   {{ t('已停用') }}
                 </BkTag>
+                <BkTag
+                  v-if="item.is_deprecated"
+                  theme="danger"
+                >
+                  deprecated
+                </BkTag>
               </div>
               <template v-if="featureFlagStore.isTenantMode">
                 <div class="flex-1">
@@ -262,20 +268,17 @@
                 :ref="makeSetEnvContainerRef(item.id)"
                 class="env flex-1 of2"
               >
-                <div
-                  class="flex"
-                  :style="{ 'flex-wrap': 'nowrap' }"
-                >
+                <div class="flex flex-nowrap">
                   <span
                     v-for="(envItem, index) in item.stages"
                     :key="envItem.id"
                     :ref="makeSetEnvTagRef(item.id, index)"
+                    class="shrink-0"
                     :style="{
                       display:
                         index < (visibleTagCountMap[item.id] ?? DEFAULT_VISIBLE)
                           ? 'inline-block'
                           : 'none',
-                      'flex-shrink': '0',
                     }"
                   >
                     <BkTag
@@ -431,11 +434,11 @@ import {
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { getGatewayList } from '@/services/source/gateway/gateway';
 import { vIntersectionObserver } from '@vueuse/components';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import GatewayEmpty from '@/images/gateway-empty.png';
 import GatewayEmpty2 from '@/images/gateway-empty2.png';
 import type { IExtractListApiResults } from '@/services/types/utils.ts';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 type GatewayType = IExtractListApiResults<typeof getGatewayList>;
@@ -519,7 +522,7 @@ let resizeTimer: number | null = null;
 // 列表容器：观测其宽度变化。
 // 拖动窗口高度时滚动条出现/消失会改变可用宽度，window.resize 之后布局可能尚未稳定，
 // 用 ResizeObserver 直接观测容器宽度最可靠
-const tableListRef = ref<HTMLElement | null>(null);
+const tableListRef = useTemplateRef<HTMLElement>('tableListRef');
 let envResizeObserver: ResizeObserver | null = null;
 let lastObservedWidth = 0;
 

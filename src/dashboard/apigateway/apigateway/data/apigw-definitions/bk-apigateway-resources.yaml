@@ -2677,6 +2677,9 @@ paths:
                               resource_perm_required:
                                 type: boolean
                                 description: '是否需要资源权限; True: 则需要申请该资源权限才可以调用'
+                          has_openapi_schema:
+                            type: boolean
+                            description: 是否已声明请求参数，包括声明无请求参数（资源编辑态）
       parameters:
         - in: path
           name: gateway_name
@@ -2689,6 +2692,11 @@ paths:
           description: 搜索关键字，模糊匹配资源 name、description 或标签名称
           schema:
             type: string
+        - in: query
+          name: has_openapi_schema
+          description: 按是否已声明请求参数过滤，包括声明无请求参数；不传则不过滤
+          schema:
+            type: boolean
         - in: query
           name: fields
           description: 指定返回的字段列表，逗号分隔，如 fields=id,name,method；不传默认返回 id 和 name
@@ -2760,6 +2768,9 @@ paths:
                   schema:
                     type: object
                     description: OpenAPI Schema 定义
+                  has_openapi_schema:
+                    type: boolean
+                    description: 是否已声明请求参数，包括声明无请求参数（指定环境已发布版本）
                   doc:
                     type: object
                     properties:
@@ -5564,7 +5575,7 @@ paths:
                         type: array
                         items:
                           type: string
-                        description: 'MCP Server 分类名称列表，不传则不更新分类。当前支持的分类：Uncategorized（未分类）、Official（官方资源）、Featured（精选推荐）、Monitoring（监控告警）、ConfigManagement（配置管理）、DevOps（持续交付）、Emergency（故障管理）、Database（数据服务）、Automation（运维自动化）、Observability（可观测性）、Security（安全合规）、ResourceOptimize（资源优化）、ChaosEngineering（混沌工程）、Network（网络管理）'
+                        description: 'MCP Server 分类名称列表，不传则不更新分类；仅支持已启用的分类。Official、Featured 仅官方网关可设置，非官方网关传入会被忽略。当前支持的分类：Uncategorized（未分类）、Official（官方资源）、Featured（精选推荐）、Monitoring（监控告警）、ConfigManagement（配置管理）、DevOps（持续交付）、Emergency（故障管理）、Database（数据服务）、Automation（运维自动化）、Observability（可观测性）、Security（安全合规）、ResourceOptimize（资源优化）、ChaosEngineering（混沌工程）、Network（网络管理）'
                         example: ["Official", "tools"]
       responses:
         '200':
@@ -5671,6 +5682,10 @@ paths:
                     - ai
                   default: normal
                   description: 网关类型；仅创建时生效，更新已有网关时忽略
+                oauth2_app_enabled:
+                  type: boolean
+                  description: 是否开启 OAuth 应用通道（Bearer 入口接受用户委托 token 与应用 token）；新建时默认 true，更新时不传则保留原值；修改后需重新发布才在数据面生效
+                  example: true
             example:
               display_name: 示例网关
               display_name_en: Example Gateway
@@ -5679,6 +5694,7 @@ paths:
               is_public: true
               is_official: false
               kind: normal
+              oauth2_app_enabled: true
       responses:
         '200':
           description: 成功同步网关
@@ -5848,8 +5864,10 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: 资源文档的归档文件对象
+                  description: 资源文档的归档文件对象，最大 10MB（10,485,760 字节）
       responses:
+        '400':
+          description: 归档文件超过 10MB 或请求参数无效，错误码为 INVALID_ARGUMENT
         '201':
           description: 成功导入资源文档
           content:
@@ -6998,7 +7016,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled、is_deprecated、deprecated_note
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled、oauth2_app_delegated_enabled、oauth2_app_only_enabled、is_deprecated、deprecated_note
         - name: limit
           in: query
           required: false
@@ -7061,6 +7079,12 @@ paths:
                             oauth2_personal_client_enabled:
                               type: boolean
                               description: 资源是否允许 OAuth2 个人客户端访问
+                            oauth2_app_delegated_enabled:
+                              type: boolean
+                              description: 资源是否接受蓝鲸应用的用户委托 token（用户认证且应用认证，且网关当前开启 OAuth 应用通道）
+                            oauth2_app_only_enabled:
+                              type: boolean
+                              description: 资源是否接受蓝鲸应用的应用 token（仅应用认证，且网关当前开启 OAuth 应用通道）
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -7102,7 +7126,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled、is_deprecated、deprecated_note
+          description: 返回字段列表，多个以逗号分隔；支持 id、name、description、is_public、oauth2_public_client_enabled、oauth2_personal_client_enabled、oauth2_app_delegated_enabled、oauth2_app_only_enabled、is_deprecated、deprecated_note
       responses:
         '200':
           description: 成功返回匹配的当前已发布资源列表，无分页包装
@@ -7142,6 +7166,12 @@ paths:
                         oauth2_personal_client_enabled:
                           type: boolean
                           description: 资源是否允许 OAuth2 个人客户端访问
+                        oauth2_app_delegated_enabled:
+                          type: boolean
+                          description: 资源是否接受蓝鲸应用的用户委托 token（用户认证且应用认证，且网关当前开启 OAuth 应用通道）
+                        oauth2_app_only_enabled:
+                          type: boolean
+                          description: 资源是否接受蓝鲸应用的应用 token（仅应用认证，且网关当前开启 OAuth 应用通道）
       x-bk-apigateway-resource:
         isPublic: false
         allowApplyPermission: false
@@ -8894,7 +8924,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [personal, public]
+            enum: [personal, public, app_delegated]
           description: OAuth2 客户端类型
         - name: gateway_name
           in: query
@@ -9010,7 +9040,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [personal, public]
+            enum: [personal, public, app_delegated, app_only]
           description: OAuth2 客户端类型
         - name: gateway_name
           in: query

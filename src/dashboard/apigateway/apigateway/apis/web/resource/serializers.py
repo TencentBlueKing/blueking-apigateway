@@ -36,7 +36,7 @@ from apigateway.apps.support.constants import DocLanguageEnum, OpenAPIFormatEnum
 from apigateway.biz.constants import MAX_BACKEND_TIMEOUT_IN_SECOND
 from apigateway.biz.gateway import GatewayLabelHandler
 from apigateway.biz.openapi import ResourceImportChangeTypeEnum
-from apigateway.biz.resource import ResourceAuthConfig, ResourceHandler
+from apigateway.biz.resource import ResourceAuthConfig, ResourceAuthFilterType, ResourceHandler
 from apigateway.biz.validators import MaxCountPerGatewayValidator
 from apigateway.common.django.validators import NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
@@ -49,7 +49,7 @@ from apigateway.core.constants import (
 )
 from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.core.utils import get_path_display
-from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS
+from apigateway.service.contexts import RESOURCE_OAUTH2_CLIENT_FIELDS, ResourceAuthContext
 from apigateway.utils.openapi import extract_openapi_parameters_from_path
 
 from .constants import MAX_LABEL_COUNT_PER_RESOURCE, PATH_PATTERN
@@ -57,6 +57,8 @@ from .legacy_serializers import LegacyTransformHeadersSLZ, LegacyUpstreamsSLZ
 
 if TYPE_CHECKING:
     from apigateway.apps.plugin.models import PluginConfig
+
+RESOURCE_AUTH_REQUIREMENT_FIELDS = ("auth_verified_required", "app_verified_required", "resource_perm_required")
 
 
 class ResourceQueryInputSLZ(serializers.Serializer):
@@ -88,6 +90,27 @@ class ResourceQueryInputSLZ(serializers.Serializer):
             return [int(x) for x in value.split(",")]
         except ValueError:
             raise serializers.ValidationError(_("标签 ID 请用逗号分割"))
+
+
+class ResourceListQueryInputSLZ(ResourceQueryInputSLZ):
+    auth_type = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="认证方式，多个值用逗号分隔并取并集。none：不认证，app：应用认证，personal：个人令牌，"
+        "public：公开客户端，oauth：OAuth 授权",
+    )
+
+    class Meta:
+        ref_name = "apigateway.apis.web.resource.serializers.ResourceListQueryInputSLZ"
+
+    def validate_auth_type(self, value: str) -> set[ResourceAuthFilterType]:
+        if not value:
+            return set()
+
+        try:
+            return {ResourceAuthFilterType(auth_type.strip()) for auth_type in value.split(",")}
+        except ValueError as err:
+            raise serializers.ValidationError(_("认证方式仅支持 none、app、personal、public、oauth")) from err
 
 
 class ResourceListOutputSLZ(serializers.ModelSerializer):
@@ -364,9 +387,16 @@ class ResourceInputSLZ(serializers.ModelSerializer):
 
     def validate(self, data):
         if self.instance:
+            # 更新时，未传的认证与公开配置保留当前存储值，而不是取创建时的缺省值
+            current_auth_config = ResourceAuthContext().get_config_for_resource(self.instance)
             auth_config = data["auth_config"]
+            for field_name in RESOURCE_AUTH_REQUIREMENT_FIELDS:
+                if field_name in current_auth_config:
+                    auth_config.setdefault(field_name, current_auth_config[field_name])
             for field_name in RESOURCE_OAUTH2_CLIENT_FIELDS:
                 auth_config.setdefault(field_name, getattr(self.instance, field_name))
+            for field_name in ("is_public", "allow_apply_permission"):
+                data.setdefault(field_name, getattr(self.instance, field_name))
             ResourceAuthConfigSLZ._validate_auth_config(auth_config)
 
         self._validate_method(data["gateway"], data["path"], data["method"])
@@ -592,6 +622,20 @@ class ResourceBatchUpdateInputSLZ(serializers.Serializer):
             raise serializers.ValidationError(_("资源不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids))))
 
         return value
+
+    def validate(self, attrs):
+        if not attrs["is_update_labels"] or "label_ids" not in attrs:
+            return attrs
+
+        gateway_id = self.context["gateway_id"]
+        value = attrs["label_ids"]
+        not_exist_ids = set(value) - set(GatewayLabelHandler.get_valid_ids(gateway_id, value))
+        if not_exist_ids:
+            raise serializers.ValidationError(
+                {"label_ids": _("标签不存在，id={ids}").format(ids=", ".join(map(str, not_exist_ids)))}
+            )
+
+        return attrs
 
 
 class ResourceBatchDestroyInputSLZ(serializers.Serializer):

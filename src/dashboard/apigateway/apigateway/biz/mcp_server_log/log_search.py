@@ -24,6 +24,7 @@ from elasticsearch_dsl.aggs import A
 
 from apigateway.service.es import BKLogESClient
 from apigateway.utils import time as time_utils
+from apigateway.utils.log_scrubber import LogDataScrubber
 from apigateway.utils.time import SmartTimeRange
 
 from .constants import MCP_SERVER_LOG_OUTPUT_FIELDS, STATUS_HTTP_CODES
@@ -295,7 +296,7 @@ class MCPServerLogSearchClient:
         return str(status_value) if status_value is not None else ""
 
     def _to_log_display(self, hit: Dict) -> Dict:
-        log = hit["_source"]
+        log = dict(hit["_source"])
         log["timestamp"] = time_utils.convert_epoch_millisecond_to_second(hit["sort"][0])
 
         # 判断是否是 MCP 协议层日志（有 mcp_method 字段）
@@ -311,7 +312,7 @@ class MCPServerLogSearchClient:
         #      因为它们表示"字段存在但无值"，比 null 更有意义）
         #   4. MCP 层日志的 path/method 保持为空，不从 __ext_json 覆盖
         ext_json = log.get("__ext_json", {}) or {}
-        if ext_json:
+        if isinstance(ext_json, dict):
             for key, value in ext_json.items():
                 if value is None:
                     continue
@@ -326,4 +327,4 @@ class MCPServerLogSearchClient:
         if "status" in log and log["status"] is not None:
             log["status"] = self._normalize_status(log["status"])
 
-        return log
+        return LogDataScrubber(mcp=True).scrub_log(log)

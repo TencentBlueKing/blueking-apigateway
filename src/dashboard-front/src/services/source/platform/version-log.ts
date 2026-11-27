@@ -16,13 +16,10 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '@/services/http';
+import type { IVersionLogOutput } from '@/services/types/platform/version-log.ts';
 
 /**
  * 获取版本日志
  */
 export const getVersionLog = () =>
-  http.get<Array<{
-    content: string
-    date: string
-    version: string
-  }>>('/version-log/');
+  http.get<Array<IVersionLogOutput>>('/version-log/');

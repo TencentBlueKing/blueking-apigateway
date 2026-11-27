@@ -77,6 +77,7 @@
                   :api-method="getTableData"
                   :columns="columns"
                   table-row-key="id"
+                  :auto-height="false"
                   resizable
                   show-first-full-row
                   select-on-row-click
@@ -111,20 +112,23 @@
 </template>
 
 <script setup lang="tsx">
-import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
+import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
 import {
   useFeatureFlag,
   useStage,
 } from '@/stores';
-import AgTable from '@/components/ag-table/Index.vue';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
+import AgTable, {
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableSelection,
+} from '@/components/base/ag-table';
 import { getResourceList } from '@/services/source/gateway/resource';
+import type { IResourceListPageOutput } from '@/services/types/gateway/resource.ts';
 import { batchResourceDocAITranslate } from '@/services/source/gateway/ai';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { Message } from 'bkui-vue';
 
 interface IProps {
-  latest?: boolean
   currentSource?: any
   isDetail?: boolean
   showNewTips?: boolean
@@ -142,18 +146,18 @@ const { t } = useI18n();
 const stage = useStage();
 const featureFlagStore = useFeatureFlag();
 
-const selectedResources = ref<any[]>([]);
-const tableRef = useTemplateRef('tableRef');
+const selectedResources = ref<IResourceListPageOutput[]>([]);
+const tableRef = useTemplateRef<IAgTableInstance<IResourceListPageOutput>>('tableRef');
 const popoverRef = useTemplateRef('popoverRef');
 
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<ITableColumn<IResourceListPageOutput>[]>(() => [
   {
     colKey: 'row-select',
     type: 'multiple',
     align: 'center',
     fixed: 'left',
     width: 60,
-    checkProps: ({ row }: { row: any }) => ({ disabled: !hasDoc(row) }),
+    checkProps: ({ row }) => ({ disabled: !hasDoc(row) }),
   },
   {
     colKey: 'name',
@@ -162,27 +166,27 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     colKey: 'cn_doc',
     title: t('中文文档'),
-    cell: (h: any, { row }: { row: any }) => <div>{getHasDocText(row, 'zh')}</div>,
+    cell: (_h, { row }) => <div>{getHasDocText(row, 'zh')}</div>,
   },
   {
     colKey: 'en_doc',
     title: t('英文文档'),
-    cell: (h: any, { row }: { row: any }) => <div>{getHasDocText(row, 'en')}</div>,
+    cell: (_h, { row }) => <div>{getHasDocText(row, 'en')}</div>,
   },
 ]);
 
 const getTableData = async (params: Record<string, any> = {}) => getResourceList(toValue(gatewayId), params);
 
-const hasDoc = (resource: any) => resource.docs?.some((item: any) => item.id);
+const hasDoc = (resource: IResourceListPageOutput) => resource.docs?.some(item => item.id);
 
-const getHasDocText = (resource: any, lang = 'zh') =>
-  resource.docs?.find((item: any) => item.language === lang)?.id ? t('有') : t('无');
+const getHasDocText = (resource: IResourceListPageOutput, lang = 'zh') =>
+  resource.docs?.find(item => item.language === lang)?.id ? t('有') : t('无');
 
 const handleTranslateConfirmClick = async () => {
   const docIds: number[] = [];
-  selectedResources.value.forEach((resource: any) => {
-    const cnDocId = resource.docs?.find((doc: any) => doc.language === 'zh')?.id;
-    const enDocId = resource.docs?.find((doc: any) => doc.language === 'en')?.id;
+  selectedResources.value.forEach((resource) => {
+    const cnDocId = resource.docs?.find(doc => doc.language === 'zh')?.id;
+    const enDocId = resource.docs?.find(doc => doc.language === 'en')?.id;
     if (cnDocId) {
       docIds.push(cnDocId);
     }
@@ -209,7 +213,7 @@ const handleTranslateAllClick = async () => {
   tableRef.value?.refresh();
 };
 
-const handleResourceSelect = ({ selections }: { selections: any[] }) => {
+const handleResourceSelect = ({ selections }: ITableSelection<IResourceListPageOutput>) => {
   selectedResources.value = selections;
 };
 
@@ -269,6 +273,7 @@ const handleCancelClick = () => {
 
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 供气泡提示与全局标题复用的渐变文字样式 -->
 <style lang="scss">
 .gradient-text-color {
   background-image: linear-gradient(#235DFA, #B881F0);

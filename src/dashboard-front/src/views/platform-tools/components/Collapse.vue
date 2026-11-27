@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 interface IProps {
   title?: string

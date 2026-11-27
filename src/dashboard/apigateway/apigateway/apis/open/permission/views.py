@@ -90,7 +90,9 @@ class ResourceViewSet(viewsets.ViewSet):
 
         resources = ResourceVersionHandler.get_released_public_resources(request.gateway.id)
 
-        # 过滤掉不允许主动申请权限的资源
+        # 只按 allow_apply_permission 过滤，与 v2 inner 可申请资源列表不同（v2 同时按应用认证、应用权限校验筛选，
+        # 并列出不校验应用权限的资源）；PaaS 已不依赖本接口，保留原口径。存量 P=0 资源经层级归一化并重新发布后
+        # allow_apply_permission 变为 false，会从本列表退出
         resources = list(filter(lambda x: x["allow_apply_permission"], resources))
 
         resource_permissions = ResourcePermissionBuilder(

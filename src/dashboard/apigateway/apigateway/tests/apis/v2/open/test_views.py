@@ -22,6 +22,8 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 import pytest
+from django.contrib.auth.models import AnonymousUser
+from django.db import connection
 from django_dynamic_fixture import G
 
 import apigateway.apis.v2.open.serializers as open_serializers
@@ -30,11 +32,13 @@ from apigateway.apps.audit.constants import OpObjectTypeEnum
 from apigateway.apps.audit.models import AuditEventLog
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.mcp_server.constants import (
+    UNCATEGORIZED_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerProtocolTypeEnum,
     MCPServerStatusEnum,
 )
 from apigateway.apps.mcp_server.models import MCPServer, MCPServerAppPermissionApply, MCPServerCategory
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.permission.models import AppGatewayPermission, AppResourcePermission
 from apigateway.apps.rbac.constants import GatewayRoleEnum
 from apigateway.apps.rbac.models import GatewayMember
@@ -172,13 +176,21 @@ def app_permissions(fake_gateway):
     r3 = G(Resource, gateway=other_gateway, name="r3")
     expired = datetime(2020, 1, 1, tzinfo=ZoneInfo("UTC"))
 
-    G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
+    legacy_gateway_permission = G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="test", expires=None)
     G(AppGatewayPermission, gateway=other_gateway, bk_app_code="test", expires=expired)
     G(AppGatewayPermission, gateway=fake_gateway, bk_app_code="other", expires=None)
-    G(AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="test", expires=None)
+    legacy_resource_permission = G(
+        AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="test", expires=None
+    )
     G(AppResourcePermission, gateway=fake_gateway, resource_id=r2.id, bk_app_code="test", expires=None)
     G(AppResourcePermission, gateway=other_gateway, resource_id=r3.id, bk_app_code="test", expires=expired)
     G(AppResourcePermission, gateway=fake_gateway, resource_id=r1.id, bk_app_code="other", expires=None)
+
+    # Seed historical rows without going through the current expiration write rule.
+    with connection.cursor() as cursor:
+        for permission in (legacy_gateway_permission, legacy_resource_permission):
+            table = connection.ops.quote_name(permission._meta.db_table)
+            cursor.execute(f"UPDATE {table} SET expires = NULL WHERE id = %s", [permission.pk])
     return other_gateway
 
 
@@ -214,6 +226,7 @@ class TestCurrentAppPermissionListApi:
         results = {item["resource_name"]: item for item in result["data"]["results"]}
         assert set(results) == {"r1", "r2", "r3"}
         assert results["r1"]["expires"] is None
+        assert results["r2"]["expires"] is not None
         assert results["r3"]["expires"] is not None
 
     @pytest.mark.parametrize(
@@ -606,6 +619,36 @@ class TestMCPServerAppPermissionRecordLookupApi:
         assert resp.status_code == 400
 
 
+@pytest.mark.parametrize(
+    "view_name, method, data",
+    [
+        ("openapi.v2.open.tools.time.get_datetime", "GET", {}),
+        ("openapi.v2.open.tools.time.get_current_unix_timestamp", "GET", {}),
+        (
+            "openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
+            "POST",
+            {"datetime": "2025-01-07 15:30:45"},
+        ),
+        (
+            "openapi.v2.open.tools.log.query_by_request_id",
+            "GET",
+            {"request_id": "2ea4000d-5676-4ae7-a3b5-a07f3dc59a6e"},
+        ),
+    ],
+)
+@pytest.mark.parametrize("authenticated_user", [False, True], ids=["anonymous", "superuser"])
+def test_tools_require_app(request_view, mocker, view_name, method, data, authenticated_user):
+    search_logs = mocker.patch(
+        "apigateway.apis.v2.open.views.LogHandler.search_logs_by_request_id", return_value=(0, [])
+    )
+    user_kwargs = {} if authenticated_user else {"user": AnonymousUser()}
+
+    resp = request_view(method=method, view_name=view_name, data=data, **user_kwargs)
+
+    assert resp.status_code in (401, 403)
+    search_logs.assert_not_called()
+
+
 class TestGetDatetimeApi:
     def test_get_datetime_with_default_timezone(self, request_view, settings):
         """测试使用默认时区获取当前时间"""
@@ -622,6 +665,7 @@ class TestGetDatetimeApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_datetime",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
             )
 
             assert resp.status_code == 200
@@ -642,6 +686,7 @@ class TestGetDatetimeApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_datetime",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={"tz_name": "UTC"},
             )
 
@@ -657,6 +702,7 @@ class TestGetDatetimeApi:
             method="GET",
             view_name="openapi.v2.open.tools.time.get_datetime",
             app=mock.MagicMock(app_code="test"),
+            user=AnonymousUser(),
             data={"tz_name": "Invalid/Timezone"},
         )
 
@@ -675,6 +721,7 @@ class TestGetCurrentUnixTimestampApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_current_unix_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
             )
 
             assert resp.status_code == 200
@@ -692,6 +739,7 @@ class TestGetCurrentUnixTimestampApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.time.get_current_unix_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
             )
 
             assert resp.status_code == 200
@@ -710,6 +758,7 @@ class TestParseDatetimeStrToTimestampApi:
                 method="POST",
                 view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={
                     "datetime": "2025-01-07 15:30:45",
                 },
@@ -730,6 +779,7 @@ class TestParseDatetimeStrToTimestampApi:
                 method="POST",
                 view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={
                     "datetime": "2025/01/07 15:30:45",
                     "datetime_format": "%Y/%m/%d %H:%M:%S",
@@ -748,6 +798,7 @@ class TestParseDatetimeStrToTimestampApi:
             method="POST",
             view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
             app=mock.MagicMock(app_code="test"),
+            user=AnonymousUser(),
             data={
                 "datetime": "2025-01-07 15:30:45",
                 "datetime_format": "%Y/%m/%d",
@@ -764,6 +815,7 @@ class TestParseDatetimeStrToTimestampApi:
             method="POST",
             view_name="openapi.v2.open.tools.time.parse_datetime_str_to_timestamp",
             app=mock.MagicMock(app_code="test"),
+            user=AnonymousUser(),
             data={
                 "datetime": "invalid-datetime-string",
                 "datetime_format": "%Y-%m-%d %H:%M:%S",
@@ -821,6 +873,7 @@ class TestLogSearchByRequestIdApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.log.query_by_request_id",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={"request_id": "2ea4000d-5676-4ae7-a3b5-a07f3dc59a6e"},
             )
 
@@ -845,6 +898,7 @@ class TestLogSearchByRequestIdApi:
                 method="GET",
                 view_name="openapi.v2.open.tools.log.query_by_request_id",
                 app=mock.MagicMock(app_code="test"),
+                user=AnonymousUser(),
                 data={"request_id": "00000000-0000-0000-0000-000000000000"},
             )
 
@@ -1934,6 +1988,93 @@ class TestGatewayResourceListApiFields:
         assert set(result["data"][0].keys()) == {"id", "name"}
 
 
+class TestGatewayResourceListApiOpenAPISchema:
+    @pytest.mark.parametrize(
+        "has_openapi_schema, expected_name",
+        [
+            ("true", "get_user_info"),
+            ("false", "create_order"),
+        ],
+    )
+    def test_list_with_has_openapi_schema(
+        self, request_to_view, request_factory, fake_gateway, has_openapi_schema, expected_name
+    ):
+        resource_with_schema = G(
+            Resource,
+            gateway=fake_gateway,
+            name="get_user_info",
+            description="获取用户信息",
+            method="GET",
+            path="/api/v1/users/",
+            is_public=True,
+        )
+        G(OpenAPIResourceSchema, resource=resource_with_schema, schema={"none_schema": True})
+
+        G(
+            Resource,
+            gateway=fake_gateway,
+            name="create_order",
+            description="创建订单",
+            method="POST",
+            path="/api/v1/orders/",
+            is_public=True,
+        )
+
+        request = request_factory.get("", data={"has_openapi_schema": has_openapi_schema})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.resources.list",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert len(result["data"]) == 1
+        assert result["data"][0]["name"] == expected_name
+
+    def test_list_with_fields_has_openapi_schema(self, request_to_view, request_factory, fake_gateway):
+        resource_with_schema = G(
+            Resource,
+            gateway=fake_gateway,
+            name="get_user_info",
+            description="获取用户信息",
+            method="GET",
+            path="/api/v1/users/",
+            is_public=True,
+        )
+        G(OpenAPIResourceSchema, resource=resource_with_schema, schema={"none_schema": True})
+
+        G(
+            Resource,
+            gateway=fake_gateway,
+            name="create_order",
+            description="创建订单",
+            method="POST",
+            path="/api/v1/orders/",
+            is_public=True,
+        )
+
+        request = request_factory.get("", data={"fields": "name,has_openapi_schema"})
+        request.gateway = fake_gateway
+        request.app = mock.MagicMock(app_code="test")
+
+        response = request_to_view(
+            request,
+            view_name="openapi.v2.open.gateway.resources.list",
+            path_params={"gateway_name": fake_gateway.name},
+        )
+        result = get_response_json(response)
+
+        assert response.status_code == 200
+        assert {item["name"]: item["has_openapi_schema"] for item in result["data"]} == {
+            "get_user_info": True,
+            "create_order": False,
+        }
+
+
 class TestMCPServerListApiCategory:
     def test_list_with_category_filter(self, request_view, fake_gateway):
         stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
@@ -1970,6 +2111,44 @@ class TestMCPServerListApiCategory:
         names = [item["name"] for item in result["data"]["results"]]
         assert "mcp-with-category" in names
         assert "mcp-without-category" not in names
+
+    def test_list_with_uncategorized_filter(self, request_view, fake_gateway):
+        MCPServerCategory.objects.all().delete()
+        stage = G(Stage, gateway=fake_gateway, status=StageStatusEnum.ACTIVE.value)
+        uncategorized_cat = G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="mcp-without-category",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+
+        mcp2 = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=stage,
+            name="mcp-uncategorized-devops",
+            status=MCPServerStatusEnum.ACTIVE.value,
+            is_public=True,
+        )
+        mcp2.categories.add(uncategorized_cat, devops_cat)
+
+        resp = request_view(
+            method="GET",
+            view_name="openapi.v2.open.mcp_server.list",
+            app=mock.MagicMock(app_code="test"),
+            data={"category": UNCATEGORIZED_MCP_CATEGORY_NAME},
+        )
+
+        assert resp.status_code == 200
+        result = resp.json()
+        names = [item["name"] for item in result["data"]["results"]]
+        assert "mcp-without-category" in names
+        assert "mcp-uncategorized-devops" not in names
 
 
 class TestMCPServerBatchQueryApi:

@@ -3,6 +3,7 @@
 获取网关下的所有资源列表，返回完整的资源信息（包括后端服务、标签、文档、认证配置等）。
 
 - 只返回公开的资源
+- 支持 `has_openapi_schema` 参数按是否已声明请求参数过滤
 - 支持 `fields` 参数指定需要返回的字段，逗号分隔
 - 不传 `fields` 时默认只返回 `id` 和 `name`，适用于 MCP Server 工具调用等需要减少上下文占用的场景
 
@@ -19,6 +20,7 @@
 | 参数名称 | 参数类型 | 必选 | 描述 |
 |----------|----------|------|------|
 | keyword  | string   | 否   | 搜索关键字，模糊匹配资源 name、description 或标签名称 |
+| has_openapi_schema | boolean | 否 | 按是否已声明请求参数过滤：`true` 只返回已声明的资源，`false` 只返回未声明的资源；不传则不过滤 |
 | fields   | string   | 否   | 指定返回的字段列表，逗号分隔，如 `fields=id,name,method,kind`；不传默认返回 `id` 和 `name` |
 
 
@@ -37,7 +39,7 @@
 }
 ```
 
-#### 指定全部字段（fields=id,name,kind,description,method,path,match_subpath,enable_websocket,is_public,labels,auth_config,is_deprecated,deprecated_note）
+#### 指定全部字段（fields=id,name,kind,description,method,path,match_subpath,enable_websocket,is_public,labels,auth_config,is_deprecated,deprecated_note,has_openapi_schema）
 
 ```json
 {
@@ -64,7 +66,8 @@
                 "user_verified_required": true,
                 "app_verified_required": true,
                 "resource_perm_required": true
-            }
+            },
+            "has_openapi_schema": true
         }
     ]
 }
@@ -96,6 +99,7 @@
 | deprecated_note       | string | 弃用说明 |
 | labels                | array   | 标签列表，详见 labels[] 说明     |
 | auth_config           | object  | 认证配置，详见 auth_config 说明  |
+| has_openapi_schema    | boolean | 是否已声明请求参数（资源编辑态）。配置了请求参数，或声明无请求参数（页面勾选【该资源无请求参数】，或导入时设置 `x-bk-apigateway-resource.noneSchema: true`）时为 `true`；只配置了响应参数时为 `false` |
 
 
 #### labels[]

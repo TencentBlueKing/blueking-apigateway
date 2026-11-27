@@ -24,7 +24,7 @@
         v-model.trim="searchKeyword"
         class="w-640px mr-8px"
         clearable
-        :placeholder="t('请输入 request_id 或 x_request_id 进行查询')"
+        :placeholder="t('请输入 X-Bkapi-Request-ID 进行查询')"
         @enter="handleQueryTrace"
         @clear="handleReset"
       />
@@ -56,7 +56,7 @@
           v-if="isEmptyResult"
           class="pt-126px"
         >
-          <TableEmpty
+          <AgTableEmpty
             :empty-type="emptyConfig.emptyType"
             :abnormal="emptyConfig.isAbnormal"
             @refresh="handleQueryTrace"
@@ -69,7 +69,7 @@
           v-else
           class="body-content"
         >
-          <AgMcpTraceChain
+          <McpTraceChain
             :key="componentKey"
             :trace-chain-detail="traceData"
           />
@@ -90,9 +90,9 @@ import {
   queryMcpLogChain,
   queryMcpLogSummary,
 } from '@/services/source/platform/toolbox';
-import { DEFAULT_TRACE_DATA } from '@/components/trace-view/constants/trace';
-import AgMcpTraceChain from '@/components/ag-mcp-trace-chain/Index.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import { DEFAULT_TRACE_DATA } from '@/constants/trace';
+import McpTraceChain from '@/components/mcp/mcp-trace-chain/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 
 const route = useRoute();
 const traceStore = useTrace();
@@ -188,8 +188,7 @@ const handleQueryTrace = async () => {
 
 // 从路由参数自动查询
 const initPage = () => {
-  const { request_id, x_request_id } = route.query;
-  const traceId = (request_id || x_request_id) as string;
+  const traceId = route.query.request_id as string;
 
   if (traceId) {
     searchKeyword.value = traceId;

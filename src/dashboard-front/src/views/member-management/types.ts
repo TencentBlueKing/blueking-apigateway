@@ -20,7 +20,7 @@
  * 成员管理的类型声明
  */
 
-import type { IGatewayMemberOutput } from '@/services/types/responses/gateway-members';
+import type { IGatewayMemberOutput } from '@/services/types/gateway/member.ts';
 import type { GatewayPermissionKey } from '@/constants/gateway-permission';
 
 export type IMember = IGatewayMemberOutput;

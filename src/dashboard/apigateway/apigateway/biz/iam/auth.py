@@ -15,13 +15,11 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-from threading import RLock
 from typing import TYPE_CHECKING
 
-from cachetools import TTLCache
 from django.conf import settings
 
-from apigateway.common.constants import CACHE_MAXSIZE
+from apigateway.common.cache import new_region
 
 from .authorization import check_gateway_authorization
 from .constants import ALLOW_CACHE_TTL
@@ -29,8 +27,9 @@ from .constants import ALLOW_CACHE_TTL
 if TYPE_CHECKING:
     from apigateway.core.models import Gateway
 
-_allow_cache: TTLCache[tuple[int, str, str], bool] = TTLCache(maxsize=CACHE_MAXSIZE, ttl=ALLOW_CACHE_TTL)
-_allow_cache_lock = RLock()
+# 只缓存允许的结果，避免授权后仍被拒绝；使用独立的 region，以便整体清除；
+# redis 中不多保留过期的结果，避免权限回收后，回源期间仍返回过期的允许结果
+_allow_cache = new_region(ALLOW_CACHE_TTL, redis_expiration_grace=0)
 
 
 def is_iam_auth_active() -> bool:
@@ -38,25 +37,20 @@ def is_iam_auth_active() -> bool:
 
 
 def clear_gateway_iam_auth_cache() -> None:
-    with _allow_cache_lock:
-        _allow_cache.clear()
+    # 与进程内缓存时一样，只清除当前进程的缓存
+    _allow_cache.invalidate()
 
 
 def is_iam_gateway_action_allowed(gateway: Gateway, username: str, action: str) -> bool:
-    cache_key = (gateway.id, username, action)
-    with _allow_cache_lock:
-        if cache_key in _allow_cache:
-            return True
-
-    allowed = check_gateway_authorization(
-        gateway,
-        {
-            "subject": {"type": "user", "id": username},
-            "action_id": action,
-            "resource": {"id": str(gateway.id)},
-        },
+    return _allow_cache.get_or_create(
+        f"iam_gateway_action_allowed:{gateway.id}:{username}:{action}",
+        lambda: check_gateway_authorization(
+            gateway,
+            {
+                "subject": {"type": "user", "id": username},
+                "action_id": action,
+                "resource": {"id": str(gateway.id)},
+            },
+        ),
+        should_cache_fn=bool,
     )
-    if allowed:
-        with _allow_cache_lock:
-            _allow_cache[cache_key] = True
-    return allowed

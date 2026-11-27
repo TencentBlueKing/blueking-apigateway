@@ -20,7 +20,7 @@ import json
 import operator
 import re
 from html import escape as html_escape
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 from urllib.parse import urljoin
 
 from django.db import transaction
@@ -76,11 +76,11 @@ from .serializers import (
     ResourceInputSLZ,
     ResourceLabelUpdateInputSLZ,
     ResourceListOutputSLZ,
+    ResourceListQueryInputSLZ,
     ResourceOutputSLZ,
     ResourcePathConflictCheckInputSLZ,
     ResourcePathConflictCheckOutputSLZ,
     ResourcePathConflictListOutputSLZ,
-    ResourceQueryInputSLZ,
     ResourceWithVerifiedUserRequiredOutputSLZ,
 )
 
@@ -98,7 +98,7 @@ class BackendHostIsEmpty(Exception):
     name="get",
     decorator=extend_schema(
         description="获取资源列表，分页",
-        parameters=[ResourceQueryInputSLZ],
+        parameters=[ResourceListQueryInputSLZ],
         responses={status.HTTP_200_OK: ResourceListOutputSLZ(many=True)},
         tags=["WebAPI.Resource"],
     ),
@@ -116,7 +116,7 @@ class ResourceListCreateApi(ResourceQuerySetMixin, generics.ListCreateAPIView):
     gateway_action_map = {"GET": GatewayActionEnum.OPERATE_GATEWAY.value}
 
     def list(self, request, *args, **kwargs):
-        slz = ResourceQueryInputSLZ(data=request.query_params)
+        slz = ResourceListQueryInputSLZ(data=request.query_params)
         slz.is_valid(raise_exception=True)
 
         queryset = ResourceHandler.filter_by_resource_filter_condition(
@@ -288,13 +288,20 @@ class ResourceRetrieveUpdateDestroyApi(ResourceQuerySetMixin, generics.RetrieveU
         ):
             schema_changed = True
 
-        if self._check_if_changed(dict(slz.validated_data), instance) or schema_changed:
-            saver = ResourcesSaver.from_resources(
-                gateway=request.gateway,
-                resources=[slz.validated_data],
-                username=request.user.username,
-            )
-
+        saver = ResourcesSaver.from_resources(
+            gateway=request.gateway,
+            resources=[slz.validated_data],
+            username=request.user.username,
+        )
+        resource_data = saver.resource_data_list[0]
+        # 原样提交存量配置也会按层级关闭无效的权限校验或允许申请。
+        # 如果关闭了权限校验，重新发布后数据面会跳过该校验。
+        input_data = {
+            **slz.validated_data,
+            "auth_config": resource_data.auth_config.model_dump(),
+            "allow_apply_permission": resource_data.allow_apply_permission,
+        }
+        if self._check_if_changed(input_data, instance) or schema_changed:
             resources = saver.save()
             instance = resources[0]
 
@@ -361,12 +368,17 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
         slz.is_valid(raise_exception=True)
 
         queryset = self.get_queryset().filter(id__in=slz.validated_data["ids"])
-        queryset.update(
-            is_public=slz.validated_data["is_public"],
-            allow_apply_permission=slz.validated_data["allow_apply_permission"],
-            updated_by=request.user.username,
-            updated_time=now_datetime(),
-        )
+        # 允许申请权限要求资源公开、开启应用认证且校验应用权限，不满足的资源静默写为 false
+        allow_apply_ids: Set[int] = set()
+        if slz.validated_data["is_public"] and slz.validated_data["allow_apply_permission"]:
+            allow_apply_ids = ResourceHandler.filter_resource_perm_required_ids(slz.validated_data["ids"])
+        update_fields = {
+            "is_public": slz.validated_data["is_public"],
+            "updated_by": request.user.username,
+            "updated_time": now_datetime(),
+        }
+        queryset.filter(id__in=allow_apply_ids).update(allow_apply_permission=True, **update_fields)
+        queryset.exclude(id__in=allow_apply_ids).update(allow_apply_permission=False, **update_fields)
         label_ids = slz.validated_data.get("label_ids")
         if slz.validated_data["is_update_labels"]:
             ResourceHandler.batch_update_resource_labels(
@@ -375,17 +387,22 @@ class ResourceBatchUpdateDestroyApi(ResourceQuerySetMixin, generics.UpdateAPIVie
                 label_ids=label_ids,
             )
 
+        resources = list(queryset)
         Auditor.record_resource_op_success(
             op_type=OpTypeEnum.MODIFY,
             username=request.user.username,
             gateway_id=request.gateway.id,
-            instance_id=";".join([str(resource.id) for resource in queryset]),
-            instance_name=";".join([resource.identity for resource in queryset]),
+            instance_id=";".join([str(resource.id) for resource in resources]),
+            instance_name=";".join([resource.identity for resource in resources]),
             comment="批量更新资源",
             data_before={},
             data_after={
                 "is_public": slz.validated_data["is_public"],
                 "allow_apply_permission": slz.validated_data["allow_apply_permission"],
+                "allow_apply_permission_result": {
+                    "true": sorted(resource.id for resource in resources if resource.id in allow_apply_ids),
+                    "false": sorted(resource.id for resource in resources if resource.id not in allow_apply_ids),
+                },
                 "label_ids": label_ids,
             },
         )

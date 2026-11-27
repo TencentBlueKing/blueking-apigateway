@@ -28,8 +28,8 @@
 
 <script lang="ts" setup>
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IPersonalWorkbenchListQuery, ITabKey } from '@/services/types/query/personal-workbench.ts';
-import type { IPersonalWorkbenchListResponse } from '@/services/types/responses/personal-workbench.ts';
+import type { IPersonalWorkbenchListQuery, IPersonalWorkbenchListResponse } from '@/services/types/me/workbench.ts';
+import type { ITabKey } from '@/types/personal-workbench.ts';
 import { getGatewayPendingList, getMcpPendingList } from '@/services/source/me/workbench';
 import { usePersonalWorkbench, usePersonalWorkbenchListRefresh } from '@/hooks';
 import TopBar from '@/views/personal-workbench/components/TopBar.vue';
@@ -42,7 +42,7 @@ const tabItem: Record<ITabKey, (
   mcp: getMcpPendingList,
 };
 
-const tableCom = ref<InstanceType<typeof ApplyTable> | null>(null);
+const tableCom = useTemplateRef<InstanceType<typeof ApplyTable>>('tableCom');
 
 const { personalWorkbenchTab } = usePersonalWorkbench();
 

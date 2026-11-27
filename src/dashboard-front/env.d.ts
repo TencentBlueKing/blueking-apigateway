@@ -83,6 +83,11 @@ declare module '@blueking/xss-filter' {
 
 declare module 'mavon-editor';
 
+// ag-code-editor 只引入 Monaco 编辑器核心（不含全部语言），API 与 monaco-editor 主入口一致
+declare module 'monaco-editor/esm/vs/editor/edcore.main' {
+  export * from 'monaco-editor';
+}
+
 declare interface Window {
   BKANALYSIS?: { init: (params: { siteName: string }) => void }
   BK_DASHBOARD_URL: string
@@ -96,5 +101,7 @@ declare var BK_DASHBOARD_URL: string;
 declare var BK_SITE_PATH: string;
 // eslint-disable-next-line
 declare var BK_STATIC_URL: string;
+
+declare const __APP_BUILD_ID__: string;
 
 type CustomDirective = import('vue').Directive<HTMLElement, any>;

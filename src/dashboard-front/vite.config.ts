@@ -11,9 +11,16 @@ import TurboConsole from 'unplugin-turbo-console/vite';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd());
+  // 生产构建每次生成新的构建标识，用于启动时清空旧构建残留的表格偏好缓存；开发服务器保持稳定标识避免重启清缓存
+  const appBuildId = command === 'build'
+    ? (process.env.APP_BUILD_ID || Date.now().toString(36))
+    : 'dev';
   return {
+    define: {
+      __APP_BUILD_ID__: JSON.stringify(appBuildId),
+    },
     server: {
       host: env.VITE_DEV_SERVER_HOST,
       port: 8888,
@@ -26,7 +33,7 @@ export default defineConfig(({ mode }) => {
         template: {
           compilerOptions: {
           // 多租户名称展示标签不要解析为组件
-            isCustomElement: tag => tag === 'bk-user-display-name' || tag === 'status-tag',
+            isCustomElement: tag => tag === 'bk-user-display-name',
           },
         },
       }),
@@ -42,7 +49,8 @@ export default defineConfig(({ mode }) => {
         viteOptimizeDeps: true,
       }),
       UnoCSS(),
-      TurboConsole({}),
+      // 仅开发时启用：生产构建下它的功能全部关闭，但仍会逐个解析源文件，白白拖慢构建
+      command === 'serve' && TurboConsole({}),
       basicSsl(),
     ],
     resolve: {
@@ -52,17 +60,12 @@ export default defineConfig(({ mode }) => {
         'bkui-lib': 'bkui-vue/lib',
       },
     },
-    // CI/Docker 资源受限环境下，less 预处理器在 worker 线程池中编译容易超时报 "[less] timed-out"，
-    // 设为 0 表示不创建 worker，改为在主线程编译，规避超时问题
-    css: {
-      preprocessorMaxWorkers: 0,
-    },
     build: {
       manifest: true,
-      rollupOptions: {
+      rolldownOptions: {
         input: {
-          main: path.resolve(__dirname, 'index.html'),
-          default: path.resolve(__dirname, 'default.html'),
+          main: path.resolve(import.meta.dirname, 'index.html'),
+          default: path.resolve(import.meta.dirname, 'default.html'),
         },
       },
     },

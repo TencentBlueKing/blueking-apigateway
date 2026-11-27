@@ -80,38 +80,33 @@ export const EXPIRE_DAYS_CONSTANTS = [
   },
 ];
 
-// 插件图标列表
-export const PLUGIN_ICONS = [
-  'bk-cors', // 跨域资源共享插件
-  'bk-header-rewrite', // 请求头重写插件
-  'bk-ip-restriction', // IP限制插件
-  'bk-rate-limit', // 限流插件
-  'bk-mock', // Mock数据插件
-  'api-breaker', // API断路器插件
-  'request-validation', // 请求验证插件
-  'fault-injection', // 故障注入插件
-  'redirect', // 重定向插件
-  'proxy-cache', // 代理缓存插件
-  'proxy-mirror', // 代理镜像插件
-  'csrf', // CSRF防护插件
-  'uri-blocker', // URI阻断插件
-  'response-rewrite', // 响应重写插件
-  'serverless', // 无服务器插件
-  'user-restriction', // 用户限制插件
-  'bk-traffic-label', // 流量染色插件
-];
-
-// 插件图标列表 - 小号图表
-export const PLUGIN_ICONS_MIN = [
-  'bk-access-token-source',
-  'bk-login-required',
-  'bk-opentelemetry',
-  'bk-query-string-rewrite',
-  'proxy-cache',
-  'bk-request-body-limit',
-  'bk-user-restriction',
-  'bk-username-required',
-];
+// 插件 code 对应的 AgIcon 名称
+export const PLUGIN_ICONS = new Map([
+  ['api-breaker', 'plugin-api-breaker'],
+  ['bk-access-token-source', 'plugin-bk-access-token-source'],
+  ['bk-cors', 'plugin-bk-cors'],
+  ['bk-header-rewrite', 'plugin-bk-header-rewrite'],
+  ['bk-ip-restriction', 'plugin-bk-ip-restriction'],
+  ['bk-login-required', 'plugin-bk-login-required'],
+  ['bk-mock', 'plugin-bk-mock'],
+  ['bk-opentelemetry', 'plugin-bk-opentelemetry'],
+  ['bk-query-string-rewrite', 'plugin-bk-query-string-rewrite'],
+  ['bk-rate-limit', 'plugin-bk-rate-limit'],
+  ['bk-request-body-limit', 'plugin-bk-request-body-limit'],
+  ['bk-resource-user-rate-limit', 'plugin-bk-resource-user-rate-limit'],
+  ['bk-traffic-label', 'plugin-bk-traffic-label'],
+  ['bk-user-restriction', 'plugin-user-restriction'],
+  ['bk-username-required', 'bk-username-required'],
+  ['fault-injection', 'plugin-fault-injection'],
+  ['proxy-cache', 'plugin-proxy-cache'],
+  ['proxy-mirror', 'plugin-proxy-mirror'],
+  ['redirect', 'plugin-redirect'],
+  ['request-validation', 'plugin-request-validation'],
+  ['response-rewrite', 'plugin-response-rewrite'],
+  ['serverless', 'plugin-serverless'],
+  ['uri-blocker', 'plugin-uri-blocker'],
+  ['user-restriction', 'plugin-user-restriction'],
+]);
 
 // 资源导入示例
 export const RESOURCE_IMPORT_EXAMPLE = {
@@ -146,6 +141,7 @@ paths:
           appVerifiedRequired: true
           resourcePermissionRequired: true
           oauth2PersonalClientEnabled: false
+          oauth2PublicClientEnabled: false
         descriptionEn: None
       `,
 };

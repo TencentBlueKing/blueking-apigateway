@@ -17,31 +17,28 @@
  */
 
 import http from '@/services/http';
-import type { IResourceImportCheckResult } from '@/types/resource';
+import type { IBatchDeleteIdsInput } from '@/services/types/gateway/common.ts';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
   IBackendPathCheckOutput,
+  IGatewaysResourcesBackendPathCheckReadQuery,
+  IGatewaysResourcesListQuery,
+  IGatewaysResourcesWithVerifiedUserRequiredListQuery,
+  IResourceBatchUpdateInputSLZ,
+  IResourceDeprecationUpdateInputSLZ,
+  IResourceExportInputSLZ,
+  IResourceImportCheckInputSLZ,
+  IResourceImportCheckResult,
+  IResourceImportDocPreviewInputSLZ,
+  IResourceImportDocPreviewOutput,
+  IResourceImportInputSLZ,
+  IResourceInputSLZ,
+  IResourceLabelUpdateInputSLZ,
   IResourceListPageOutput,
   IResourcePathConflictOutput,
   IResourceRetrieveOutput,
   IResourceWithVerifiedUserRequiredOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
-  IGatewaysResourcesBackendPathCheckReadQuery,
-  IGatewaysResourcesListQuery,
-  IGatewaysResourcesWithVerifiedUserRequiredListQuery,
-} from '@/services/types/query/gateways.ts';
-import type {
-  IResourceExportInputSLZ,
-  IResourceImportCheckInputSLZ,
-  IResourceImportDocPreviewInputSLZ,
-  IResourceImportInputSLZ,
-  IResourceInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
-import type {
-  IResourceBatchUpdateInputSLZ,
-  IResourceLabelUpdateInputSLZ,
-} from '@/services/types/body/patch/gateways.ts';
+} from '@/services/types/gateway/resource.ts';
 
 const path = '/gateways';
 
@@ -67,7 +64,7 @@ export const getResourceDetail = (gatewayId: number, resourceId: number) =>
  * @param data 网关资源数据
  */
 export const createResources = (gatewayId: number, data: IResourceInputSLZ) =>
-  http.post(`${path}/${gatewayId}/resources/`, data);
+  http.post<void>(`${path}/${gatewayId}/resources/`, data);
 
 /**
  *  更新资源
@@ -76,7 +73,7 @@ export const createResources = (gatewayId: number, data: IResourceInputSLZ) =>
  * @param data 网关资源数据
  */
 export const updateResources = (gatewayId: number, resourceId: number, data: IResourceInputSLZ) =>
-  http.put(`${path}/${gatewayId}/resources/${resourceId}/`, data);
+  http.put<void>(`${path}/${gatewayId}/resources/${resourceId}/`, data);
 
 /**
  *  删除资源
@@ -84,15 +81,15 @@ export const updateResources = (gatewayId: number, resourceId: number, data: IRe
  * @param resourceId 网关资源id
  */
 export const deleteResources = (gatewayId: number, resourceId: number) =>
-  http.delete(`${path}/${gatewayId}/resources/${resourceId}/`);
+  http.delete<void>(`${path}/${gatewayId}/resources/${resourceId}/`);
 
 /**
  *  批量删除资源
  * @param gatewayId 网关id
  * @param params.ids 资源id列表
  */
-export const batchDeleteResources = (gatewayId: number, params: { ids: number[] }) =>
-  http.delete(`${path}/${gatewayId}/resources/batch/`, params);
+export const batchDeleteResources = (gatewayId: number, params: IBatchDeleteIdsInput) =>
+  http.delete<void>(`${path}/${gatewayId}/resources/batch/`, params);
 
 /**
  *  批量编辑资源
@@ -100,7 +97,7 @@ export const batchDeleteResources = (gatewayId: number, params: { ids: number[] 
  * @param params 批量编辑参数
  */
 export const batchEditResources = (gatewayId: number, params: IResourceBatchUpdateInputSLZ) =>
-  http.put(`${path}/${gatewayId}/resources/batch/`, params);
+  http.put<void>(`${path}/${gatewayId}/resources/batch/`, params);
 
 /**
  * 导入资源
@@ -108,7 +105,7 @@ export const batchEditResources = (gatewayId: number, params: IResourceBatchUpda
  * @param data 导入参数
  */
 export const importResource = (gatewayId: number, data: IResourceImportInputSLZ) =>
-  http.post(`${path}/${gatewayId}/resources/import/`, data);
+  http.post<void>(`${path}/${gatewayId}/resources/import/`, data);
 
 /**
  * 导入前检查
@@ -129,7 +126,7 @@ export const checkResourceImport = (
  * @param data 资源参数
  */
 export const getResourceDocPreview = (gatewayId: number, data: IResourceImportDocPreviewInputSLZ) =>
-  http.post(`${path}/${gatewayId}/resources/import/doc/preview/`, data);
+  http.post<IResourceImportDocPreviewOutput>(`${path}/${gatewayId}/resources/import/doc/preview/`, data);
 
 /**
  * 导出资源
@@ -137,7 +134,7 @@ export const getResourceDocPreview = (gatewayId: number, data: IResourceImportDo
  * @param data 导出参数
  */
 export const exportResources = (gatewayId: number, data: IResourceExportInputSLZ) =>
-  http.post(`${path}/${gatewayId}/resources/export/`, data, { responseType: 'blob' });
+  http.post<void>(`${path}/${gatewayId}/resources/export/`, data, { responseType: 'blob' });
 
 /**
  * 检测编辑区全部资源的请求路径冲突
@@ -176,4 +173,16 @@ export const backendsPathCheck = (gatewayId: number, data: IGatewaysResourcesBac
  * @param data 标签数据
  */
 export const updateResourceLabels = (gatewayId: number, resourceId: number, data: IResourceLabelUpdateInputSLZ) =>
-  http.put(`${path}/${gatewayId}/resources/${resourceId}/labels/`, data);
+  http.put<void>(`${path}/${gatewayId}/resources/${resourceId}/labels/`, data);
+
+/**
+ * 更新资源弃用标记
+ * @param gatewayId 网关id
+ * @param resourceId 资源id
+ * @param data 弃用标记及说明
+ */
+export const updateResourceDeprecation = (
+  gatewayId: number,
+  resourceId: number,
+  data: IResourceDeprecationUpdateInputSLZ,
+) => http.patch<void>(`${path}/${gatewayId}/resources/${resourceId}/deprecation/`, data);

@@ -23,7 +23,7 @@
         v-model.trim="requestId"
         class="header-input"
         clearable
-        :placeholder="t('请输入 request_id 进行查询')"
+        :placeholder="t('请输入 X-Bkapi-Request-ID 进行查询')"
         @enter="getDetailData"
         @clear="handleClear"
       />
@@ -121,7 +121,7 @@
           v-show="isEmpty"
           class="empty-wrapper"
         >
-          <TableEmpty
+          <AgTableEmpty
             :empty-type="tableEmptyConf.emptyType"
             :abnormal="tableEmptyConf.isAbnormal"
             @refresh="refreshData"
@@ -134,9 +134,9 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import { copy as copyToClipboard } from '@/utils';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { queryAccessLogByRequestId } from '@/services/source/platform/toolbox';
 import dayjs from 'dayjs';
 import { useGateway } from '@/stores';

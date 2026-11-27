@@ -43,11 +43,11 @@
       <div class="w-full">
         <AgTable
           ref="tableRef"
+          cache-identifier="ResourceVersionSDK"
           show-settings
           resizable
           :api-method="getTableData"
           :columns="columns"
-          :max-limit-config="{ allocatedHeight: 267, mode: 'tdesign'}"
           @clear-filter="handleClearFilterKey"
         />
       </div>
@@ -63,16 +63,14 @@
 
 <script setup lang="tsx">
 import { getSDKList } from '@/services/source/gateway/sdk';
+import type { IGatewaySDKListOutput } from '@/services/types/gateway/sdk.ts';
 import { copy } from '@/utils';
 import {
   useFeatureFlag,
   useResourceVersion,
 } from '@/stores';
 import CreateSDK from './CreateSDK.vue';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/ag-table/Index.vue';
-import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import AgTable, { type IAgTableInstance, type ITableColumn } from '@/components/base/ag-table';
 
 const emits = defineEmits<{ 'on-show-version': [version: string] }>();
 
@@ -81,9 +79,9 @@ const route = useRoute();
 const featureFlagStore = useFeatureFlag();
 const resourceVersionStore = useResourceVersion();
 
-const tableRef = ref();
+const tableRef = useTemplateRef<IAgTableInstance<IGatewaySDKListOutput>>('tableRef');
 const keyword = ref('');
-const createSdkRef = ref();
+const createSdkRef = useTemplateRef('createSdkRef');
 const filterData = ref({
   keyword: '',
   resource_version_id: '',
@@ -91,7 +89,7 @@ const filterData = ref({
 
 const apigwId = computed(() => +route.params.id);
 
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<ITableColumn<IGatewaySDKListOutput>[]>(() => [
   {
     title: t('SDK 版本号'),
     colKey: 'version_number',
@@ -107,7 +105,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     title: t('资源版本'),
     colKey: 'resource_version',
     ellipsis: true,
-    cell: (h: any, { row }: any) => (
+    cell: (_h, { row }) => (
       <bk-button
         text
         theme="primary"
@@ -124,29 +122,13 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
   {
     title: t('创建人'),
     colKey: 'created_by',
-    cell: (h: any, { row }: any) => (
-      <div>
-        {
-          !featureFlagStore.isEnableDisplayName
-            ? (
-              <EditMember
-                mode="detail"
-                width="600px"
-                field="created_by"
-                content={[row?.created_by]}
-              />
-            )
-            : (
-              <TenantUserSelector
-                mode="detail"
-                width="600px"
-                field="created_by"
-                content={[row?.created_by]}
-              />
-            )
-        }
-      </div>
-    ),
+    ellipsis: true,
+    cell: (_h, { row }) => {
+      if (!row?.created_by) return <span>--</span>;
+      return !featureFlagStore.isEnableDisplayName
+        ? <span>{row.created_by}</span>
+        : <span><bk-user-display-name user-id={row.created_by} /></span>;
+    },
   },
   {
     title: t('生成时间'),
@@ -158,7 +140,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
     title: t('操作'),
     colKey: 'operate',
     width: 160,
-    cell: (h: any, { row }: any) => {
+    cell: (_h, { row }) => {
       return (
         <div class="flex gap-10px">
           <bk-button
@@ -208,7 +190,7 @@ const handleKeywordChange = () => {
 };
 
 // 下载单个
-const handleDownload = (row: any) => {
+const handleDownload = (row: IGatewaySDKListOutput) => {
   const { download_url } = row;
   window.open(download_url);
 };
@@ -226,7 +208,7 @@ const handleClearFilterKey = () => {
   };
 };
 
-const goVersionList = (data: any) => {
+const goVersionList = (data: IGatewaySDKListOutput) => {
   emits('on-show-version', data?.resource_version?.version || '');
 };
 

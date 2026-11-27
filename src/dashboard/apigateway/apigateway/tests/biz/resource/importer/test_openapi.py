@@ -20,21 +20,97 @@ import json
 
 import pytest
 from ddf import G
+from django.utils.translation import override
 from openapi_spec_validator.versions import get_spec_version
 
+from apigateway.apps.openapi.models import OpenAPIResourceSchema
 from apigateway.apps.plugin.constants import PluginTypeScopeEnum
 from apigateway.apps.plugin.models import PluginType
 from apigateway.apps.support.constants import OpenAPIFormatEnum
+from apigateway.apps.support.models import ResourceDoc
 from apigateway.biz.openapi import OpenAPIImportManager
 from apigateway.biz.openapi.schema import openapi_validator_mapping
 from apigateway.biz.resource.importer import sync_openapi_resources_from_content
 from apigateway.core.constants import DEFAULT_BACKEND_NAME
-from apigateway.core.models import Backend, Gateway
+from apigateway.core.models import Backend, Gateway, Resource
 from apigateway.service.resource_version import BaseExporter, OpenAPIExportManager
 from apigateway.utils.yaml import yaml_loads
 
 
 class TestOpenAPIManger:
+    @pytest.mark.parametrize("language", ["zh-hans", "en"])
+    @pytest.mark.parametrize("delete_unspecified", [False, True])
+    @pytest.mark.parametrize(
+        "name, method, path",
+        [
+            pytest.param("get_foo", "GET", "/foo/new", id="same-name-changed-path"),
+            pytest.param("getFoo", "GET", "/foo/new", id="normalized-name"),
+            pytest.param("get_foo", "POST", "/foo", id="same-name-changed-method"),
+            pytest.param("get_foo", "POST", "/foo/new", id="same-name-changed-method-and-path"),
+        ],
+    )
+    def test_resource_name_conflict_explains_possible_causes(
+        self, fake_gateway, fake_default_backend, language, delete_unspecified, name, method, path
+    ):
+        existing = G(Resource, gateway=fake_gateway, name="get_foo", method="GET", path="/foo")
+        manager = OpenAPIImportManager(
+            fake_gateway,
+            {
+                "openapi": "3.0.0",
+                "info": {"title": "Resource import", "version": "1.0.0"},
+                "paths": {path: {method.lower(): {"operationId": name, "responses": {"200": {"description": "OK"}}}}},
+            },
+            need_delete_unspecified_resources=delete_unspecified,
+        )
+
+        with override(language):
+            errors = manager.validate()
+
+        resource_data = manager.get_resource_list()[0]
+        assert resource_data.resource is None
+        assert resource_data.metadata["is_created"] is True
+        assert errors
+        assert all(error.json_path == f"$.paths.{path}.{method.lower()}.operationId" for error in errors)
+        messages = " ".join(error.message for error in errors)
+        assert name in messages
+        if language == "en":
+            assert "identical to an existing resource name" in messages
+            assert "matches an existing resource name after normalization" in messages
+            assert "get_foo" in messages and "getFoo" in messages
+            assert "method or path was changed" in messages
+            assert "treated as a new resource during import" in messages
+            assert "Check operationId, method and path" in messages
+        else:
+            assert "名称与已有资源完全相同" in messages
+            assert "名称归一化后与已有资源相同" in messages
+            assert "get_foo" in messages and "getFoo" in messages
+            assert "请求方法（method）或请求路径（path）已修改" in messages
+            assert "导入时被识别为新增资源" in messages
+            assert "请检查 operationId、method 和 path" in messages
+        existing.refresh_from_db()
+        assert (existing.name, existing.method, existing.path) == ("get_foo", "GET", "/foo")
+
+    @pytest.mark.parametrize("language", ["zh-hans", "en"])
+    def test_same_name_and_method_path_import_updates_existing_resource(
+        self, fake_gateway, fake_default_backend, language
+    ):
+        existing = G(Resource, gateway=fake_gateway, name="get_foo", method="GET", path="/foo")
+        manager = OpenAPIImportManager(
+            fake_gateway,
+            {
+                "openapi": "3.0.0",
+                "info": {"title": "Resource import", "version": "1.0.0"},
+                "paths": {"/foo": {"get": {"operationId": "get_foo", "responses": {"200": {"description": "OK"}}}}},
+            },
+        )
+
+        with override(language):
+            assert manager.validate() == []
+
+        resource_data = manager.get_resource_list()[0]
+        assert resource_data.resource.id == existing.id
+        assert resource_data.metadata["is_created"] is False
+
     @pytest.mark.parametrize(
         "content, expected, error",
         [
@@ -1702,6 +1778,116 @@ class TestOpenAPIImportManagerValidateRefs:
 
 class TestSyncOpenAPIResourcesFromContent:
     PATCH_PREFIX = "apigateway.biz.resource.importer.sync"
+
+    @pytest.mark.parametrize("version", ["3.0.3", "3.1.0"])
+    def test_shared_parameters_survive_sync_and_export(self, fake_gateway, fake_default_backend, version):
+        path = "/orders/{id}"
+        existing = G(Resource, gateway=fake_gateway, name="get_order", method="GET", path=path)
+        order_id = {
+            "name": "id",
+            "in": "path",
+            "required": True,
+            "schema": {"type": "integer"},
+            "description": "Order identifier",
+            "example": 42,
+        }
+        page = {"name": "page", "in": "query", "schema": {"type": "integer"}, "description": "Shared page"}
+        get_page = {"name": "page", "in": "query", "schema": {"type": "integer"}, "description": "GET page"}
+        page_header = {"name": "page", "in": "header", "schema": {"type": "string"}}
+        options = {
+            "name": "options",
+            "in": "query",
+            "description": "JSON filter options",
+            "content": {"application/json": {"schema": {"anyOf": [{"type": "object"}, {"type": "string"}]}}},
+        }
+        order_view = {"name": "order_view", "in": "cookie", "schema": {"type": "string"}}
+        other_shared_parameters = [options, order_view]
+        if version == "3.1.0":
+            other_shared_parameters.append(
+                {
+                    "name": "filter",
+                    "in": "query",
+                    "schema": {"type": ["string", "null"]},
+                    "description": "Order filter",
+                }
+            )
+        responses = {"200": {"description": "OK"}}
+        content = {
+            "openapi": version,
+            "info": {"title": "Orders", "version": "1.0"},
+            "components": {"parameters": {"OrderId": order_id}},
+            "paths": {
+                path: {
+                    "parameters": [{"$ref": "#/components/parameters/OrderId"}, page, *other_shared_parameters],
+                    "get": {
+                        "operationId": "get_order",
+                        "parameters": [get_page, page_header],
+                        "responses": responses,
+                    },
+                    "put": {"operationId": "put_order", "parameters": [], "responses": responses},
+                    "delete": {"operationId": "delete_order", "responses": responses},
+                },
+            },
+        }
+        ok, message, result = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content=json.dumps(content),
+            delete_missing_resources=False,
+            doc_language="en",
+        )
+
+        assert ok, message
+        assert result["updated"] == [{"id": existing.id}]
+        expected = {
+            "get": [order_id, get_page, *other_shared_parameters, page_header],
+            "put": [order_id, page, *other_shared_parameters],
+            "delete": [order_id, page, *other_shared_parameters],
+        }
+        resources = []
+        saved_schemas = OpenAPIResourceSchema.objects.filter(resource__gateway=fake_gateway).select_related("resource")
+        for saved in saved_schemas:
+            resource = saved.resource
+            assert saved.schema.get("parameters") == expected[resource.method.lower()]
+            resources.append(
+                {
+                    "path": resource.path,
+                    "method": resource.method,
+                    "name": resource.name,
+                    "description": resource.description,
+                    "openapi_schema": saved.schema,
+                }
+            )
+
+        exporter = OpenAPIExportManager(include_bk_apigateway_resource=False)
+        exported = exporter.get_openapi_content(resources)["paths"][path]
+        assert {method: operation["parameters"] for method, operation in exported.items()} == expected
+        doc = ResourceDoc.objects.get(resource_id=existing.id, language="en")
+        assert "Order identifier" in doc.content
+        assert "JSON filter options" in doc.content
+
+    @pytest.mark.parametrize("operation_fields", [{}, {"parameters": []}])
+    def test_no_shared_parameters_preserve_legacy_schema(self, fake_gateway, fake_default_backend, operation_fields):
+        path = "/legacy/{id}"
+        response = {"200": {"description": "OK"}}
+        content = {
+            "openapi": "3.0.3",
+            "info": {"title": "Legacy", "version": "1.0"},
+            "paths": {path: {"get": {"operationId": "get_legacy", "responses": response, **operation_fields}}},
+        }
+        ok, message, _ = sync_openapi_resources_from_content(
+            gateway=fake_gateway,
+            username="admin",
+            content=json.dumps(content),
+            delete_missing_resources=False,
+        )
+
+        assert ok, message
+        saved = OpenAPIResourceSchema.objects.get(resource__gateway=fake_gateway, resource__path=path)
+        expected = {"version": "OpenAPIV3.0", "responses": response}
+        if "parameters" in operation_fields:
+            expected.update(parameters=[], none_schema=False)
+        assert saved.schema == expected
 
     def _mock_sync_deps(self, mocker):
         mgr = mocker.patch(f"{self.PATCH_PREFIX}.OpenAPIImportManager.load_from_content").return_value

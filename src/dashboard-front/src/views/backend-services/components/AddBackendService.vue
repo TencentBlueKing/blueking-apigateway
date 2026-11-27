@@ -120,7 +120,8 @@
             <BkCollapsePanel name="stage-config">
               <template #header>
                 <div
-                  :class="`flex items-center panel-header ${!activeKey?.includes('stage-config') ? 'mb-0!' : ''}`"
+                  class="flex items-center panel-header"
+                  :class="{ 'mb-0!': !activeKey?.includes('stage-config') }"
                 >
                   <AngleUpFill
                     :class="[
@@ -144,7 +145,7 @@
                       v-for="(stage, index) in stageConfig"
                       :key="stage.id"
                       :name="stage.id"
-                      :title="stage.configs?.stage?.name || stage.name"
+                      :title="stage.name"
                       icon="right-shape"
                     >
                       <template #content>
@@ -298,11 +299,11 @@
 
                           <BkFormItem
                             :label="t('超时时间')"
-                            :property="'configs.timeout'"
+                            property="configs.timeout"
                             class="timeout-item"
                             required
                             :rules="configRules.timeout"
-                            :error-display-type="'normal'"
+                            error-display-type="normal"
                           >
                             <BkInput
                               v-model="stage.configs.timeout"
@@ -368,55 +369,15 @@
     </AgSideslider>
 
     <!-- 提示弹窗 -->
-    <BkDialog
+    <ServicePublishDialog
       v-model:is-show="publishDialog.isShow"
-      class="custom-main-dialog"
-      width="500"
-    >
-      <div class="dialog-content">
-        <div class="publish-icon">
-          <Success fill="#3FC06D" />
-        </div>
-        <div class="dialog-title">
-          {{ t("内容保存成功，正在发布至对应环境...") }}
-        </div>
-        <div class="dialog-main">
-          <div class="publish-tips">
-            {{ t("当前服务") }} <span>{{ baseInfo.name }}</span>{{ t("，") }} {{ t("已绑定以下") }}
-            <span>{{ publishDialog.stageNames?.length }}</span>
-            {{ t("个环境，所有修改都将发布到这些环境中：") }}
-          </div>
-          <div class="flex flex-wrap publish-stages">
-            <div
-              v-for="stage in publishDialog.stageNames"
-              :key="stage"
-              class="stage-item"
-            >
-              {{ stage }}
-            </div>
-          </div>
-        </div>
-        <div class="dialog-footer">
-          <BkButton
-            theme="primary"
-            @click="toStageReleaseRecord"
-          >
-            {{ t("去查看发布记录") }}
-          </BkButton>
-          <BkButton
-            class="ml-10px"
-            @click="publishDialog.isShow = false"
-          >
-            {{ t("关闭") }}
-          </BkButton>
-        </div>
-      </div>
-    </BkDialog>
+      :service-name="baseInfo.name"
+      :stage-names="publishDialog.stageNames"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
-// @ts-nocheck
 import {
   cloneDeep,
   isEqual,
@@ -426,10 +387,7 @@ import {
   Input,
   Message,
 } from 'bkui-vue';
-import {
-  AngleUpFill,
-  Success,
-} from 'bkui-vue/lib/icon';
+import { AngleUpFill } from 'bkui-vue/lib/icon';
 import {
   useEnv,
   useFeatureFlag,
@@ -442,21 +400,30 @@ import {
   updateBackendService,
 } from '@/services/source/gateway/backend';
 import { getStageList } from '@/services/source/gateway/stage';
-import AgSideslider from '@/components/ag-sideslider/Index.vue';
+import AgSideslider from '@/components/base/ag-sideslider/Index.vue';
 import KeyFormItem from '@/views/backend-services/components/KeyFormItem.vue';
 import HealthChecks from '@/views/backend-services/components/health-checks/Index.vue';
+import ServicePublishDialog from '@/views/backend-services/components/ServicePublishDialog.vue';
+import type {
+  IBackendRetrieveOutput,
+  IStandardBackendConfigInput,
+  IStandardBackendConfigOutput,
+} from '@/services/types/gateway/backend.ts';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 
 interface ILocalStageConfig {
   id: number
-  description?: string | null
+  description: string
   name: string
-  // stage_id: number
-  configs: Parameters<typeof createBackendService>[1]['configs'][number]
+  configs: IStandardBackendConfigInput
 }
 
+type StandardBackendDetail = Omit<IBackendRetrieveOutput, 'configs'> & {
+  configs: IStandardBackendConfigOutput[]
+};
+
 interface IProps {
-  editId?: number | string
+  editId?: number
   disabled?: boolean
   base: {
     name: string
@@ -470,7 +437,6 @@ const { editId = 0, base } = defineProps<IProps>();
 const emits = defineEmits<IEmits>();
 
 const { t, locale } = useI18n();
-const router = useRouter();
 const gatewayStore = useGateway();
 const envStore = useEnv();
 const featureFlagStore = useFeatureFlag();
@@ -482,12 +448,7 @@ const baseInfo = ref({
   name: '',
   description: '',
 });
-const curServiceDetail = ref<IExtractApiReturn<typeof getBackendServiceDetail>>({
-  id: 0,
-  name: '',
-  description: '',
-  configs: [],
-});
+const curServiceDetail = ref<StandardBackendDetail | null>(null);
 const initData = ref();
 const stageConfig = ref<ILocalStageConfig[]>([]);
 const activeIndex = ref<number[]>([]);
@@ -495,7 +456,7 @@ const stageList = ref<IExtractApiReturn<typeof getStageList>>([]);
 const stageConfigRef = ref<any[]>([]);
 const isPublish = ref(false);
 const isSaveLoading = ref(false);
-const nameRef = ref<InstanceType<typeof Input>>();
+const nameRef = useTemplateRef<InstanceType<typeof Input> & { focus: () => void }>('nameRef');
 const baseInfoEl = useTemplateRef<InstanceType<typeof Form> & IFormMethod>(
   'baseInfoRef',
 );
@@ -669,6 +630,11 @@ const handleCancel = () => {
 };
 
 const handleConfirm = async () => {
+  const backendId = editId;
+  const backendDetail = curServiceDetail.value;
+  if (backendId && !backendDetail) {
+    return;
+  }
   let emptyHostIndex = -1;
   // 基础信息校验
   try {
@@ -676,7 +642,9 @@ const handleConfirm = async () => {
   }
   catch {
     nameRef.value?.focus();
-    handleScrollView(nameRef?.value?.$el);
+    if (nameRef.value) {
+      handleScrollView(nameRef.value.$el);
+    }
     return;
   }
   // 逐个stage服务配置的校验
@@ -698,28 +666,26 @@ const handleConfirm = async () => {
     }
     return;
   }
-  const finalConfigs = stageConfig.value.map((item: ILocalStageConfig, index: number) => {
-    // @ts-expect-error stage.id 在编辑模式下存在
-    const id = !editId ? item.id : item.configs.stage.id;
-    const results = {
+  const finalConfigs = stageConfig.value.map((item, index): IStandardBackendConfigInput => {
+    const config: IStandardBackendConfigInput = {
       timeout: item.configs.timeout,
       loadbalance: item.configs.loadbalance,
       hosts: item.configs.hosts,
-      stage_id: id,
+      stage_id: item.id,
     };
     if (item.configs.hash_on) {
-      Object.assign(results, { hash_on: item.configs.hash_on });
+      config.hash_on = item.configs.hash_on;
     }
     if (item.configs.key) {
-      Object.assign(results, { key: item.configs.key });
+      config.key = item.configs.key;
     }
-    if (featureFlagStore.flags.ENABLE_HEALTH_CHECK && healthChecksRef.value?.[index]) {
-      const checks = healthChecksRef.value[index].getValue();
+    if (featureFlagStore.flags.ENABLE_HEALTH_CHECK) {
+      const checks = healthChecksRef.value?.[index]?.getValue();
       if (checks) {
-        Object.assign(results, { checks: healthChecksRef.value[index].getValue() });
+        config.checks = checks;
       }
     }
-    return results;
+    return config;
   });
   const { name, description } = baseInfo.value;
   const params = {
@@ -727,18 +693,16 @@ const handleConfirm = async () => {
     description,
     configs: finalConfigs,
   };
-  if (editId) {
+  if (backendId && backendDetail) {
     const detailContent = {
-      name: curServiceDetail.value.name,
-      description: curServiceDetail.value.description,
-      configs: curServiceDetail.value.configs.map((item: IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number]) => {
-        return {
-          timeout: item.timeout,
-          loadbalance: item.loadbalance,
-          hosts: item.hosts,
-          stage_id: item.stage.id,
-        };
-      }),
+      name: backendDetail.name,
+      description: backendDetail.description,
+      configs: backendDetail.configs.map(item => ({
+        timeout: item.timeout,
+        loadbalance: item.loadbalance,
+        hosts: item.hosts,
+        stage_id: item.stage.id,
+      })),
     };
     // 如果内容一致无需调用编辑接口
     if (isEqual(detailContent, params)) {
@@ -748,11 +712,10 @@ const handleConfirm = async () => {
   }
   isSaveLoading.value = true;
   try {
-    let res: { updated_stages?: { name: string }[] } = {};
-    res = editId
-      ? await updateBackendService(apigwId.value, curServiceDetail.value.id, params)
+    const res = backendId
+      ? await updateBackendService(apigwId.value, backendId, params)
       : await createBackendService(apigwId.value, params);
-    if (isPublish.value && editId) {
+    if (isPublish.value && backendId) {
       sliderConfig.isShow = false;
       if (res?.updated_stages?.length) {
         publishDialog = Object.assign(publishDialog, {
@@ -769,7 +732,7 @@ const handleConfirm = async () => {
     }
     else {
       Message({
-        message: t(!editId ? '新建成功' : '更新成功'),
+        message: t(!backendId ? '新建成功' : '更新成功'),
         theme: 'success',
       });
       sliderConfig.isShow = false;
@@ -782,17 +745,14 @@ const handleConfirm = async () => {
   }
 };
 
-const toStageReleaseRecord = () => {
-  router.push({ name: 'StageReleaseRecord' });
-};
-
 const setInit = () => {
+  curServiceDetail.value = null;
   stageConfig.value = stageList.value.map((item: IExtractApiReturn<typeof getStageList>[number]) => {
     const { name, id, description } = item;
     return {
       name,
       id,
-      description,
+      description: description ?? '',
       configs: {
         loadbalance: 'roundrobin',
         timeout: 30,
@@ -831,26 +791,35 @@ const getStageListData = async () => {
   stageList.value = [...res];
 };
 
-const getInfo = async () => {
-  const res = await getBackendServiceDetail(apigwId.value, editId);
-  curServiceDetail.value = cloneDeep(res);
-  stageConfig.value = res.configs.map((item: IExtractApiReturn<typeof getBackendServiceDetail>['configs'][number]) => {
-    return {
-      id: item.stage.id,
-      name: item.stage.name,
-      description: null,
-      configs: {
-        stage_id: item.stage.id,
-        ...item,
-      },
-    };
+const getInfo = async (backendId: number) => {
+  const { configs, ...detail } = await getBackendServiceDetail(apigwId.value, backendId);
+  if (
+    editId !== backendId
+    || detail.kind === 'ai'
+    || !configs.every((config): config is IStandardBackendConfigOutput => 'hosts' in config)
+  ) {
+    return false;
+  }
+  curServiceDetail.value = cloneDeep({
+    ...detail,
+    configs,
   });
+  stageConfig.value = configs.map(({ stage, ...config }) => ({
+    id: stage.id,
+    name: stage.name,
+    description: '',
+    configs: {
+      ...config,
+      stage_id: stage.id,
+    },
+  }));
   const sliderParams = {
     curServiceDetail: curServiceDetail.value,
     stageConfig: stageConfig.value,
     baseInfo: baseInfo.value,
   };
   initData.value = cloneDeep(sliderParams);
+  return true;
 };
 
 const handleLoadBalanceChange = (value: string, stageId: number) => {
@@ -887,9 +856,15 @@ const handleHashOnKeyChange = (config: any) => {
 };
 
 const show = async () => {
+  const backendId = editId;
   await getStageListData();
-  if (editId) {
-    await getInfo();
+  if (editId !== backendId) {
+    return;
+  }
+  if (backendId) {
+    if (!await getInfo(backendId)) {
+      return;
+    }
   }
   else {
     setInit();
@@ -1145,79 +1120,9 @@ defineExpose({ show });
     }
   }
 }
-
-.custom-main-dialog {
-
-  :deep(.bk-dialog-title) {
-    display: none;
-  }
-
-  :deep(.bk-modal-footer) {
-    display: none;
-  }
-
-  .dialog-content {
-
-    .publish-icon {
-      margin-bottom: 18px;
-      font-size: 42px;
-      line-height: 32px;
-      text-align: center;
-    }
-
-    .dialog-title {
-      margin-bottom: 16px;
-      font-size: 20px;
-      color: #313238;
-      text-align: center;
-    }
-
-    .dialog-main {
-      padding: 12px 16px 18px;
-      margin-bottom: 25px;
-      background-color: #f5f6fa;
-      border-radius: 2px;
-
-      .publish-tips {
-        margin-bottom: 10px;
-        font-size: 14px;
-        color: #63656e;
-
-        span {
-          font-weight: 700;
-        }
-      }
-
-      .publish-stages {
-
-        .stage-item {
-          position: relative;
-          width: 33%;
-          padding-left: 12px;
-          font-size: 14px;
-          color: #63656e;
-
-          &::after {
-            position: absolute;
-            top: 10px;
-            left: 0;
-            width: 4px;
-            height: 4px;
-            background-color: #63656e;
-            border-radius: 50%;
-            content: " ";
-          }
-        }
-      }
-    }
-
-    .dialog-footer {
-      text-align: center;
-    }
-  }
-}
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的侧滑抽屉滚动条样式 -->
 <style lang="scss">
 .backend-service-slider {
 

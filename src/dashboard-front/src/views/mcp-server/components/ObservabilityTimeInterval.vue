@@ -123,7 +123,7 @@
 import { t } from '@/locales';
 import { INTERVAL_TIME_LIST, PRECISION_STEPS_LIST } from '@/constants';
 import { useObservabilityDashboard } from '@/hooks';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 const {
   interval,
@@ -132,6 +132,7 @@ const {
   searchParams,
   handleStepChange,
   handleRefreshTimeChange,
+  handleResetTime,
 } = useObservabilityDashboard();
 
 const handleRefreshTimeToggle = (isVisible: boolean) => {
@@ -142,11 +143,9 @@ const handleStepToggle = (isVisible: boolean) => {
   isOpenStep.value = isVisible;
 };
 
+// 只修改共享状态；定时器由仪表盘组件根据 interval 启停
 const handleResetForm = () => {
-  interval.value = 'off';
-  searchParams.value.step = 'auto';
-  handleRefreshTimeChange('off');
-  handleStepChange('auto');
+  handleResetTime();
 };
 
 defineExpose({ handleResetForm });

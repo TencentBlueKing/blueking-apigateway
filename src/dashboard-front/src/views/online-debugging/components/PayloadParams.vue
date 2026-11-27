@@ -23,7 +23,7 @@
   >
     <BkCollapsePanel
       :name="1"
-      style="margin-bottom: 20px"
+      class="mb-20px"
     >
       <template #header>
         <div class="params-header">
@@ -74,7 +74,7 @@
 </template>
 
 <script lang="ts" setup>
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 import EditTable from '@/views/online-debugging/components/EditTable.vue';
 
 interface IProps {
@@ -90,15 +90,15 @@ const {
 } = defineProps<IProps>();
 
 const emit = defineEmits<{
-  queryChange: [data: any ]
-  pathChange: [data: any ]
+  'query-change': [data: any]
+  'path-change': [data: any]
 }>();
 
 const { t } = useI18n();
 
-const queryRef = ref();
+const queryRef = useTemplateRef('queryRef');
 const queryList = ref<any[]>([]);
-const pathRef = ref();
+const pathRef = useTemplateRef('pathRef');
 const pathList = ref<any[]>([]);
 const activeIndex = ref<number[]>([1]);
 
@@ -141,11 +141,11 @@ const getData = () => {
 };
 
 const handleQueryChange = (list: any) => {
-  emit('queryChange', list);
+  emit('query-change', list);
 };
 
 const handlePathChange = (list: any) => {
-  emit('pathChange', list);
+  emit('path-change', list);
 };
 
 defineExpose({
@@ -162,22 +162,27 @@ defineExpose({
   justify-content: space-between;
   margin-bottom: 8px;
   cursor: pointer;
+
   .params-header-title {
-    font-weight: 700;
-    font-size: 14px;
-    color: #313238;
     display: flex;
+    font-size: 14px;
+    font-weight: 700;
+    color: #313238;
     align-items: center;
+
     .params-header-fold {
       margin-right: 8px;
       transition: all .2s;
+
       &.fold {
         transform: rotate(-90deg);
       }
     }
   }
 }
+
 .params-collapse {
+
   :deep(.bk-collapse-content) {
     padding: 0;
   }

@@ -20,11 +20,17 @@
  * @description 配置 BkUserDisplayName 组件
  * @param {string} tenantId 要覆盖的租户 id
  */
-import BkUserDisplayName from '@blueking/bk-user-display-name';
+import BkUserDisplayNameModule from '@blueking/bk-user-display-name';
 import {
   useEnv,
   useUserInfo,
 } from '@/stores';
+
+// 该包是带 __esModule 标记的 CommonJS 包。Vite 8 按 Node 语义处理默认导入，
+// 拿到的是整个 module.exports，需要再取一次 default；旧的互操作规则下直接就是类本身
+const BkUserDisplayName = (
+  BkUserDisplayNameModule as unknown as { default?: typeof BkUserDisplayNameModule }
+).default ?? BkUserDisplayNameModule;
 
 export function useBkUserDisplayName() {
   const userStore = useUserInfo();

@@ -21,33 +21,27 @@
 *  */
 
 import http from '@/services/http';
-import type { ICountAndResults } from '@/services/types/utils.ts';
-import type {
-  IDocsGatewaysListResponse,
-  IDocsGatewaysPermissionApplyResponse,
-  IDocsGatewaysReadResponse,
-  IDocsGatewaysResourcesDocReadResponse,
-  IDocsGatewaysResourcesListResponse,
-  IDocsGatewaysSdksUsageExampleReadResponse,
-  IDocsGatewaysStagesListResponse,
-  IDocsSdksDocReadResponse,
-} from '@/services/types/responses/docs.ts';
 import type {
   IDocsGatewaysListQuery,
+  IDocsGatewaysListResponse,
+  IDocsGatewaysPermissionApplyResponse,
+  IDocsGatewaysReadQuery,
+  IDocsGatewaysReadResponse,
   IDocsGatewaysResourcesDocReadQuery,
+  IDocsGatewaysResourcesDocReadResponse,
   IDocsGatewaysResourcesListQuery,
+  IDocsGatewaysResourcesListResponse,
   IDocsGatewaysSdksUsageExampleReadQuery,
+  IDocsGatewaysSdksUsageExampleReadResponse,
   IDocsGatewaysStagesListQuery,
+  IDocsGatewaysStagesListResponse,
+  IDocsPermissionApplyInput,
   IDocsSdksDocReadQuery,
-} from '@/services/types/query/docs.ts';
+  IDocsSdksDocReadResponse,
+} from '@/services/types/docs/gateway.ts';
+import type { ICountAndResults } from '@/services/types/utils.ts';
 
 const path = '/docs/gateways';
-
-export interface IDocsPermissionApplyInput {
-  bk_app_code: string
-  reason: string
-  resource_name: string
-}
 
 /**
  * 获取有公开文档的网关列表
@@ -61,7 +55,7 @@ export const getDocsGatewayList = (data: IDocsGatewaysListQuery = {}) =>
  * @param gatewayName 网关名称
  * @param data.source 访问来源，如 api_debug（在线调试）
  */
-export const getDocsGatewayDetail = (gatewayName: string, data: { source?: string } = {}) =>
+export const getDocsGatewayDetail = (gatewayName: string, data: IDocsGatewaysReadQuery = {}) =>
   http.get<IDocsGatewaysReadResponse>(`${path}/${gatewayName}/`, data);
 
 /**

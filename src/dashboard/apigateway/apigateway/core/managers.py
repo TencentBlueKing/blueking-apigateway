@@ -21,11 +21,12 @@ import json
 import operator
 from typing import Any, Dict, List, Optional
 
-from cachetools import TTLCache, cached
 from django.db import models
 
-from apigateway.common.constants import CACHE_MAXSIZE, CACHE_TIME_24_HOURS
+from apigateway.common.cache import cache_on_arguments
+from apigateway.common.constants import CACHE_TIME_24_HOURS
 from apigateway.core.constants import (
+    BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE,
     DEFAULT_STAGE_NAME,
     ResourceKindEnum,
     StageStatusEnum,
@@ -58,7 +59,7 @@ class ResourceVersionManager(models.Manager):
         """
         return self.filter(gateway_id=gateway_id).last()
 
-    @cached(cache=TTLCache(maxsize=CACHE_MAXSIZE, ttl=CACHE_TIME_24_HOURS))
+    @cache_on_arguments(expiration_time=CACHE_TIME_24_HOURS)
     def get_resources(self, gateway_id: int, id: int) -> Dict[int, dict]:
         resource_version = self.filter(gateway_id=gateway_id, id=id).first()
         if not resource_version:
@@ -218,20 +219,62 @@ class ReleaseManager(models.Manager):
         return ids[0]
 
 
-def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+def _load_released_resource_auth_config(resource: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     try:
         raw_config = resource["contexts"]["resource_auth"]["config"]
         config = json.loads(raw_config) if isinstance(raw_config, str) else raw_config
     except KeyError, TypeError, ValueError:
-        return False, False
+        return None
 
     if not isinstance(config, dict):
+        return None
+    return config
+
+
+def get_released_resource_oauth2_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+    config = _load_released_resource_auth_config(resource)
+    if config is None:
         return False, False
 
     return (
         config.get("oauth2_public_client_enabled") is True,
         config.get("oauth2_personal_client_enabled") is True,
     )
+
+
+def released_resource_binds_access_token_source(resource: Dict[str, Any]) -> bool:
+    """资源快照是否绑定了 bk-access-token-source（不区分 source、allow_fallback）
+
+    该插件先于 bk-oauth2-verify 执行：source=bearer 会消费 Authorization，source=api_key 且
+    allow_fallback=false 时缺少 X-API-KEY 直接 400，都与真实应用 Bearer 冲突；插件已不公开、使用方很少，
+    绑定即不开放应用通道
+    """
+    plugins = resource.get("plugins")
+    if not isinstance(plugins, list):
+        return False
+
+    return any(
+        isinstance(binding, dict) and binding.get("type") == BK_ACCESS_TOKEN_SOURCE_PLUGIN_TYPE for binding in plugins
+    )
+
+
+def get_released_resource_oauth2_app_flags(resource: Dict[str, Any]) -> tuple[bool, bool]:
+    """Return (app_delegated_enabled, app_only_enabled) derived from U/A, excluding the gateway switch.
+
+    A resource bound with bk-access-token-source gets no app channel route, so both are false.
+    Shared by the ReleasedResource projection columns and RouteConvertor's support_app.
+    """
+    config = _load_released_resource_auth_config(resource)
+    if config is None:
+        return False, False
+
+    if released_resource_binds_access_token_source(resource):
+        return False, False
+
+    # 缺省按 true，与 bk-resource-context 下发给数据面的 verified_*_required 一致
+    user_required = config.get("auth_verified_required", True) is True
+    app_required = config.get("app_verified_required", True) is True
+    return user_required and app_required, not user_required and app_required
 
 
 class ReleasedResourceManager(models.Manager):
@@ -259,6 +302,7 @@ class ReleasedResourceManager(models.Manager):
         resource_to_add = []
         for resource in resource_version.data:
             oauth2_public_enabled, oauth2_personal_enabled = get_released_resource_oauth2_flags(resource)
+            oauth2_app_delegated_enabled, oauth2_app_only_enabled = get_released_resource_oauth2_app_flags(resource)
             resource_to_add.append(
                 self.model(
                     gateway_id=resource_version.gateway_id,
@@ -270,6 +314,8 @@ class ReleasedResourceManager(models.Manager):
                     is_public=resource.get("is_public") is True,
                     oauth2_public_client_enabled=oauth2_public_enabled,
                     oauth2_personal_client_enabled=oauth2_personal_enabled,
+                    oauth2_app_delegated_enabled=oauth2_app_delegated_enabled,
+                    oauth2_app_only_enabled=oauth2_app_only_enabled,
                     data=resource,
                 )
             )

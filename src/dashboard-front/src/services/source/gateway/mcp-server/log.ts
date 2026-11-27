@@ -21,32 +21,15 @@
 *  */
 
 import http, { withExtraQuery } from '@/services/http';
-import type { IPagination } from '@/types/common';
 import type {
   IMCPServerChainLogListOutput,
   IMCPServerLogChainOutput,
   IMCPServerLogListOutput,
+  IMCPServerLogQuery,
   IMCPServerLogTimeChartOutput,
-} from '@/services/types/responses/gateways.ts';
+} from '@/services/types/gateway/mcp-server/log.ts';
 
 const path = '/gateways';
-
-// 查询条件泛型
-export interface IObservabilityBasicForm {
-  time_start?: number
-  time_end?: number
-  time_range?: number
-  app_code?: string
-  request_id?: string
-  status?: string
-  query?: string
-  metrics?: string
-  step?: string
-  mcp_server_name?: string
-}
-
-// 流水日志和仪表盘数据图层请求参数泛型
-export type IObservabilitySearchParams = IObservabilityBasicForm & IPagination;
 
 /**
  *  查询 MCP Server 日志时间分布图
@@ -54,7 +37,7 @@ export type IObservabilitySearchParams = IObservabilityBasicForm & IPagination;
  * @param params 搜索参数
  * @param extraStr 额外检索串（include/exclude）
  */
-export const getMcpLogTimechart = (gatewayId: number, params: IObservabilityBasicForm, extraStr?: string) =>
+export const getMcpLogTimechart = (gatewayId: number, params: IMCPServerLogQuery, extraStr?: string) =>
   http.get<IMCPServerLogTimeChartOutput>(withExtraQuery(`${path}/${gatewayId}/mcp-servers/-/logs/timechart/`, extraStr), params);
 
 /**
@@ -63,17 +46,16 @@ export const getMcpLogTimechart = (gatewayId: number, params: IObservabilityBasi
  * @param params 搜索参数
  * @param extraStr 额外检索串（include/exclude）
  */
-export const getMcpLogList = (gatewayId: number, params: IObservabilitySearchParams, extraStr?: string) =>
+export const getMcpLogList = (gatewayId: number, params: IMCPServerLogQuery, extraStr?: string) =>
   http.get<IMCPServerLogListOutput>(withExtraQuery(`${path}/${gatewayId}/mcp-servers/-/logs/`, extraStr), params);
 
 /**
  *  根据 request_id 获取 MCP Server 日志详情（调用链扁平化后的日志列表）
  * @param gatewayId 网关id
  * @param requestId 请求id
- * @param params 搜索参数
  */
-export const getMcpLogDetail = (gatewayId: number, requestId: string, params: IObservabilitySearchParams) =>
-  http.get<IMCPServerChainLogListOutput>(`${path}/${gatewayId}/mcp-servers/-/logs/${requestId}/`, params);
+export const getMcpLogDetail = (gatewayId: number, requestId: string) =>
+  http.get<IMCPServerChainLogListOutput>(`${path}/${gatewayId}/mcp-servers/-/logs/${requestId}/`);
 
 /**
  *  根据 request_id 查询 MCP Server 调用链路（瀑布图数据）
@@ -89,8 +71,8 @@ export const getMcpLogChain = (gatewayId: number, requestId: string) =>
  * @param params 导出参数
  * @param extraStr 额外检索串（include/exclude）
  */
-export const exportMcpLogs = (gatewayId: number, params: IObservabilityBasicForm, extraStr?: string) =>
-  http.get<unknown>(
+export const exportMcpLogs = (gatewayId: number, params: IMCPServerLogQuery, extraStr?: string) =>
+  http.get<void>(
     withExtraQuery(`${path}/${gatewayId}/mcp-servers/-/logs/export/`, extraStr),
     params,
     { responseType: 'blob' },

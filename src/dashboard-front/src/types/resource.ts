@@ -24,9 +24,11 @@ interface IAuthConfig {
   auth_verified_required: boolean
   app_verified_required: boolean
   resource_perm_required: boolean
-  // oauth2_public_client_enabled: boolean
+  oauth2_public_client_enabled?: boolean
   oauth2_personal_client_enabled?: boolean
 }
+
+type IResourceAuthFormConfig = Required<IAuthConfig>;
 
 interface IBackendConfig {
   method: TRequestMethod
@@ -37,7 +39,7 @@ interface IBackendConfig {
 
 interface IBackend {
   name: string
-  config: IBackendConfig
+  config: IBackendConfig | null
   path?: string
 }
 
@@ -78,13 +80,10 @@ interface IImportedResource {
   enable_websocket: boolean
 }
 
-interface IResourceImportCheckResult extends IImportedResource {
-  change_type?: ResourceChangeType
-}
-
 interface ILocalImportedResource extends Partial<IImportedResource> {
   _localId: number
   _unchecked: boolean
+  path_display?: string
 }
 
 interface ResourcesItem {
@@ -115,10 +114,10 @@ export type {
   IBackend,
   IBackendConfig,
   IAuthConfig,
+  IResourceAuthFormConfig,
   IPluginConfig,
   IPublicConfig,
   IImportedResource,
-  IResourceImportCheckResult,
   ILocalImportedResource,
   ResourceChangeType,
   ResourcesItem,

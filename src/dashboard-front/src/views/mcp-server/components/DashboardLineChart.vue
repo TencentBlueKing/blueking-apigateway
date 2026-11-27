@@ -53,7 +53,7 @@
       v-show="isEmpty"
       class="basic-height"
     >
-      <TableEmpty
+      <AgTableEmpty
         :empty-type="tableEmptyConf.emptyType"
         :abnormal="tableEmptyConf.isAbnormal"
         @refresh="handleInit"
@@ -65,7 +65,7 @@
 
 <script lang="ts" setup>
 import dayjs from 'dayjs';
-import * as echarts from 'echarts';
+import { type ECharts, createChart } from '@/utils/echarts';
 import { merge } from 'lodash-es';
 import { t } from '@/locales';
 import type {
@@ -81,9 +81,9 @@ import type {
 } from 'echarts/types/dist/shared';
 import { getColorHue } from '@/utils';
 import { useChartIntervalOption, useObservabilityDashboard } from '@/hooks';
-import type { IObservabilitySearchParams } from '@/services/source/gateway/mcp-server/log';
+import type { IObservabilitySearchParams } from '@/types/observability';
 import type { ISeriesItemType } from '@/types/metrics';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 
 // 图例类型定义
 type LegendSelectedType = 'all' | 'selected' | 'unselected';
@@ -128,7 +128,10 @@ const displayBytesList: DisplayBytesType[] = ['request_body_size', 'response_bod
 const { getChartIntervalOption } = useChartIntervalOption();
 const { searchParams } = useObservabilityDashboard();
 
-const myChart = shallowRef<echarts.ECharts | undefined>();
+// 本图最近一次同步的查询参数，只用于判断空状态类型；不回写共享查询状态
+const chartParams = shallowRef<IObservabilitySearchParams>({ ...searchParams.value });
+
+const myChart = shallowRef<ECharts | undefined>();
 const chartLegend = ref<Record<string, ILegendItem[] | null>>({});
 const tableEmptyConf = ref<{
   emptyType: 'empty' | 'search-empty' | 'searchEmpty' | 'error' | undefined
@@ -147,7 +150,7 @@ const isFailedStatus = computed(() => ['non_2xx_status'].includes(instanceId));
 
 // 更新空状态置
 const updateTableEmptyConfig = () => {
-  const hasFilter = Object.values(searchParams.value).some(item => !!item);
+  const hasFilter = Object.values(chartParams.value).some(item => !!item);
   tableEmptyConf.value.emptyType = hasFilter ? 'searchEmpty' : 'empty';
 };
 
@@ -252,7 +255,8 @@ const getChartOption = (): EChartsOption => {
     xAxis: {
       type: 'time',
       scale: true,
-      boundaryGap: false,
+      // 时间轴的 boundaryGap 只接受数组，ECharts 6 的类型不再允许 false
+      boundaryGap: [0, 0],
       axisLabel: {
         color: '#666666',
         fontSize: 12,
@@ -396,8 +400,9 @@ const generateChartLegend = () => {
   // 需要隐藏legend的instance
   const hiddenLegend = ['requests'] as const;
 
-  const option = myChart.value?.getOption() as EChartsOption;
-  if ((option?.series as SeriesOption[]).length < 1
+  const option = myChart.value?.getOption() as EChartsOption | undefined;
+  if (!option
+    || !(option.series as SeriesOption[] | undefined)?.length
     || hiddenLegend.includes(instanceId as typeof hiddenLegend[number])
   ) {
     chartLegend.value[instanceId] = null;
@@ -456,7 +461,7 @@ const renderChart = () => {
 
 // 同步搜索参数
 const syncParams = (params: IObservabilitySearchParams) => {
-  searchParams.value = params;
+  chartParams.value = params;
 };
 
 // 清空筛选
@@ -491,7 +496,7 @@ onMounted(() => {
     }
 
     myChart.value?.dispose();
-    myChart.value = echarts.init(chartDom);
+    myChart.value = createChart(chartDom);
     renderChart();
   };
 

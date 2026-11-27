@@ -27,7 +27,7 @@
         >
           <Spinner
             v-if="status === 'doing'"
-            style="font-size: 16px;color:#3a84f6;"
+            class="text-16px color-#3a84f6"
           />
           <div
             v-else
@@ -201,7 +201,7 @@ import {
   useGateway,
 } from '@/stores';
 import { debounce, uniqueId } from 'lodash-es';
-import CardContainer from '@/components/card-container/Index.vue';
+import CardContainer from './CardContainer.vue';
 
 type IPaasInfo = Awaited<ReturnType<typeof getProgrammableStageDetail>>;
 

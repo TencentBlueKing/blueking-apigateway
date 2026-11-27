@@ -18,6 +18,7 @@
 #
 import hashlib
 import os
+import ssl
 from pathlib import Path
 from typing import List
 from urllib.parse import quote
@@ -394,9 +395,27 @@ REDIS_TLS_CERT_CA_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_CA_FILE", "")
 REDIS_TLS_CERT_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_FILE", "")
 REDIS_TLS_CERT_KEY_FILE = env.str("BK_APIGW_REDIS_TLS_CERT_KEY_FILE", "")
 REDIS_TLS_CHECK_HOSTNAME = env.bool("BK_APIGW_REDIS_TLS_CHECK_HOSTNAME", True)
+# redis 部署模式：single / sentinel / cluster
+# 注意：cluster 模式下 celery 不能使用 redis，需要配置 rabbitmq 作为 broker，详见下方 celery 配置
+REDIS_MODE = env.str("BK_APIGW_REDIS_MODE", "") or "single"
+# sentinel / cluster 模式的节点地址（sentinel 模式为 sentinel 节点地址），格式：host1:port1,host2:port2
+REDIS_ADDRS = [addr.strip() for addr in env.list("BK_APIGW_REDIS_ADDRS", default=[])]
+# sentinel 节点自身的密码和 tls，与 redis 节点分开配置
+REDIS_SENTINEL_MASTER_NAME = env.str("BK_APIGW_REDIS_SENTINEL_MASTER_NAME", "mymaster")
+REDIS_SENTINEL_PASSWORD = env.str("BK_APIGW_REDIS_SENTINEL_PASSWORD", "")
+REDIS_SENTINEL_TLS_ENABLED = env.bool("BK_APIGW_REDIS_SENTINEL_TLS_ENABLED", REDIS_TLS_ENABLED)
+
+if REDIS_MODE not in ("single", "sentinel", "cluster"):
+    raise ImproperlyConfigured(f"unsupported BK_APIGW_REDIS_MODE: {REDIS_MODE}, should be single / sentinel / cluster")
+if REDIS_MODE != "single" and not REDIS_ADDRS:
+    raise ImproperlyConfigured(f"BK_APIGW_REDIS_ADDRS is required in redis {REDIS_MODE} mode")
+if REDIS_MODE == "cluster" and REDIS_DB != 0:
+    raise ImproperlyConfigured("redis cluster only support db 0, please set BK_APIGW_REDIS_DB to 0")
 
 
 DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
+    "mode": REDIS_MODE,
+    "addrs": REDIS_ADDRS,
     "host": REDIS_HOST,
     "port": REDIS_PORT,
     "password": REDIS_PASSWORD,
@@ -407,6 +426,9 @@ DEFAULT_REDIS_CONFIG = CHANNEL_REDIS_CONFIG = {
     "tls_cert_file": REDIS_TLS_CERT_FILE,
     "tls_cert_key_file": REDIS_TLS_CERT_KEY_FILE,
     "tls_check_hostname": REDIS_TLS_CHECK_HOSTNAME,
+    "sentinel_master_name": REDIS_SENTINEL_MASTER_NAME,
+    "sentinel_password": REDIS_SENTINEL_PASSWORD,
+    "sentinel_tls_enabled": REDIS_SENTINEL_TLS_ENABLED,
 }
 
 # redis lock 配置
@@ -445,7 +467,8 @@ RABBITMQ_PORT = env.str("BK_APIGW_RABBITMQ_PORT", "")
 RABBITMQ_HOST = env.str("BK_APIGW_RABBITMQ_HOST", "")
 RABBITMQ_USER = env.str("BK_APIGW_RABBITMQ_USER", "")
 RABBITMQ_PASSWORD = env.str("BK_APIGW_RABBITMQ_PASSWORD", "")
-if all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD]):
+RABBITMQ_ENABLED = all([RABBITMQ_VHOST, RABBITMQ_PORT, RABBITMQ_HOST, RABBITMQ_USER, RABBITMQ_PASSWORD])
+if RABBITMQ_ENABLED:
     # this section not support tls, both rabbitmq and redis
     # KMS credentials are literal strings and may contain URL delimiters.
     # Keep the legacy URL construction unchanged when KMS is disabled.
@@ -481,6 +504,43 @@ else:
         broker_url = f"rediss://:{_redis_password}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}?{urllib.parse.urlencode(query_string_params)}"
         CELERY_BROKER_URL = broker_url
         CELERY_RESULT_BACKEND = broker_url
+
+# redis sentinel 模式：celery 通过 sentinel 获取 master 地址
+if REDIS_MODE == "sentinel":
+    _redis_password = quote(REDIS_PASSWORD, safe="")
+    CELERY_RESULT_BACKEND = ";".join(f"sentinel://:{_redis_password}@{addr}/{REDIS_DB}" for addr in REDIS_ADDRS)
+    _redis_ssl_options = {
+        "ssl_cert_reqs": ssl.CERT_REQUIRED,
+        "ssl_ca_certs": REDIS_TLS_CERT_CA_FILE or None,
+        "ssl_certfile": REDIS_TLS_CERT_FILE or None,
+        "ssl_keyfile": REDIS_TLS_CERT_KEY_FILE or None,
+        "ssl_check_hostname": REDIS_TLS_CHECK_HOSTNAME,
+    }
+    CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {
+        "master_name": REDIS_SENTINEL_MASTER_NAME,
+        "sentinel_kwargs": {
+            "password": REDIS_SENTINEL_PASSWORD,
+            "socket_timeout": REDIS_CONNECTION_OPTIONS["socket_timeout"],
+            "socket_connect_timeout": REDIS_CONNECTION_OPTIONS["socket_connect_timeout"],
+            **({"ssl": True, **_redis_ssl_options} if REDIS_SENTINEL_TLS_ENABLED else {}),
+        },
+    }
+    # support tls
+    if REDIS_TLS_ENABLED:
+        CELERY_REDIS_BACKEND_USE_SSL = _redis_ssl_options
+
+    if not RABBITMQ_ENABLED:
+        CELERY_BROKER_URL = CELERY_RESULT_BACKEND
+        CELERY_BROKER_TRANSPORT_OPTIONS = {**REDIS_CONNECTION_OPTIONS, **CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS}
+        if REDIS_TLS_ENABLED:
+            CELERY_BROKER_USE_SSL = _redis_ssl_options
+elif REDIS_MODE == "cluster":
+    # celery（kombu）不支持 redis cluster：
+    # - broker 必须使用 rabbitmq，未配置时启动直接报错，避免运行时才发现任务无法投递
+    # - 任务都不保存结果（CELERY_TASK_IGNORE_RESULT = True），不需要 result backend
+    if not RABBITMQ_ENABLED:
+        raise ImproperlyConfigured("redis cluster mode requires rabbitmq as celery broker")
+    CELERY_RESULT_BACKEND = None
 
 # 清理任务相关配置
 CLEAN_TABLE_INTERVAL_DAYS = env.int("CLEAN_TABLE_INTERVAL_DAYS", 365)
@@ -660,7 +720,7 @@ RESERVED_GATEWAY_NAME_PREFIXES = ["bk-", "bp-"]
 OFFICIAL_GATEWAY_NAME_PREFIXES = ["bk-"]
 # 网关名校验白名单
 IGNORE_GATEWAY_NAME_CHECK_WHITELIST = env.list(
-    "IGNORE_GATEWAY_NAME_CHECK_WHITELIST", default=["bkpaas3", "paasv3", "bkiam"]
+    "IGNORE_GATEWAY_NAME_CHECK_WHITELIST", default=["bkpaas3", "paasv3", "bkiam", "bcs-api-gateway", "cw-aitsm"]
 )
 
 # 允许管理端更新网关认证信息
@@ -745,14 +805,14 @@ BKAUTH_SESSION_TIMEOUT = 60
 # 启用多租户模式
 BKAUTH_ENABLE_MULTI_TENANT_MODE = ENABLE_MULTI_TENANT_MODE
 
-# 验证用户信息的网关 API(租户版本) => 走网关，不走 esb
-# FIXME: remove `and ENABLE_MULTI_TENANT_MODE` when all env has the newest bk-login
-if EDITION == "ee" and ENABLE_MULTI_TENANT_MODE:
+# EE 可通过 USE_LOGIN_V3_URL 使用 bk-login v3 网关 API 验证用户信息
+USE_LOGIN_V3_URL = env.bool("USE_LOGIN_V3_URL", default=False)
+if EDITION == "ee" and USE_LOGIN_V3_URL:
     BKAUTH_USER_INFO_APIGW_URL = (
         BK_API_URL_TMPL.format(api_name="bk-login") + "/prod/login/api/v3/open/bk-tokens/userinfo/"
     )
 else:
-    # 只在 te 生效，并且会被 te_default.py 中的值覆盖
+    # 使用 v2 接口验证用户信息，TE 可在 te_default.py 中覆盖
     BKAUTH_USER_COOKIE_VERIFY_URL = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/is_login/"
     BKAUTH_TOKEN_USER_INFO_ENDPOINT = f"{BK_COMPONENT_API_INNER_URL}/api/c/compapi/v2/bk_login/get_user/"
 
@@ -813,6 +873,9 @@ SKILL_DATA_DIR = os.path.join(BASE_DIR, "data/skill")
 # ==============================================================================
 # 访问日志
 # ==============================================================================
+# Additional credential keys/headers; built-in log masking rules always apply.
+LOG_SENSITIVE_KEYS = env.list("BK_APIGW_LOG_SENSITIVE_KEYS", default=[])
+
 ACCESS_LOG_CONFIG = {
     "es_time_field_name": "dtEventTimeStamp",
     "es_index": env.str("BK_APIGW_API_LOG_ES_INDEX", "2_bklog_bkapigateway_apigateway_container*"),
@@ -860,6 +923,8 @@ BCS_CLUSTER_BK_BIZ_ID = env.str("BCS_CLUSTER_BK_BIZ_ID", "2")
 # apisix
 # ==============================================================================
 PLUGIN_METADATA_CONFIG = get_plugin_metadata_config(env)
+
+GATEWAY_DEBUG_PLUGIN_ENABLED = env.bool("GATEWAY_DEBUG_PLUGIN_ENABLED", default=False)
 
 # 是否启用网关并发限制，默认启用；
 # 目前这个插件有缺陷，暂时支持关闭; https://github.com/apache/apisix/issues/11868

@@ -60,14 +60,14 @@
             :exclude-self-tips="false"
             :placeholder="t('请选择联系人')"
             :content="docForm.contacts"
-            :is-error-class="'maintainers-error-tip'"
+            is-error-class="maintainers-error-tip"
             @on-change="(e: any) => handleContactsChange(e)"
           />
-          <TenantUserSelector
+          <TenantUserEditor
             v-else
             ref="selectorRef"
             :content="docForm.contacts"
-            :is-error-class="'maintainers-error-tip'"
+            is-error-class="maintainers-error-tip"
             is-required
             :placeholder="t('请选择联系人')"
             field="contacts"
@@ -185,7 +185,7 @@
                     field="maintainers"
                     :content="data?.maintainers"
                   />
-                  <TenantUserSelector
+                  <TenantUserEditor
                     v-else
                     :content="data?.maintainers"
                     field="maintainers"
@@ -212,7 +212,7 @@
                     field="contacts"
                     :content="docForm.contacts"
                   />
-                  <TenantUserSelector
+                  <TenantUserEditor
                     v-else
                     :content="docForm.contacts"
                     field="contacts"
@@ -260,7 +260,7 @@ import { Form, Message } from 'bkui-vue';
 import { getGatewayDetail, patchGateway } from '@/services/source/gateway/gateway';
 import type { IExtractApiReturn } from '@/services/types/utils';
 import EditMember from '@/views/basic-info/components/EditMember.vue';
-import TenantUserSelector from '@/components/tenant-user-selector/Index.vue';
+import TenantUserEditor from '@/components/user/tenant-user-editor/Index.vue';
 import { getGatewayDisplayName } from '@/utils/gateway-name';
 
 interface IForm {
@@ -304,9 +304,9 @@ const InitForm = (): IForm => {
   };
 };
 
-const formRef = ref<InstanceType<typeof Form> & { clearValidate: () => void }>();
-const selectorRef = ref<InstanceType<typeof EditMember | typeof TenantUserSelector> & { isShowError: boolean
-  isEditable: boolean }>();
+const formRef = useTemplateRef<InstanceType<typeof Form> & { clearValidate: () => void }>('formRef');
+const selectorRef = useTemplateRef<InstanceType<typeof EditMember | typeof TenantUserEditor> & { isShowError: boolean
+  isEditable: boolean }>('selectorRef');
 const loading = ref<boolean>(false);
 const docForm = ref<IForm>(InitForm());
 
@@ -388,8 +388,9 @@ const handleCommit = async () => {
     loading.value = true;
 
     const payload: any = { ...data };
-    // 展示名有独立编辑入口，保存文档信息时省略，避免覆盖后端按语言返回的展示名
+    // 展示名和认证协议在基本信息弹窗中更新，保存文档联系人时省略。
     delete payload.display_name;
+    delete payload.oauth2_app_enabled;
 
     const { type, contacts, service_account } = docForm.value;
     if (type === 'user') {

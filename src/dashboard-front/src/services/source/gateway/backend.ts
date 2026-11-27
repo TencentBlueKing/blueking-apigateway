@@ -18,15 +18,14 @@
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
+  IBackendInputSLZ,
   IBackendListOutput,
   IBackendRetrieveOutput,
-  IBackendTestConnectionOutput,
-} from '@/services/types/responses/gateways.ts';
-import type { IGatewaysBackendsListQuery } from '@/services/types/query/gateways.ts';
-import type {
-  IBackendInputSLZ,
   IBackendTestConnectionInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
+  IBackendTestConnectionOutput,
+  IBackendUpdateOutput,
+  IGatewaysBackendsListQuery,
+} from '@/services/types/gateway/backend.ts';
 
 const path = '/gateways';
 
@@ -52,7 +51,7 @@ export const getBackendServiceDetail = (gatewayId: number, id: number) =>
  * @param params 新建参数
  */
 export const createBackendService = (gatewayId: number, params: IBackendInputSLZ) =>
-  http.post(`${path}/${gatewayId}/backends/`, params);
+  http.post<void>(`${path}/${gatewayId}/backends/`, params);
 
 /**
  * 更新后端服务
@@ -61,7 +60,7 @@ export const createBackendService = (gatewayId: number, params: IBackendInputSLZ
  * @param params 更新参数
  */
 export const updateBackendService = (gatewayId: number, id: number, params: IBackendInputSLZ) =>
-  http.put(`${path}/${gatewayId}/backends/${id}/`, params);
+  http.put<IBackendUpdateOutput>(`${path}/${gatewayId}/backends/${id}/`, params);
 
 /**
  * 测试 AI 后端服务连通性
@@ -69,7 +68,12 @@ export const updateBackendService = (gatewayId: number, id: number, params: IBac
  * @param params 连通测试参数
  */
 export const testBackendServiceConnection = (gatewayId: number, params: IBackendTestConnectionInputSLZ) =>
-  http.post<IBackendTestConnectionOutput>(`${path}/${gatewayId}/backends/test-connection/`, params);
+  http.post<IBackendTestConnectionOutput>(
+    `${path}/${gatewayId}/backends/test-connection/`,
+    params,
+    // 失败原因由表单内的提示条展示
+    { catchError: true },
+  );
 
 /**
  * 删除后端服务
@@ -77,4 +81,4 @@ export const testBackendServiceConnection = (gatewayId: number, params: IBackend
  * @param id 后端服务id
  */
 export const deleteBackendService = (gatewayId: number, id: number) =>
-  http.delete(`${path}/${gatewayId}/backends/${id}/`);
+  http.delete<void>(`${path}/${gatewayId}/backends/${id}/`);

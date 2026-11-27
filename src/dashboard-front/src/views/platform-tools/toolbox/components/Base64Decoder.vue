@@ -102,12 +102,12 @@
 <script lang="ts" setup>
 import { Input } from 'bkui-vue';
 import { copy } from '@/utils';
-import highlightJs from 'highlight.js';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import highlightJs from 'highlight.js/lib/common';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
 
 const { t } = useI18n();
 
-const base64InputRef = ref<InstanceType<typeof Input>>();
+const base64InputRef = useTemplateRef<InstanceType<typeof Input>>('base64InputRef');
 const base64Content = ref('');
 const result = ref('');
 const errorMsg = ref('');

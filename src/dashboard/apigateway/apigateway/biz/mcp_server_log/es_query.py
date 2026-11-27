@@ -22,6 +22,7 @@ from elasticsearch_dsl import Q, Search
 
 from apigateway.common.error_codes import error_codes
 from apigateway.utils import time as time_utils
+from apigateway.utils.log_scrubber import LogDataScrubber
 from apigateway.utils.time import SmartTimeRange
 
 from .constants import CHAIN_OUTPUT_FIELDS
@@ -194,7 +195,7 @@ def _parse_hits(hits: list, log_prefix: str = "") -> List[Dict]:
     """解析 ES 查询结果，提取字段并过滤无效日志"""
     result = []
     for hit in hits:
-        log = hit["_source"]
+        log = dict(hit["_source"])
         # 检查 sort 字段
         sort = hit.get("sort")
         logger.debug(
@@ -224,7 +225,7 @@ def _parse_hits(hits: list, log_prefix: str = "") -> List[Dict]:
         # 真正的 HTTP 请求日志有 __ext_json.method 字段
         # 但 MCP 协议层日志（audit 日志）没有 __ext_json，通过 mcp_method 字段识别
         ext_json = log.get("__ext_json", {}) or {}
-        if not ext_json.get("method") and not log.get("mcp_method"):
+        if not (isinstance(ext_json, dict) and ext_json.get("method")) and not log.get("mcp_method"):
             continue
 
         # 排除健康检查请求
@@ -232,7 +233,7 @@ def _parse_hits(hits: list, log_prefix: str = "") -> List[Dict]:
         if "/health" in path and path.split("?")[0].split("/")[-1] == "/health":
             continue
 
-        result.append(log)
+        result.append(LogDataScrubber(mcp=True).scrub_log(log))
     return result
 
 
@@ -258,7 +259,7 @@ def _merge_ext_json(log: Dict) -> Dict:
     is_mcp_layer = bool(log.get("mcp_method"))
 
     ext_json = log.get("__ext_json", {}) or {}
-    if ext_json:
+    if isinstance(ext_json, dict):
         for key, value in ext_json.items():
             if value is None:
                 continue

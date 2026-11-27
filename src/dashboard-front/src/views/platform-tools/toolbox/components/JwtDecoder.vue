@@ -83,7 +83,7 @@ import {
   type JwtPayload,
   jwtDecode,
 } from 'jwt-decode';
-import highlightJs from 'highlight.js';
+import highlightJs from 'highlight.js/lib/common';
 import Collapse from '@/views/platform-tools/components/Collapse.vue';
 
 const { t } = useI18n();
@@ -93,7 +93,7 @@ const decodedHeader = ref<JwtHeader>({});
 const decodedPayload = ref<JwtPayload>({});
 const decodeErrorMsg = ref('');
 
-const tokenInputRef = ref();
+const tokenInputRef = useTemplateRef('tokenInputRef');
 
 const handleInputClick = () => {
   tokenInputRef.value?.focus();

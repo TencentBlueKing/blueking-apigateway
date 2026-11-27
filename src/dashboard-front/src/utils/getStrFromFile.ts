@@ -21,7 +21,7 @@
  * @param {Object} file file文件对象
  */
 export const getStrFromFile = (file: any) => {
-  let resolveFn = (_: unknown) => {
+  let resolveFn: (value: unknown) => void = () => {
   };
   const PromiseFunc = new Promise(resolve => resolveFn = resolve);
   // ▼ new 一个 FileReader

@@ -20,7 +20,7 @@ import itertools
 import operator
 from typing import Any, Dict, List, Set, Tuple
 
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 
 from apigateway.apps.label.models import APILabel, ResourceLabel
 from apigateway.apps.openapi.models import OpenAPIResourceSchema
@@ -30,6 +30,8 @@ from apigateway.service.contexts import (
     ResourceAuthContext,
     strip_resource_oauth2_client_config,
 )
+
+from .models import ResourceAuthFilterType
 
 
 class ResourceHandler:
@@ -101,12 +103,38 @@ class ResourceHandler:
                 Q(path__icontains=keyword) | Q(name__icontains=keyword) | Q(description__icontains=keyword)
             )
 
+        if auth_types := condition.get("auth_type"):
+            queryset = ResourceHandler._filter_by_auth_type(queryset, auth_types)
+
         if condition.get("order_by"):
             queryset = queryset.order_by(condition["order_by"])
         else:
             queryset = queryset.order_by("-updated_time")
 
         return queryset
+
+    @staticmethod
+    def _filter_by_auth_type(
+        queryset: QuerySet[Resource], auth_types: set[ResourceAuthFilterType]
+    ) -> QuerySet[Resource]:
+        # 应用认证、用户认证保存在 Context 的 JSON 文本中，批量读取候选资源后再判定。
+        resource_ids = list(queryset.values_list("id", flat=True))
+        auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
+        matched_ids = []
+        for resource_id, config in auth_configs.items():
+            user_required = config.get("auth_verified_required")
+            app_required = config.get("app_verified_required")
+            matches = {
+                ResourceAuthFilterType.NONE: user_required is False and app_required is False,
+                ResourceAuthFilterType.APP: user_required is False and app_required is True,
+                ResourceAuthFilterType.PERSONAL: user_required is True and config["oauth2_personal_client_enabled"],
+                ResourceAuthFilterType.PUBLIC: user_required is True and config["oauth2_public_client_enabled"],
+                ResourceAuthFilterType.OAUTH: user_required is True and app_required is True,
+            }
+            if any(matches[auth_type] for auth_type in auth_types):
+                matched_ids.append(resource_id)
+
+        return queryset.filter(id__in=matched_ids)
 
     @staticmethod
     def get_default_auth_config():
@@ -153,9 +181,12 @@ class ResourceHandler:
         - 删除未指定的标签
 
         :param gateway: 网关实例
-        :param resource_ids: 资源ID列表
-        :param label_ids: 要关联的网关标签ID列表，忽略不存在的标签
+        :param resource_ids: 资源ID列表，忽略不存在或不属于当前网关的资源
+        :param label_ids: 要关联的网关标签ID列表，忽略不存在或不属于当前网关的标签
         """
+        resource_ids = ResourceHandler.get_valid_ids(gateway.id, resource_ids)
+        label_ids = list(APILabel.objects.filter(gateway=gateway, id__in=label_ids).values_list("id", flat=True))
+
         # while the unique key of resource_label is (resource_id, api_label_id)
         input_resource_labels = {(r_id, l_id): -1 for r_id in resource_ids for l_id in label_ids}
 
@@ -189,6 +220,16 @@ class ResourceHandler:
     @staticmethod
     def get_id_to_resource(gateway_id: int) -> Dict[int, Resource]:
         return {r.id: r for r in Resource.objects.filter(gateway_id=gateway_id)}
+
+    @staticmethod
+    def filter_resource_perm_required_ids(resource_ids: List[int]) -> Set[int]:
+        """筛选应用认证与校验应用权限都开启的资源，即可以开启“允许申请权限”的资源"""
+        auth_configs = ResourceAuthContext().get_resource_id_to_auth_config(resource_ids)
+        return {
+            resource_id
+            for resource_id, config in auth_configs.items()
+            if config.get("app_verified_required") and config.get("resource_perm_required")
+        }
 
     @staticmethod
     def get_valid_ids(gateway_id: int, ids: List[int]) -> List[int]:

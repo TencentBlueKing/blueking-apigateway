@@ -16,26 +16,17 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '@/services/http';
+import type { ICreateChatInput, ICreateChatOutput, ISendChatInput } from '@/services/types/external/chat.ts';
 import { useEnv } from '@/stores';
 
 // 拉群
-export const createChat = (data: {
-  bk_app_code: string
-  name: string
-  owner: string
-  userlist: string[]
-}) => {
+export const createChat = (data: ICreateChatInput) => {
   const envStore = useEnv();
-  return http.post(envStore.env.CREATE_CHAT_API, data);
+  return http.post<ICreateChatOutput>(envStore.env.CREATE_CHAT_API, data);
 };
 
 // 发消息
-export const sendChat = (data: {
-  bk_app_code: string
-  chatid: string
-  msgtype: string
-  text: { content: string }
-}) => {
+export const sendChat = (data: ISendChatInput) => {
   const envStore = useEnv();
-  return http.post(envStore.env.SEND_CHAT_API, data);
+  return http.post<unknown>(envStore.env.SEND_CHAT_API, data);
 };

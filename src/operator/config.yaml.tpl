@@ -3,6 +3,10 @@ debug: false
 operator:
   defaultGateway: "bk-default"
   defaultStage: "default"
+  # Commit after 5s without resource events, or after 30s of continuous changes.
+  # These windows reduce partial syncs; they do not guarantee publication completeness.
+  agentEventsWaitingTimeWindow: "5s"
+  agentForceUpdateTimeWindow: "30s"
   #write apisix etcd interval
   etcdPutInterval: "100ms"
   etcdDelInterval: "15s"

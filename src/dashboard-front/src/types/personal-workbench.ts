@@ -1,0 +1,62 @@
+/*
+ * TencentBlueKing is pleased to support the open source community by making
+ * 蓝鲸智云 - API 网关(BlueKing - APIGateway) available.
+ * Copyright (C) 2026 Tencent. All rights reserved.
+ * Licensed under the MIT License (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ *     http://opensource.org/licenses/MIT
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * We undertake not to change the open source license (MIT license) applicable
+ * to the current version of the project delivered to anyone in the future.
+ */
+
+import type { IPersonalWorkbenchListQuery, IPersonalWorkbenchListResponse } from '@/services/types/me/workbench.ts';
+import type { ITimeRangeFilter } from '@/types/common';
+import type { IResource } from '@/types/permission';
+
+// 个人工作台 —> MCP Server 列表/ gateway tab选项
+export type ITabKey = 'gateway' | 'mcp';
+
+// 个人工作台 —> MCP Server 列表/ gateway 审批状态
+export type IApplyStatus = '' | 'approved' | 'rejected';
+
+// 个人工作台 —> 接口响应内容和自定义UI界面变量
+export type IPersonalWorkbenchUIState = IPersonalWorkbenchListResponse & {
+  isExpand?: boolean
+  isSelectAll?: boolean
+  isLoading?: boolean
+  gateway_id?: number
+  resource_ids?: number[]
+  selection?: IResource[]
+  isGrantDimensionOverflow?: boolean
+};
+
+// 个人工作台 —> 筛选表单状态：时间未选择时为空字符串，请求前用 toTimeRangeQuery 转为接口参数
+export type IPersonalWorkbenchFilter = Omit<IPersonalWorkbenchListQuery, 'time_start' | 'time_end'> & ITimeRangeFilter;
+
+// 个人工作台 —> MCP Server 列表/ gateway 审批参数
+export interface IFomDataQuery {
+  id?: number
+  gateway_id?: number
+  ids?: number[]
+  status?: IApplyStatus
+  comment?: string
+  part_resource_ids?: Record<string, unknown>
+  mcp_server_id?: string | number
+};
+
+// 个人工作台 —> MCP Server 列表/ gateway tab选项
+export interface IPermission {
+  bk_app_code: string
+  grant_dimension?: string
+  isSelectAll: boolean
+  resources?: IResource[]
+  selection?: IResource[]
+  resource_ids: number[]
+}

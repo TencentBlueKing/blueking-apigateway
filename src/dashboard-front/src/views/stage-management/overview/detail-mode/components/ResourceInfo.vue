@@ -39,10 +39,11 @@
       <AgTable
         ref="resourceTableRef"
         v-model:table-data="tableData"
+        cache-identifier="StageOverview"
         :columns="columns"
         table-row-key="id"
         show-settings
-        :filter-row="null"
+        :filter-value="filterValue"
         local-page
         resizable
         :row-class-name="getRowClassName"
@@ -73,8 +74,6 @@ import { copy } from '@/utils';
 import { useGateway, useStage } from '@/stores';
 import { METHOD_THEMES } from '@/enums';
 import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
-import type { ITableEmptyType } from '@/types/common';
 import { getStageList } from '@/services/source/gateway/stage';
 import type { IStageListItem } from '@/types/stage';
 import { getLabelList } from '@/services/source/gateway/label';
@@ -82,16 +81,26 @@ import { getVersionDetail } from '@/services/source/gateway/resource-version';
 import type { IExtractApiReturn } from '@/services/types/utils.ts';
 import ResourceDetails from './ResourceDetails.vue';
 import CreateStage from '../../components/CreateStage.vue';
-import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
+import AgTable, {
+  type FilterValue,
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableEmptyType,
+} from '@/components/base/ag-table';
 
 type IGatewayLabelItem = IExtractApiReturn<typeof getLabelList>[number];
-type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][number];
+type IVersionResource = IExtractApiReturn<typeof getVersionDetail>['resources'][number] & {
+  gateway_label_names?: string[]
+};
 
 interface IProps {
   stageAddress: string
   stageId: number
+  // 动态 Tab 面板组件公共入参占位，避免透传到根 DOM
+  // eslint-disable-next-line vue/no-unused-properties
   versionId: number | undefined
+  // eslint-disable-next-line vue/no-unused-properties
   stage: Record<string, any> | undefined
 }
 const {
@@ -105,11 +114,11 @@ const gatewayStore = useGateway();
 const stageStore = useStage();
 
 const filterValue = ref<Record<string, any>>({ keyword: '' });
-const resourceTableRef = ref();
+const resourceTableRef = useTemplateRef<IAgTableInstance<IVersionResource>>('resourceTableRef');
 const currentStage = ref<any>(null);
 const currentResource = ref<any>({});
-const resourceDetailsRef = ref();
-const stageSidesliderRef = ref();
+const resourceDetailsRef = useTemplateRef('resourceDetailsRef');
+const stageSidesliderRef = useTemplateRef('stageSidesliderRef');
 // 是否是点击了后端服务
 const highlightRowId = ref(0);
 
@@ -148,13 +157,13 @@ const renderResourceTag = computed(() => {
 
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 
-const columns = computed<PrimaryTableProps['columns']>(() => {
-  const backendCol: PrimaryTableProps['columns'] = [
+const columns = computed<ITableColumn<IVersionResource>[]>(() => {
+  const backendCol: ITableColumn<IVersionResource>[] = [
     {
       colKey: 'backend',
       title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
       ellipsis: true,
-      cell: (_, { row }: { row: TableRowData }) => (
+      cell: (_h, { row }) => (
         <span
           class="color-#3a84ff cursor-pointer"
           onClick={() => {
@@ -171,7 +180,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     },
   ];
   // ai网关需要展示的列
-  const aiCols: PrimaryTableProps['columns'] = isAIGateway.value
+  const aiCols: ITableColumn<IVersionResource>[] = isAIGateway.value
     ? [
       ...backendCol,
       {
@@ -185,7 +194,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
           popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
           list: RESOURCE_TYPE_LIST,
         },
-        cell: (h, { row }) => {
+        cell: (_h, { row }) => {
           const resourceTypeData = RESOURCE_TYPE_LIST.find(item => item.value === row.kind);
           return (
             <bk-tag theme={resourceTypeData?.theme ?? 'default'}>
@@ -197,14 +206,14 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     ]
     : backendCol;
 
-  const cols: PrimaryTableProps['columns'] = [
+  return [
     ...aiCols,
     {
       colKey: 'name',
       title: t('资源名称'),
-      ellipsis: (h, { row }) => row.name,
+      ellipsis: (_h, { row }) => row.name,
       minWidth: 150,
-      cell: (h, { row }) => (
+      cell: (_h, { row }) => (
         <span
           class="color-#3A84FF cursor-pointer"
           onClick={() => showDetails(row)}
@@ -229,7 +238,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
     {
       colKey: 'method',
       title: t('前端请求方法'),
-      cell: (h, { row }) => (
+      cell: (_h, { row }) => (
         <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
           {row.method}
         </bk-tag>
@@ -261,11 +270,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
         resetValue: [],
         list: labelsList.value,
       },
-      cell: (_, { row }) => (
+      cell: (_h, { row }) => (
         labels.value?.filter((label: IGatewayLabelItem) =>
           row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name).length
           ? (
-            <RenderTagOverflow
+            <AgOverflowTags
               data={labels.value?.filter((label: IGatewayLabelItem) =>
                 row.gateway_label_ids?.includes(label.id)).map((label: IGatewayLabelItem) => label.name)}
             />
@@ -311,11 +320,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
         );
       },
       ellipsis: true,
-      cell: (h: unknown, { row }: { row: TableRowData }) => (
+      cell: (_h, { row }) => (
         row.plugins?.length
           ? (
             <div class="flex items-center">
-              {row.plugins.map((plugin: IVersionResource['plugins'][number]) => (
+              {row.plugins.map(plugin => (
                 <div class="flex items-center" key={plugin.id}>
                   {plugin.binding_type === 'stage' ? renderStageTag.value : ''}
                   {plugin.binding_type === 'resource' ? renderResourceTag.value : ''}
@@ -326,11 +335,11 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
           )
           : <span>--</span>
       ),
-    } as Record<string, any>,
+    },
     {
       colKey: 'is_public',
       title: t('是否公开'),
-      cell: (_, { row }) => (
+      cell: (_h, { row }) => (
         <span class={{
           'color-#FE9C00': row.is_public,
           'color-#63656e': !row.is_public,
@@ -344,7 +353,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       colKey: 'act',
       title: t('操作'),
       width: 200,
-      cell: (_, { row }) => (
+      cell: (_h, { row }) => (
         <>
           <bk-button
             text
@@ -365,8 +374,6 @@ const columns = computed<PrimaryTableProps['columns']>(() => {
       ),
     },
   ];
-
-  return cols;
 });
 
 const labelsList = computed(() => {
@@ -446,14 +453,14 @@ const getTableData = async () => {
   resetFilterAndPage();
 };
 
-// 数据源改变时，重置筛选与分页参数
+// 数据源改变时，重置筛选并回到第一页（保留当前自适应每页条数）
 const resetFilterAndPage = () => {
   filterValue.value = { keyword: '' };
   nextTick(() => {
-    resourceTableRef.value?.TDesignTableRef?.clearFilter?.();
+    const pageSize = resourceTableRef.value?.getPagination()?.pageSize ?? 10;
     resourceTableRef.value?.setPagination({
       current: 1,
-      pageSize: 10,
+      pageSize,
     });
   });
 };
@@ -505,12 +512,12 @@ const handleClearQueries = () => {
   filterValue.value = {};
 };
 
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filters) => {
-  Object.assign(
-    filterValue.value,
-    filters,
-    { method: filters.method?.filter((item: string | undefined) => !!item) || [] },
-  );
+const handleFilterChange = (filters: FilterValue) => {
+  filterValue.value = {
+    ...filterValue.value,
+    ...filters,
+    method: filters.method?.filter((item: string | undefined) => !!item) || [],
+  };
 };
 
 const hasNoVerification = (row: any) => {
@@ -545,6 +552,7 @@ defineExpose({ reload: init });
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的 TDesign 表头筛选弹层样式 -->
 <style lang="scss">
 .content-footer {
   justify-content: flex-end;

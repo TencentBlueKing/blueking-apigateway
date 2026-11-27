@@ -278,7 +278,7 @@ export interface IMCPFormData {
   raw_response_enabled: boolean
   labels: string[]
   categories: string[]
-  protocol_type: string
+  protocol_type: 'sse' | 'streamable_http'
   url?: string
 }
 

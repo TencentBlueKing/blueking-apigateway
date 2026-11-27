@@ -7,7 +7,7 @@
  * http://opensource.org/licenses/MIT
  */
 
-import toJsonSchema from 'to-json-schema';
+import { inferJsonSchema } from '@/utils/inferJsonSchema';
 import { openApiSchemaToState, schemaToFieldRow } from './utils';
 import {
   type IJsonSchemaObject,
@@ -181,8 +181,7 @@ export const jsonExampleToBody = (input: unknown): {
     // 数字样本中存在小数时使用 number，否则保留 integer。
     const sample = types.has('number') ? values.find(value => !Number.isInteger(value)) ?? values[0] : values[0];
     return {
-      ...toJsonSchema(sample, { required: false,
-        strings: { detectFormat: false } }) as IJsonSchemaObject,
+      ...inferJsonSchema(sample, { detectFormat: false }) as IJsonSchemaObject,
       ...nullable,
     };
   };

@@ -30,7 +30,7 @@ from apigateway.apps.rbac.models import GatewayMember
 from apigateway.biz.iam import BK_IAM_V4_SYSTEM_ID, build_gateway_authorization, grant_gateway_authorizations
 from apigateway.components.bkiam import chunked
 from apigateway.core.models import Gateway
-from apigateway.utils.redis_utils import get_default_redis_client
+from apigateway.utils.redis_utils import get_default_redis_client, get_redis_lock_name
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def _renew_gateway_member_iam_authorizations(
             for member in batch_members
         ]
         try:
-            grant_gateway_authorizations(gateway, authorizations, operator)
+            grant_gateway_authorizations(gateway, authorizations, operator, skip_missing_users=True)
         except Exception:
             failed_batches += 1
             logger.exception(
@@ -100,7 +100,7 @@ def renew_gateway_member_iam_authorizations() -> None:
 
     lock = redis_lock.Lock(
         get_default_redis_client(),
-        RENEWAL_LOCK_NAME,
+        get_redis_lock_name(RENEWAL_LOCK_NAME),
         expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
         auto_renewal=True,
         strict=False,

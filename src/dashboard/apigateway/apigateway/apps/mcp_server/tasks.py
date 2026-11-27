@@ -39,7 +39,7 @@ from apigateway.core.constants import ReleaseHistoryStatusEnum
 from apigateway.core.models import PublishEvent, Release, ReleaseHistory, ResourceVersion
 from apigateway.service.release import wait_release_ready
 from apigateway.utils.exception import LockTimeout
-from apigateway.utils.redis_utils import get_default_redis_client
+from apigateway.utils.redis_utils import get_default_redis_client, get_redis_lock_name
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 def _stage_mcp_server_permission_sync_lock(stage_id: int) -> Iterator[None]:
     lock = redis_lock.Lock(
         get_default_redis_client(),
-        f"bk_apigw:mcp_server_permission_sync:{stage_id}",
+        get_redis_lock_name(f"bk_apigw:mcp_server_permission_sync:{stage_id}"),
         expire=settings.REDIS_PUBLISH_LOCK_TIMEOUT,
         auto_renewal=True,
         strict=False,

@@ -19,13 +19,13 @@
 import redis_lock
 
 from apigateway.apps.esb.component.constants import ESB_RELEASE_LOCK_KEY, ESB_RELEASE_LOCK_TIMEOUT
-from apigateway.utils.redis_utils import get_default_redis_client
+from apigateway.utils.redis_utils import get_default_redis_client, get_redis_lock_name
 
 
 def get_release_lock() -> redis_lock.Lock:
     return redis_lock.Lock(
         get_default_redis_client(),
-        ESB_RELEASE_LOCK_KEY,
+        get_redis_lock_name(ESB_RELEASE_LOCK_KEY),
         expire=ESB_RELEASE_LOCK_TIMEOUT,
         strict=False,
     )

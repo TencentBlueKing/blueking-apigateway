@@ -49,7 +49,7 @@ export interface ISearchParamsType {
   metrics?: string // 指标，可选
   time_start?: number // 开始时间，可选
   time_end?: number // 结束时间，可选
-  time_range?: string // 时间范围，可选
+  time_range?: number // 最近 N 秒，可选；与起止同时传时后端以起止为准
   limit?: number // 限制数量，可选
   offset?: number // 偏移量，可选
   backend_name?: string // 后端服务名称，可选
@@ -58,7 +58,7 @@ export interface ISearchParamsType {
 // 统计报表搜索参数
 export interface ISummarySearchParams {
   stage_id?: number // 阶段ID，可选
-  resource_id?: string // 资源ID，可选
+  resource_id?: number | string // 资源ID，可选；未选择时为空字符串
   bk_app_code?: string // 蓝鲸应用代码，可选
   metrics?: string // 指标，可选
   time_dimension?: string // 时间维度，可选

@@ -234,7 +234,7 @@
           #aside
         >
           <!-- 配置 -->
-          <AgMcpAgentConfig
+          <McpAccessConfig
             :list="mcpConfigList"
             class="h-full bg-white mcp-detail-config"
           />
@@ -281,6 +281,7 @@
                 <Guideline
                   v-if="item.name === 'guide'"
                   v-model:is-exist-custom-guide="isExistCustomGuide"
+                  v-model:guide-tab="guideTab"
                   show-usage-guide
                   :markdown-str="markdownStr"
                   :config-list="mcpConfigList"
@@ -323,7 +324,7 @@ import CustomTop from '@/views/mcp-server/components/CustomTop.vue';
 import Guideline from '@/views/mcp-market/components/GuideLine.vue';
 import ServerTools from '@/views/mcp-server/components/ServerTools.vue';
 import ServerPrompts from '@/views/mcp-server/components/ServerPrompts.vue';
-import AgMcpAgentConfig from '@/components/ag-mcp-agent-config/Index.vue';
+import McpAccessConfig from '@/components/mcp/mcp-access-config/Index.vue';
 
 type IPanelType = {
   name: string
@@ -342,7 +343,7 @@ const gatewayStore = useGateway();
 const featureFlagStore = useFeatureFlag();
 const { divideRatio } = useMcpConfigDivideRatio();
 
-const createSliderRef = ref<InstanceType<typeof CreateSlider>>();
+const createSliderRef = useTemplateRef<InstanceType<typeof CreateSlider>>('createSliderRef');
 const serverId = ref(0);
 const server = ref<any>({
   id: 0,
@@ -395,15 +396,59 @@ const fetchServer = async () => {
   server.value = await getServer(gatewayId, serverId.value);
 };
 
+const guideTab = ref('default');
+// 指引请求序号：仅应用最新一次请求的结果，过期响应直接丢弃。
+// 用于隔离「保存后整体刷新」「快速切换指引 tab」「增删自定义指引」并发时的旧响应回写
+let guideRequestSeq = 0;
+
 const fetchGuide = async () => {
-  const { content } = await getServerGuideDoc(gatewayId, serverId.value);
-  markdownStr.value = content;
+  const requestId = ++guideRequestSeq;
+  try {
+    const { content } = await getServerGuideDoc(gatewayId, serverId.value);
+    if (requestId !== guideRequestSeq) return;
+    markdownStr.value = content;
+  }
+  catch {
+    // 获取失败时保留现有内容，避免主指引被清空
+  }
 };
 
 const fetchCustomGuide = async () => {
-  const res = await getCustomServerGuideDoc(gatewayId, serverId.value);
-  markdownStr.value = res?.content ?? '';
-  isExistCustomGuide.value = markdownStr.value.length > 0;
+  const requestId = ++guideRequestSeq;
+  try {
+    const res = await getCustomServerGuideDoc(gatewayId, serverId.value);
+    if (requestId !== guideRequestSeq) return;
+    const content = res?.content ?? '';
+    isExistCustomGuide.value = content.length > 0;
+    markdownStr.value = content;
+  }
+  catch {
+    // 获取失败时保留现有内容与自定义文档存在标记
+  }
+};
+
+// 整体刷新（详情加载/保存后）：并发获取默认与自定义指引，按当前指引 tab 决定渲染内容。
+// 任一请求失败不影响另一份落地，也不清空现有内容；自定义文档请求成功才更新存在标记
+const fetchGuideContent = async () => {
+  const requestId = ++guideRequestSeq;
+  const [defaultRes, customRes] = await Promise.allSettled([
+    getServerGuideDoc(gatewayId, serverId.value),
+    getCustomServerGuideDoc(gatewayId, serverId.value),
+  ]);
+  if (requestId !== guideRequestSeq) return;
+  const defaultContent = defaultRes.status === 'fulfilled' ? defaultRes.value?.content : undefined;
+  const customContent = customRes.status === 'fulfilled' ? customRes.value?.content : undefined;
+  if (customContent !== undefined) {
+    isExistCustomGuide.value = customContent.length > 0;
+  }
+  if (guideTab.value === 'custom' && isExistCustomGuide.value) {
+    if (customContent !== undefined) {
+      markdownStr.value = customContent;
+    }
+  }
+  else if (defaultContent !== undefined) {
+    markdownStr.value = defaultContent ?? '';
+  }
 };
 
 const fetchMcpAIConfigList = async () => {
@@ -412,15 +457,18 @@ const fetchMcpAIConfigList = async () => {
 };
 
 const handleUpdated = async () => {
-  await Promise.all([
-    fetchServer(),
-    fetchGuide(),
-    fetchCustomGuide(),
-  ]);
+  // 主详情请求成功后立即更新面板计数与显隐；
+  // 指引与配置列表为辅助展示数据，其请求失败不应阻断主详情与计数更新
+  await fetchServer();
   updateCount();
+  await Promise.allSettled([
+    fetchGuideContent(),
+    fetchMcpAIConfigList(),
+  ]);
 };
 
 const handleGuideChange = (tabName: string) => {
+  guideTab.value = tabName;
   const tabMap: Record<string, () => Promise<void>> = {
     default: () => {
       return fetchGuide();
@@ -438,7 +486,10 @@ watch(
     if (id && mcpId) {
       serverId.value = Number(mcpId);
       if (gatewayId === Number(id)) {
-        Promise.allSettled([handleUpdated(), fetchMcpAIConfigList()]);
+        // handleUpdated 内部已隔离辅助数据失败，此处仅兜底主详情失败，请求层已统一提示错误
+        handleUpdated().catch(() => {
+          // 避免未处理的 rejection
+        });
       }
     }
   },

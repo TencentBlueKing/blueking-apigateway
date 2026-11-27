@@ -73,7 +73,7 @@
       </div>
     </template>
 
-    <Guide :markdown-html="markdownHtml" />
+    <AgMarkdownViewer :markdown-html="markdownHtml" />
 
     <CustomMdGuideSlider
       v-model:is-show="isShowGuideSlider"
@@ -96,8 +96,8 @@ import {
   getCustomServerGuideDoc,
 } from '@/services/source/gateway/mcp-server/server';
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
-import Guide from '@/components/guide/Index.vue';
+import hljs from 'highlight.js/lib/common';
+import AgMarkdownViewer from '@/components/base/ag-markdown-viewer/Index.vue';
 import CustomMdGuideSlider from '@/views/mcp-server/components/CustomMdGuideSlider.vue';
 
 interface IProps {
@@ -111,6 +111,9 @@ const isExistCustomGuide = defineModel('isExistCustomGuide', {
   type: Boolean,
   default: false,
 });
+// 指引 tab 支持与父组件双向绑定（未绑定时为组件内部状态），
+// 保证父组件刷新/重置 tab 时子组件高亮同步
+const activeTab = defineModel<string>('guideTab', { default: 'default' });
 
 const {
   markdownStr = '',
@@ -149,7 +152,6 @@ const isShowGuideSlider = ref(false);
 const markdownText = ref('');
 const markdownHtml = ref('');
 const guideType = ref('');
-const activeTab = ref('default');
 
 const serverId = computed(() => Number(route.params.serverId));
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);

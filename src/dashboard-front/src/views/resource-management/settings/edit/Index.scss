@@ -59,7 +59,18 @@
 
   .bk-collapse-content {
     padding-top: 0 !important;
-    padding-left: 160px !important;
+    padding-left: 24px !important;
+
+    .request-params-table-wrapper,
+    .response-params-table-wrapper {
+      // 与表单的 180px 标签列对齐
+      padding-left: 180px;
+    }
+
+    .response-params-table-wrapper .response-params-table-wrapper {
+      // 响应参数外层和每个状态码的表格共用同一个类名
+      padding-left: 0;
+    }
 
     .bk-input--text,
     .bk-select-tag-input {

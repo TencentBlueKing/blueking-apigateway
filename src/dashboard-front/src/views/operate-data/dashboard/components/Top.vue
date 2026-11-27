@@ -106,16 +106,24 @@
 
 <script setup lang="ts">
 import { useStage } from '@/stores';
-import AgIcon from '@/components/ag-icon/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
+import type { IGatewaysMetricsQueryRangeListQuery } from '@/services/types/gateway/metrics.ts';
+
+type MetricsStep = NonNullable<IGatewaysMetricsQueryRangeListQuery['step']>;
 
 type IntervalItem = {
   label: string
   value: string
 };
 
+type StepItem = {
+  label: string
+  value: MetricsStep
+};
+
 const emit = defineEmits<{
   'refresh-change': [data: string]
-  'step-change': [data: string]
+  'step-change': [data: MetricsStep]
 }>();
 
 const { t } = useI18n();
@@ -173,8 +181,8 @@ const intervalList = ref<IntervalItem[]>([
   },
 ]);
 
-const step = ref<string>('auto');
-const stepList = ref<IntervalItem[]>([
+const step = ref<MetricsStep>('auto');
+const stepList = ref<StepItem[]>([
   {
     label: 'Auto',
     value: 'auto',

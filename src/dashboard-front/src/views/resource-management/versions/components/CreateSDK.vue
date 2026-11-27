@@ -22,7 +22,7 @@
       :is-show="dialogConfig.isShow"
       :title="dialogConfig.title"
       :is-loading="dialogConfig.loading"
-      :theme="'primary'"
+      theme="primary"
       quick-close
       width="600"
       class="dialog-scroll-y"
@@ -83,7 +83,7 @@ import { createSDK } from '@/services/source/gateway/sdk';
 import { getVersionList } from '@/services/source/gateway/resource-version';
 import type { IVersionItem } from '@/types/resource-version';
 import { Message } from 'bkui-vue';
-import SdkLanguageSelector from '@/components/sdk-language-selector/Index.vue';
+import SdkLanguageSelector from './SdkLanguageSelector.vue';
 
 interface CreateDialog {
   resource_version_id: string
@@ -109,7 +109,7 @@ const route = useRoute();
 // 网关id
 const apigwId = computed(() => +route.params.id);
 
-const baseInfoRef = ref();
+const baseInfoRef = useTemplateRef('baseInfoRef');
 // 版本列表
 const versionOpts = ref<IVersionItem[]>([]);
 

@@ -38,8 +38,8 @@ stages:
 
     mcp_servers:
       - name: "context"
-        title: "蓝鲸 API 网关 Context"
-        description: "提供网关上下文相关的工具接口"
+        title: "蓝鲸网关-Context"
+        description: "提供蓝鲸网关上所有公开网关/API详情查询工具"
         resource_names:
           - v2_open_list_gateways
           - v2_open_list_gateway_resources
@@ -60,7 +60,7 @@ stages:
           - "DevOps"
 
       - name: "debugger"
-        title: "蓝鲸 API 网关 Debugger"
+        title: "蓝鲸网关-问题排查"
         description: "提供调试相关的工具接口"
         resource_names:
           - v2_open_tools_time_get_datetime
@@ -99,6 +99,8 @@ grant_permissions:
       - v2_inner_list_app_resource_permissions
       - v2_inner_list_resource_permission_apply_records
       - v2_inner_retrieve_resource_permission_apply_record
+      - v2_inner_cancel_resource_permission_apply_record
+      - v2_inner_delete_resource_permission_apply_record
       # monitor related
       - v2_inner_list_app_alarm_records
       - v2_inner_list_app_request_logs
@@ -118,6 +120,8 @@ grant_permissions:
       - v2_inner_list_mcp_server_app_permissions
       - v2_inner_list_mcp_server_permission_apply_records
       - v2_inner_retrieve_mcp_server_permission_apply_record
+      - v2_inner_cancel_mcp_server_permission_apply_record
+      - v2_inner_delete_mcp_server_permission_apply_record
   # bk_lesscode
   - bk_app_code: bk_lesscode
     grant_dimension: "resource"
@@ -157,6 +161,16 @@ grant_permissions:
       - v2_open_get_released_resource
       - v2_open_get_gateway
       - v2_open_list_gateways
+  # bk_aidev
+  - bk_app_code: bk_aidev
+    grant_dimension: "resource"
+    resource_names:
+      - v2_open_list_mcp_server_app_permissions
+      - v2_open_list_mcp_server_app_permissions_apply_records
+      - v2_open_mcp_server_app_permissions_apply
+      - v2_open_list_user_mcp_server
+      - v2_inner_list_mcp_server_app_permissions
+      - v2_inner_list_mcp_server
 
 resource_docs:
   basedir: "{{ settings.BASE_DIR }}/data/apidocs/"

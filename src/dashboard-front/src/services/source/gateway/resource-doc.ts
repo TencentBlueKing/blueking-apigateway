@@ -21,17 +21,17 @@
 *  */
 
 import http from '@/services/http';
+import type { ICreatedIdOutput } from '@/services/types/gateway/common.ts';
 import type {
+  IDocArchiveParseInputSLZ,
   IDocArchiveParseOutput,
-  IDocListOutput,
-} from '@/services/types/responses/gateways.ts';
-import type { IGatewaysResourcesDocsListQuery } from '@/services/types/query/gateways.ts';
-import type {
   IDocExportInputSLZ,
   IDocImportByArchiveInputSLZ,
   IDocImportBySwaggerInputSLZ,
   IDocInputSLZ,
-} from '@/services/types/body/post/gateways.ts';
+  IDocListOutput,
+  IGatewaysResourcesDocsListQuery,
+} from '@/services/types/gateway/resource-doc.ts';
 
 const path = '/gateways';
 
@@ -41,23 +41,33 @@ const path = '/gateways';
  * @param data 导出参数
  */
 export const exportDocs = (gatewayId: number, data: IDocExportInputSLZ) =>
-  http.post(`${path}/${gatewayId}/docs/export/`, data, { responseType: 'blob' });
+  http.post<void>(`${path}/${gatewayId}/docs/export/`, data, { responseType: 'blob' });
 
 /**
  * 解析资源文档压缩包
  * @param gatewayId 网关id
  * @param data 文档压缩包
  */
-export const parseDocArchive = (gatewayId: number, data: FormData) =>
-  http.post<IDocArchiveParseOutput[]>(`${path}/${gatewayId}/docs/archive/parse/`, data);
+export const parseDocArchive = (gatewayId: number, { file }: IDocArchiveParseInputSLZ) => {
+  const data = new FormData();
+  data.append('file', file);
+  return http.post<IDocArchiveParseOutput[]>(`${path}/${gatewayId}/docs/archive/parse/`, data);
+};
 
 /**
  * 通过压缩包导入资源文档
  * @param gatewayId 网关id
  * @param data 导入参数
  */
-export const importDocsByArchive = (gatewayId: number, data: IDocImportByArchiveInputSLZ) =>
-  http.post(`${path}/${gatewayId}/docs/import/by-archive/`, data, { responseType: 'formdata' });
+export const importDocsByArchive = (
+  gatewayId: number,
+  { file, selected_resource_docs }: IDocImportByArchiveInputSLZ,
+) => {
+  const data = new FormData();
+  data.append('file', file);
+  data.append('selected_resource_docs', JSON.stringify(selected_resource_docs));
+  return http.post<void>(`${path}/${gatewayId}/docs/import/by-archive/`, data, { responseType: 'formdata' });
+};
 
 /**
  * 通过 swagger 导入资源文档
@@ -65,7 +75,7 @@ export const importDocsByArchive = (gatewayId: number, data: IDocImportByArchive
  * @param data 导入参数
  */
 export const importDocsBySwagger = (gatewayId: number, data: IDocImportBySwaggerInputSLZ) =>
-  http.post(`${path}/${gatewayId}/docs/import/by-swagger/`, data);
+  http.post<void>(`${path}/${gatewayId}/docs/import/by-swagger/`, data);
 
 /**
  * 获取资源文档数据
@@ -82,7 +92,7 @@ export const getResourceDocs = (gatewayId: number, resourceId: number, query: IG
  * @param data 文档内容
  */
 export const createResourceDoc = (gatewayId: number, resourceId: number, data: IDocInputSLZ) =>
-  http.post(`${path}/${gatewayId}/resources/${resourceId}/docs/`, data);
+  http.post<ICreatedIdOutput>(`${path}/${gatewayId}/resources/${resourceId}/docs/`, data);
 
 /**
  * 更新资源文档
@@ -92,7 +102,7 @@ export const createResourceDoc = (gatewayId: number, resourceId: number, data: I
  * @param docId 文档id
  */
 export const updateResourceDoc = (gatewayId: number, resourceId: number, data: IDocInputSLZ, docId: number) =>
-  http.put(`${path}/${gatewayId}/resources/${resourceId}/docs/${docId}/`, data);
+  http.put<void>(`${path}/${gatewayId}/resources/${resourceId}/docs/${docId}/`, data);
 
 /**
  * 删除资源文档
@@ -101,4 +111,4 @@ export const updateResourceDoc = (gatewayId: number, resourceId: number, data: I
  * @param docId 文档id
  */
 export const deleteResourceDoc = (gatewayId: number, resourceId: number, docId: number) =>
-  http.delete(`${path}/${gatewayId}/resources/${resourceId}/docs/${docId}/`);
+  http.delete<void>(`${path}/${gatewayId}/resources/${resourceId}/docs/${docId}/`);

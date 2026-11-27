@@ -19,16 +19,15 @@
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
-  IReleaseHistoryEventRetrieveOutput,
-  IReleaseHistoryListOutput,
-  IReleaseResourceSchemaOutput,
-  IResourceListOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
   IGatewaysReleasesHistoriesListQuery,
   IGatewaysReleasesStagesResourcesListQuery,
-} from '@/services/types/query/gateways.ts';
-import type { IReleaseInputSLZ } from '@/services/types/body/post/gateways.ts';
+  IReleaseHistoryEventRetrieveOutput,
+  IReleaseHistoryListOutput,
+  IReleaseHistoryOutput,
+  IReleaseInputSLZ,
+  IReleaseResourceSchemaOutput,
+  IResourceListOutput,
+} from '@/services/types/gateway/release.ts';
 
 const path = '/gateways';
 
@@ -38,7 +37,7 @@ const path = '/gateways';
  * @param params 发布参数
  */
 export const createRelease = (gatewayId: number, params: IReleaseInputSLZ) =>
-  http.post(`${path}/${gatewayId}/releases/`, params, { catchError: true });
+  http.post<IReleaseHistoryOutput>(`${path}/${gatewayId}/releases/`, params, { catchError: true });
 
 /**
  * 获取某次发布的事件详情

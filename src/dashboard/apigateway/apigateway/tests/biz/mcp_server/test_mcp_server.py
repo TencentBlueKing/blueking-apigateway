@@ -27,6 +27,7 @@ from django.utils import translation
 
 from apigateway.apps.mcp_server.constants import (
     OFFICIAL_MCP_CATEGORY_NAME,
+    UNCATEGORIZED_MCP_CATEGORY_NAME,
     MCPServerAppPermissionApplyStatusEnum,
     MCPServerAppPermissionGrantTypeEnum,
     MCPServerExtendTypeEnum,
@@ -46,7 +47,6 @@ from apigateway.biz.mcp_server import MCPServerHandler
 from apigateway.common.error_codes import APIError
 from apigateway.core.constants import GatewayStatusEnum, ResourceKindEnum, StageStatusEnum
 from apigateway.core.models import Gateway, Release, Resource, ResourceVersion, Stage
-from apigateway.service.resource_version import get_standard_resource_names_set
 from apigateway.tests.utils.testing import create_gateway
 from apigateway.utils.time import NeverExpiresTime, now_datetime
 
@@ -54,10 +54,7 @@ from apigateway.utils.time import NeverExpiresTime, now_datetime
 class TestMCPServerHandler:
     @pytest.fixture(autouse=True)
     def setup_fixtures(self):
-        get_standard_resource_names_set.cache_clear()
         self.gateway = create_gateway()
-        yield
-        get_standard_resource_names_set.cache_clear()
 
     @staticmethod
     def _release_resources(gateway, stage, resources):
@@ -1707,6 +1704,90 @@ class TestMCPServerHandler:
 
         assert result.count() == 0
 
+    def test_apply_category_filter_uncategorized(self, fake_gateway, fake_stage):
+        """未分类匹配没有任何启用常规分类的 MCPServer"""
+        MCPServerCategory.objects.all().delete()
+
+        official_cat = G(MCPServerCategory, name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True)
+        uncategorized_cat = G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+        inactive_cat = G(MCPServerCategory, name="InactiveCat", is_active=False)
+
+        server_none = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        server_official_only = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_official_only.categories.add(official_cat)
+
+        server_inactive_only = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_inactive_only.categories.add(inactive_cat)
+
+        server_uncategorized = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_uncategorized.categories.add(uncategorized_cat)
+
+        # 显式关联未分类但同时属于常规分类，不算未分类
+        server_uncategorized_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_uncategorized_devops.categories.add(uncategorized_cat, devops_cat)
+
+        server_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_devops.categories.add(devops_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        uncategorized_ids = {
+            server_none.id,
+            server_official_only.id,
+            server_inactive_only.id,
+            server_uncategorized.id,
+        }
+
+        result = MCPServerHandler.apply_category_filter(queryset, [UNCATEGORIZED_MCP_CATEGORY_NAME])
+        assert set(result.values_list("id", flat=True)) == uncategorized_ids
+
+    def test_apply_category_filter_uncategorized_or_logic(self, fake_gateway, fake_stage):
+        """未分类与常规分类使用 OR 逻辑"""
+        MCPServerCategory.objects.all().delete()
+
+        G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+        monitor_cat = G(MCPServerCategory, name="Monitoring", is_active=True)
+
+        server_none = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        server_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_devops.categories.add(devops_cat)
+
+        server_monitor = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_monitor.categories.add(monitor_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        result = MCPServerHandler.apply_category_filter(queryset, [UNCATEGORIZED_MCP_CATEGORY_NAME, "DevOps"])
+
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_none.id in result_ids
+        assert server_devops.id in result_ids
+        assert server_monitor.id not in result_ids
+
+    def test_apply_category_filter_uncategorized_and_logic_with_special(self, fake_gateway, fake_stage):
+        """未分类与 Official 使用 AND 逻辑"""
+        MCPServerCategory.objects.all().delete()
+
+        official_cat = G(MCPServerCategory, name=OFFICIAL_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        server_none = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+
+        server_official_only = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_official_only.categories.add(official_cat)
+
+        server_official_devops = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        server_official_devops.categories.add(official_cat, devops_cat)
+
+        queryset = MCPServer.objects.filter(gateway=fake_gateway)
+        result = MCPServerHandler.apply_category_filter(
+            queryset, [OFFICIAL_MCP_CATEGORY_NAME, UNCATEGORIZED_MCP_CATEGORY_NAME]
+        )
+
+        assert set(result.values_list("id", flat=True)) == {server_official_only.id}
+
     # ========== build_list_queryset 测试 ==========
 
     def test_build_list_queryset_basic(self, fake_gateway, fake_stage):
@@ -1819,6 +1900,39 @@ class TestMCPServerHandler:
         result_ids = set(result.values_list("id", flat=True))
         assert server_with_cat.id in result_ids
         assert server_no_cat.id not in result_ids
+
+    def test_build_list_queryset_with_category_uncategorized(self, fake_gateway, fake_stage):
+        """单分类筛选 Uncategorized 时按未分类语义匹配，而非显式关联"""
+        MCPServerCategory.objects.all().delete()
+
+        fake_gateway.status = GatewayStatusEnum.ACTIVE.value
+        fake_gateway.save()
+        fake_stage.status = StageStatusEnum.ACTIVE.value
+        fake_stage.save()
+
+        uncategorized_cat = G(MCPServerCategory, name=UNCATEGORIZED_MCP_CATEGORY_NAME, is_active=True)
+        devops_cat = G(MCPServerCategory, name="DevOps", is_active=True)
+
+        server_no_cat = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+
+        # 显式关联未分类但同时属于常规分类，不算未分类
+        server_uncategorized_devops = G(
+            MCPServer,
+            gateway=fake_gateway,
+            stage=fake_stage,
+            status=MCPServerStatusEnum.ACTIVE.value,
+        )
+        server_uncategorized_devops.categories.add(uncategorized_cat, devops_cat)
+
+        result = MCPServerHandler.build_list_queryset(category=UNCATEGORIZED_MCP_CATEGORY_NAME)
+        result_ids = set(result.values_list("id", flat=True))
+        assert server_no_cat.id in result_ids
+        assert server_uncategorized_devops.id not in result_ids
 
     def test_build_list_queryset_with_categories(self, fake_gateway, fake_stage):
         """按多个分类过滤"""
@@ -2197,7 +2311,9 @@ class TestMCPServerHandler:
         mock_sync.assert_called_once_with(mcp_server_id)
 
     def test_save_mcp_servers_with_categories(self, fake_gateway, fake_stage):
-        """创建时同步分类"""
+        """官方网关创建时同步特殊分类"""
+        fake_gateway.is_official = True
+        fake_gateway.save()
         MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
 
         with (
@@ -2269,21 +2385,42 @@ class TestMCPServerHandler:
     def test_sync_mcp_server_categories_set(self, fake_gateway, fake_stage):
         """设置分类"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        MCPServerCategory.objects.get_or_create(name="Featured", defaults={"display_name": "精选"})
+        MCPServerCategory.objects.get_or_create(name="DevOps", defaults={"display_name": "运维"})
 
-        MCPServerHandler._sync_mcp_server_categories(mcp_server, ["Featured"])
+        MCPServerHandler._sync_mcp_server_categories(mcp_server, ["DevOps"])
 
-        assert list(mcp_server.categories.values_list("name", flat=True)) == ["Featured"]
+        assert list(mcp_server.categories.values_list("name", flat=True)) == ["DevOps"]
 
     def test_sync_mcp_server_categories_clear(self, fake_gateway, fake_stage):
         """传空列表清除分类"""
         mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
-        cat, _ = MCPServerCategory.objects.get_or_create(name="Official", defaults={"display_name": "官方"})
+        cat, _ = MCPServerCategory.objects.get_or_create(name="DevOps", defaults={"display_name": "运维"})
         mcp_server.categories.add(cat)
 
         MCPServerHandler._sync_mcp_server_categories(mcp_server, [])
 
         assert mcp_server.categories.count() == 0
+
+    @pytest.mark.parametrize(
+        "is_official, category_names, expected",
+        [
+            (False, ["Official", "DevOps"], {"DevOps"}),
+            (False, [], set()),
+            (True, ["Official", "DevOps"], {"Official", "DevOps"}),
+        ],
+    )
+    def test_sync_mcp_server_categories_special(self, fake_gateway, fake_stage, is_official, category_names, expected):
+        """非官方网关传入的特殊分类被忽略，已绑定的特殊分类按声明同步移除；官方网关按声明写入"""
+        fake_gateway.is_official = is_official
+        fake_gateway.save()
+        mcp_server = G(MCPServer, gateway=fake_gateway, stage=fake_stage)
+        for name in ["Official", "Featured", "DevOps"]:
+            MCPServerCategory.objects.get_or_create(name=name, defaults={"display_name": name})
+        mcp_server.categories.add(MCPServerCategory.objects.get(name="Featured"))
+
+        MCPServerHandler._sync_mcp_server_categories(mcp_server, category_names)
+
+        assert set(mcp_server.categories.values_list("name", flat=True)) == expected
 
     def test_sync_mcp_server_categories_none_noop(self, fake_gateway, fake_stage):
         """传 None 不操作"""

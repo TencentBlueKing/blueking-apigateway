@@ -17,7 +17,7 @@
  */
 
 import { cloneDeep, uniqueId } from 'lodash-es';
-import toJsonSchema from 'to-json-schema';
+import { inferJsonSchema } from '@/utils/inferJsonSchema';
 
 import {
   type BodyParameterType,
@@ -140,7 +140,7 @@ const isSchemaLike = (value: unknown): value is IJsonSchemaObject => {
 /** 将普通 JSON 示例转换为 Schema，转换失败时回退为基础类型。 */
 const sampleToSchema = (value: unknown): IJsonSchemaObject => {
   try {
-    return normalizeSchema(toJsonSchema(value));
+    return normalizeSchema(inferJsonSchema(value));
   }
   catch {
     const type = typeof value;

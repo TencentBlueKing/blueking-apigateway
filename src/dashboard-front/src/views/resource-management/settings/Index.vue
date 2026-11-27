@@ -25,7 +25,6 @@
       :gateway-id="gatewayId"
       :current-source="curResource"
       :is-detail="!isCollapsed"
-      :latest="versionConfigs.needNewVersion"
       :show-new-tips="!!tableData.length"
     />
     <div
@@ -252,15 +251,17 @@
               <AgTable
                 ref="tableRef"
                 v-model:table-data="tableData"
+                cache-identifier="ResourceSetting"
                 show-settings
+                :immediate="false"
                 :api-method="getTableData"
                 :columns="columns"
-                :unchecked-column="['oauth2_personal_client_enabled']"
-                :max-height="tableMaxHeight"
                 :hidden-column="hiddenColumns"
+                :unchecked-column="['user_auth_method', 'oauth2_personal_client_enabled']"
                 :show-selection="isShowSelection"
                 :show-first-full-row="selectedRows.length > 0"
-                :filter-value="getFilterValue"
+                :filter-value="tableFilterValue"
+                :sort="tableSort"
                 @filter-change="handleFilterChange"
                 @sort-change="handleSortChange"
                 @selection-change="handleSelectionChange"
@@ -382,6 +383,64 @@
       </div>
     </BkDialog>
 
+    <!-- 标记为弃用 dialog -->
+    <BkDialog
+      width="540"
+      :is-show="deprecationDialog.isShow"
+      :title="t('确认标记为弃用？')"
+      quick-close
+      theme="primary"
+      @closed="deprecationDialog.isShow = false"
+    >
+      <div>
+        <BkAlert
+          class="mb-16px"
+          theme="warning"
+        >
+          <template #title>
+            <div>{{ t('资源被标记为弃用后，将在 API 文档中标记为“deprecated”，不推荐用户调用') }}</div>
+          </template>
+        </BkAlert>
+        <BkForm
+          ref="deprecationFormRef"
+          :model="deprecationDialog.formData"
+          form-type="vertical"
+        >
+          <BkFormItem
+            class="form-item-name"
+            :label="t('弃用说明')"
+            property="deprecated_note"
+            required
+          >
+            <BkInput
+              v-model="deprecationDialog.formData.deprecated_note"
+              :placeholder="t('请输入废弃说明，比如：此 API 即将下线，请使用 xx API 替代。')"
+              type="textarea"
+              :maxlength="100"
+              :rows="3"
+              show-word-limit
+            />
+          </BkFormItem>
+          <span class="font-size-12px color-#979ba5 top--20px position-relative">
+            {{ t('说明将会展示在 API 文档中，帮助用户理解弃用影响以及如何迁移') }}
+          </span>
+        </BkForm>
+      </div>
+      <template #footer>
+        <BkButton
+          theme="primary"
+          class="mr-8px"
+          :loading="deprecationDialog.loading"
+          @click="handleDeprecationConfirm"
+        >
+          {{ t('确定') }}
+        </BkButton>
+        <BkButton @click="deprecationDialog.isShow = false">
+          {{ t('取消') }}
+        </BkButton>
+      </template>
+    </BkDialog>
+
     <!-- 资源配置导出 -->
     <ExportResourceDialog
       v-model:dialog-config="exportDialogConfig"
@@ -401,7 +460,7 @@
     />
 
     <!-- 生成版本 -->
-    <CreateResourceVersion
+    <CreateResourceVersionSlider
       ref="createResourceVersionRef"
       @done="handleVersionCreated"
     />
@@ -431,9 +490,7 @@ import {
   cloneDeep,
   differenceBy,
 } from 'lodash-es';
-import { useRouteQuery } from '@vueuse/router';
 import { Divider, Message } from 'bkui-vue';
-import type { PrimaryTableProps, TableRowData } from '@blueking/tdesign-ui';
 import type {
   IDialog,
   IDropList,
@@ -443,16 +500,16 @@ import type {
 import { HTTP_METHODS, RESOURCE_TYPE_LIST } from '@/constants';
 import { METHOD_THEMES } from '@/enums';
 import { isAfter24h } from '@/utils';
+import { getAuthKind, getAuthTypeLabel, getUserAuthMethodLabels, isAuthConfigEmpty } from '@/utils/auth-config';
 import {
   useFeatureFlag,
   useGateway,
   useResourceSetting,
   useResourceVersion,
 } from '@/stores';
-import { usePopInfoBox, useTableFilterChange } from '@/hooks';
+import { usePopInfoBox } from '@/hooks';
 import type { ICountAndResults } from '@/services/types/utils.ts';
-import type { IGatewaysResourcesListQuery } from '@/services/types/query/gateways.ts';
-import type { IResourceListPageOutput } from '@/services/types/responses/gateways.ts';
+import type { IGatewaysResourcesListQuery, IResourceListPageOutput } from '@/services/types/gateway/resource.ts';
 import { exportDocs } from '@/services/source/gateway/resource-doc';
 import { getLabelList } from '@/services/source/gateway/label';
 import {
@@ -461,6 +518,7 @@ import {
   deleteResources,
   exportResources,
   getResourceList,
+  updateResourceDeprecation,
 } from '@/services/source/gateway/resource';
 import { checkNeedNewVersion, getVersionList } from '@/services/source/gateway/resource-version';
 import ResourceDetail from '@/views/resource-management/settings/components/ResourceDetail.vue';
@@ -471,15 +529,28 @@ import ExportResourceDialog from '@/views/resource-management/components/ExportR
 import ResourceDocSlider from '@/views/resource-management/components/ResourceDocSlider.vue';
 import ResourcePathConflictTips from '@/views/resource-management/components/ResourcePathConflictTips.vue';
 import PageNotFound from '@/views/404.vue';
-import AgDropdown from '@/components/ag-dropdown/Index.vue';
-import PluginManage from '@/components/plugin-manage/Index.vue';
-import AgTable from '@/components/ag-table/Index.vue';
-import CreateResourceVersion from '@/components/create-resource-version/Index.vue';
-import VersionDiff from '@/components/version-diff/Index.vue';
-import RenderTagOverflow from '@/components/render-tag-overflow/Index.vue';
-import { useElementSize, useWindowSize } from '@vueuse/core';
+import AgDropdown from '@/components/base/ag-dropdown/Index.vue';
+import PluginManage from '@/components/plugin/plugin-manage/Index.vue';
+import AgTable, {
+  type IAgTableInstance,
+  type ITableColumn,
+  type ITableSelection,
+  type TableRow,
+} from '@/components/base/ag-table';
+import CreateResourceVersionSlider from '@/components/release/create-resource-version-slider/Index.vue';
+import VersionDiff from '@/components/release/version-diff/Index.vue';
+import AgOverflowTags from '@/components/base/ag-overflow-tags/Index.vue';
+import { useResourceFilters } from './use-resource-filters';
 
 interface ApigwIDropList extends IDropList { tooltips?: string }
+
+interface IResourceRow extends IResourceListPageOutput {
+  isAfter24h?: boolean
+  tagOrder?: number
+  labelText?: string[]
+  isEditLabel?: boolean
+  highlight?: boolean
+}
 
 interface IProps { gatewayId?: number }
 
@@ -492,21 +563,34 @@ const gatewayStore = useGateway();
 const resourceVersionStore = useResourceVersion();
 const resourceSettingStore = useResourceSetting();
 const featureFlagStore = useFeatureFlag();
-const { handleTableFilterChange } = useTableFilterChange();
 
-// 资源列表 url query
-const queryKeyword = useRouteQuery('keyword');
-const queryName = useRouteQuery('name');
-const queryPath = useRouteQuery('path');
-const queryMethod = useRouteQuery('method');
-const queryBackendName = useRouteQuery('backend_name');
-const queryBackendId = useRouteQuery('backend_id');
-
-const tableData = ref<any[]>([]);
-const tableRef = useTemplateRef('tableRef');
-const tableQueries = ref<Record<string, any>>({});
+const tableData = ref<IResourceRow[]>([]);
+const tableRef = useTemplateRef<IAgTableInstance<IResourceRow>>('tableRef');
+const {
+  authTypeFilterList,
+  searchData,
+  searchValue,
+  tableFilterValue,
+  tableSort,
+  apiQuery,
+  handleFilterChange,
+  handleSortChange,
+  handleClearQueries,
+  markInitialFetchDispatched,
+  startInitialFetch,
+} = useResourceFilters({
+  gatewayId: () => gatewayId,
+  isResourceAuthV2: () => gatewayStore.isResourceAuthV2,
+  isGatewayReady: () => gatewayStore.currentGateway?.id === gatewayId,
+  route,
+  router,
+  t,
+  onQueryChange: (query) => {
+    tableRef.value?.fetchData(query, { resetPage: true });
+  },
+});
 const selectedRowKeys = ref<number[]>([]);
-const selectedRows = ref<any[]>([]);
+const selectedRows = ref<IResourceRow[]>([]);
 const deleteLoading = ref(false);
 // 导入下拉
 const importDropData = ref<ApigwIDropList[]>([
@@ -535,7 +619,7 @@ const exportDropData = ref<ApigwIDropList[]>([
   // { value: 'selected', label: t('已选资源'), disabled: false, tooltips: t('请先勾选资源') },
 ]);
 
-const createResourceVersionRef = ref();
+const createResourceVersionRef = useTemplateRef('createResourceVersionRef');
 const selectCheckBoxParentRef = ref();
 // 导出参数
 const exportParams: IExportParams = reactive({
@@ -558,37 +642,6 @@ const curResource = ref<any>({});
 const active = ref('resourceInfo');
 
 const isComponentLoading = ref(false);
-
-const searchValue = ref<any[]>([]);
-const searchData = ref([
-  {
-    name: t('资源名称'),
-    id: 'name',
-    placeholder: t('请输入资源名称'),
-  },
-  {
-    name: t('前端请求路径'),
-    id: 'path',
-    placeholder: t('请输入前端请求路径'),
-  },
-  {
-    name: t('前端请求方法'),
-    id: 'method',
-    placeholder: t('请选择前端请求方法'),
-    children: HTTP_METHODS,
-    multiple: true,
-  },
-  {
-    name: t('后端服务'),
-    id: 'backend_name',
-    placeholder: t('请输入后端服务'),
-  },
-  {
-    name: t('后端服务ID'),
-    id: 'backend_id',
-    placeholder: t('请输入后端服务ID'),
-  },
-]);
 
 // 标签数据
 const labelsData = ref<any[]>([]);
@@ -688,9 +741,14 @@ const isProgrammableGateway = computed(() => gatewayStore.isProgrammableGateway)
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
 const hiddenColumns = computed(() => {
   const hideCols = [];
-  const hidePersonalClient = !featureFlagStore?.flags?.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT;
   if (!gatewayStore.isAIGateway) hideCols.push('kind');
-  if (hidePersonalClient) hideCols.push('oauth2_personal_client_enabled');
+  if (gatewayStore.isResourceAuthV2) {
+    hideCols.push('oauth2_personal_client_enabled');
+  }
+  else {
+    hideCols.push('auth_config', 'user_auth_method');
+    if (!featureFlagStore.flags.ENABLE_MCP_SERVER_OAUTH2_PERSONAL_CLIENT) hideCols.push('oauth2_personal_client_enabled');
+  }
 
   return hideCols;
 });
@@ -718,365 +776,387 @@ const labelsList = computed(() => {
     value: item.id,
   }));
 });
-const columns = computed<PrimaryTableProps['columns']>(() => {
-  const cols: PrimaryTableProps['columns'] = [
-    {
-      colKey: 'name',
-      title: t('资源名称'),
-      minWidth: 170,
-      fixed: 'left',
-      cell: (h, { row }) => (
-        <div
-          class={[
-            'name color-#3a84ff cursor-pointer flex items-center gap-x-6px w-full',
-            { 'name-updated': row.has_updated },
-          ]}
-          onClick={() => handleShowInfo(row.id)}
-        >
-          {row.has_updated
-            ? (
-              <div
-                v-bk-tooltips={{
-                  content: t('资源已更新'),
-                  delay: 300,
-                }}
-                class="w-8px h-8px border border-solid border-#ff9c01 rounded-full bg-#fff3e1 flex-shrink-0"
-              />
-            )
-            : null}
-          <div
-            v-bk-tooltips={{
-              placement: 'top',
-              content: row.name ?? '',
-              disabled: !row.isOverflow,
-              extCls: 'max-w-480px',
-            }}
-            class="lh-20px truncate"
-            onMouseenter={(e: MouseEvent) =>
-              tableRef.value?.handleCellEnter({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: TableRowData
-              })}
-            onMouseleave={(e: MouseEvent) =>
-              tableRef.value?.handleCellLeave({
-                e,
-                row,
-              } as {
-                e: MouseEvent
-                row: TableRowData
-              })}
-          >
-            { row.name || '--' }
-          </div>
-          {(
-            row.auth_config?.auth_verified_required === false
-            && row.auth_config?.app_verified_required === false
-            && row.auth_config?.oauth2_personal_client_enabled === false
+const columns = computed<ITableColumn<IResourceRow>[]>(() => [
+  {
+    colKey: 'name',
+    title: t('资源名称'),
+    minWidth: 150,
+    fixed: 'left',
+    cell: (_h, { row }) => (
+      <div
+        class={[
+          'name color-#3a84ff cursor-pointer flex items-center gap-x-6px w-full',
+          { 'name-updated': row.has_updated },
+        ]}
+        onClick={() => handleShowInfo(row.id)}
+      >
+        {row.has_updated
+          ? (
+            <div
+              v-bk-tooltips={{
+                content: t('资源已更新'),
+                delay: 300,
+              }}
+              class="w-8px h-8px border border-solid border-#ff9c01 rounded-full bg-#fff3e1 flex-shrink-0"
+            />
           )
-            ? (
-              <ag-icon
-                v-bk-tooltips={{
-                  content: t('该资源未配置认证方式，存在安全风险。')
-                    + t('请点击"编辑"按钮为资源配置适当的认证方式。')
-                    + t('如当前配置符合预期，可忽略该提示。'),
-                }}
-                name="exclamation-circle-fill"
-                class="min-w-14px flex-shrink-0 color-#f59500"
-              />
-            )
-            : null}
+          : null}
+        <div
+          v-bk-tooltips={{
+            placement: 'top',
+            content: row.name ?? '',
+            disabled: !row.isOverflow,
+            extCls: 'max-w-480px',
+          }}
+          class="lh-20px truncate"
+          onMouseenter={(e: MouseEvent) =>
+            tableRef.value?.handleCellEnter({
+              e,
+              row,
+            })}
+          onMouseleave={() =>
+            tableRef.value?.handleCellLeave({ row })}
+        >
+          { row.name || '--' }
         </div>
-      ),
+        {!gatewayStore.isResourceAuthV2 && isAuthConfigEmpty(row.auth_config)
+          ? (
+            <ag-icon
+              v-bk-tooltips={{
+                content: t('该资源未配置认证方式，存在安全风险。')
+                  + t('请点击"编辑"按钮为资源配置适当的认证方式。')
+                  + t('如当前配置符合预期，可忽略该提示。'),
+              }}
+              name="exclamation-circle-fill"
+              class="min-w-14px flex-shrink-0 color-#f59500"
+            />
+          )
+          : null}
+        {row.is_deprecated
+          ? (
+            <bk-tag
+              theme="danger"
+              v-bk-tooltips={{
+                content: row.deprecated_note || t('该资源已弃用'),
+                disabled: !row.deprecated_note,
+                extCls: 'max-w-480px',
+              }}
+            >
+              deprecated
+            </bk-tag>
+          )
+          : null}
+      </div>
+    ),
+  },
+  {
+    colKey: 'kind',
+    title: t('资源类型'),
+    ellipsis: true,
+    minWidth: 150,
+    filter: {
+      type: 'single',
+      showConfirmAndReset: true,
+      popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
+      list: RESOURCE_TYPE_LIST,
     },
-    {
-      colKey: 'kind',
-      title: t('资源类型'),
-      ellipsis: true,
-      minWidth: 150,
-      filter: {
-        type: 'single',
-        showConfirmAndReset: true,
-        popupProps: { overlayInnerClassName: 'custom-radio-filter-wrapper' },
-        list: RESOURCE_TYPE_LIST,
-      },
-      cell: (h, { row }) => {
-        const resourceTypeData = RESOURCE_TYPE_LIST.find(item => item.value === row.kind);
-        return (
-          <bk-tag theme={resourceTypeData?.theme ?? 'default'}>
-            {resourceTypeData?.label ?? t('普通 API')}
-          </bk-tag>
-        );
-      },
-    },
-    {
-      colKey: 'backend.name',
-      title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
-      minWidth: 130,
-      ellipsis: true,
-    },
-    {
-      colKey: 'method',
-      title: t('前端请求方法'),
-      width: 130,
-      ellipsis: true,
-      cell: (h, { row }) => (
-        <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
-          {row.method}
+    cell: (_h, { row }) => {
+      const resourceTypeData = RESOURCE_TYPE_LIST.find(item => item.value === row.kind);
+      return (
+        <bk-tag theme={resourceTypeData?.theme ?? 'default'}>
+          {resourceTypeData?.label ?? t('普通 API')}
         </bk-tag>
-      ),
-      filter: {
-        type: 'multiple',
-        showConfirmAndReset: true,
-        resetValue: [],
-        list: customMethodsList.value,
-      },
+      );
     },
-    {
-      colKey: 'path',
-      title: t('前端请求路径'),
-      minWidth: 250,
-      ellipsis: true,
+  },
+  {
+    colKey: 'backend.name',
+    title: isAIGateway.value ? t('后端/模型服务') : t('后端服务'),
+    width: 120,
+    ellipsis: true,
+  },
+  {
+    colKey: 'method',
+    title: t('前端请求方法'),
+    width: 130,
+    ellipsis: true,
+    cell: (_h, { row }) => (
+      <bk-tag theme={METHOD_THEMES[row.method as keyof typeof METHOD_THEMES]}>
+        {row.method}
+      </bk-tag>
+    ),
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: customMethodsList.value,
     },
-    {
-      title: t('个人令牌'),
-      colKey: 'oauth2_personal_client_enabled',
-      ellipsis: true,
-      width: 100,
-      cell: (_, { row }) => {
+  },
+  {
+    colKey: 'path',
+    title: t('前端请求路径'),
+    minWidth: 170,
+    ellipsis: true,
+  },
+  {
+    colKey: 'auth_config',
+    title: t('认证方式'),
+    width: 120,
+    ellipsis: true,
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: authTypeFilterList.value,
+    },
+    cell: (_h, { row }) => {
+      const label = getAuthTypeLabel(row.auth_config, t, gatewayStore.isResourceAuthV2);
+      if (label === '--') return label;
+      if (isAuthConfigEmpty(row.auth_config)) {
         return (
           <bk-tag
-            class={
-              [
-                'border-transparent',
-                { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': row?.auth_config?.oauth2_personal_client_enabled },
-              ]
-            }
+            v-bk-tooltips={{
+              content: t('网关不校验调用方身份，请确认接口可以完全公开。'),
+            }}
+            theme="warning"
           >
-            {t(row?.auth_config?.oauth2_personal_client_enabled ? '已开启' : '未开启')}
+            {label}
           </bk-tag>
         );
-      },
+      }
+      const theme = getAuthKind(row.auth_config) === 'user' ? 'success' : 'info';
+      return (
+        <bk-tag theme={theme}>
+          {label}
+        </bk-tag>
+      );
     },
-    {
-      colKey: 'plugin_count',
-      title: t('插件数'),
-      cell: (h, { row }) => (
+  },
+  {
+    colKey: 'user_auth_method',
+    title: t('用户认证方式'),
+    minWidth: 240,
+    ellipsis: false,
+    className: 'auth-config-col',
+    cell: (_h, { row }) => {
+      const methods = getUserAuthMethodLabels(row.auth_config, t);
+      if (!methods.length) {
+        return '--';
+      }
+      return (
+        <div class="auth-config-tags">
+          {methods.map(method => (
+            <bk-tag
+              key={method}
+              size="small"
+            >
+              {method}
+            </bk-tag>
+          ))}
+        </div>
+      );
+    },
+  },
+  {
+    title: t('个人令牌'),
+    colKey: 'oauth2_personal_client_enabled',
+    ellipsis: true,
+    width: 100,
+    cell: (_h, { row }) => {
+      const enabled = Boolean(
+        row?.auth_config?.auth_verified_required && row?.auth_config?.oauth2_personal_client_enabled,
+      );
+      return (
+        <bk-tag
+          class={
+            [
+              'border-transparent',
+              { 'bg-#e1ecff color-#1768ef hover:bg-#e1ecff': enabled },
+            ]
+          }
+        >
+          {t(enabled ? '已开启' : '未开启')}
+        </bk-tag>
+      );
+    },
+  },
+  {
+    colKey: 'plugin_count',
+    title: t('插件数'),
+    width: 70,
+    cell: (_h, { row }) => (
+      <bk-button
+        text
+        theme="primary"
+        onClick={() => handleShowInfo(row.id, 'pluginManage')}
+      >
+        <span class="mr-4px">{row.plugin_count}</span>
+        <ag-icon name="cog" />
+      </bk-button>
+    ),
+  },
+  {
+    colKey: 'docs',
+    title: t('文档'),
+    width: 70,
+    ellipsis: true,
+    cell: (_h, { row }) => (
+      <div>
+        {row.docs?.length
+          ? (
+            <bk-button text theme="primary" onClick={() => handleShowDoc(row)}>
+              <ag-icon name="document" />
+              { t('详情') }
+            </bk-button>
+          )
+          : (
+            <section class="group">
+              <ag-icon
+                v-bk-tooltips={t('添加文档')}
+                name="plus"
+                size="14"
+                class="hidden group-hover:inline p-4px color-#979ba5 cursor-pointer bg-#eaebf0 hover:color-#3a84ff hover:bg-#e1ecff"
+                onClick={() => handleShowDoc(row)}
+              />
+              <span class="inline group-hover:hidden">--</span>
+            </section>
+          )}
+      </div>
+    ),
+  },
+  {
+    colKey: 'label_ids',
+    title: t('标签'),
+    width: 150,
+    filter: {
+      type: 'multiple',
+      showConfirmAndReset: true,
+      resetValue: [],
+      list: labelsList.value,
+    },
+    cell: (_h, { row }) => (
+      <div>
+        {!row.isEditLabel
+          ? (
+            <div
+              class="flex items-center gap-4px group"
+              onClick={() => handleEditLabel(row)}
+            >
+              {
+                row.labels?.length
+                  ? (
+                    <div class="min-w-0 flex-1">
+                      <AgOverflowTags
+                        data={row.labels.map(label => label.name)}
+                      />
+                    </div>
+                  )
+                  : <span>--</span>
+              }
+              <ag-icon
+                name="edit-small"
+                class="hidden group-hover:inline hover:cursor-pointer hover:color-#3a84ff"
+                size="22"
+                onClick={() => handleEditLabel(row)}
+              />
+            </div>
+          )
+          : (
+            <section ref="selectCheckBoxParentRef">
+              <SelectCheckBox
+                cur-select-label-ids={curLabelIds.value}
+                labels-data={labelsData.value}
+                resource-id={resourceId.value}
+                width={(selectCheckBoxParentRef as any)?.offsetWidth}
+                force-focus
+                onClose={newLabelData => handleCloseSelect(row, newLabelData)}
+                onUpdated={() => handleUpdateLabelSuccess()}
+                onAdded={() => getLabelsData()}
+              />
+            </section>
+          )}
+      </div>
+    ),
+  },
+  {
+    colKey: 'updated_time',
+    title: t('更新时间'),
+    width: 160,
+    ellipsis: true,
+    sorter: true,
+  },
+  {
+    colKey: 'act',
+    title: t('操作'),
+    width: 90,
+    fixed: 'right',
+    cell: (_h, { row }) => (
+      <div class="flex">
         <bk-button
           text
           theme="primary"
-          onClick={() => handleShowInfo(row.id, 'pluginManage')}
+          onClick={() => handleEditResource(row.id, row.kind, 'edit')}
         >
-          <span class="mr-4px">{row.plugin_count}</span>
-          <ag-icon name="cog" />
+          { t('编辑') }
         </bk-button>
-      ),
-    },
-    {
-      colKey: 'docs',
-      title: t('文档'),
-      width: 80,
-      ellipsis: true,
-      cell: (h, { row }) => (
-        <div>
-          {row.docs?.length
-            ? (
-              <bk-button text theme="primary" onClick={() => handleShowDoc(row)}>
-                <ag-icon name="document" />
-                { t('详情') }
-              </bk-button>
-            )
-            : (
-              <section class="group">
-                <ag-icon
-                  v-bk-tooltips={t('添加文档')}
-                  name="plus"
-                  size="14"
-                  class="hidden group-hover:inline p-4px color-#979ba5 cursor-pointer bg-#eaebf0 hover:color-#3a84ff hover:bg-#e1ecff"
-                  onClick={() => handleShowDoc(row)}
-                />
-                <span class="inline group-hover:hidden">--</span>
-              </section>
-            )}
-        </div>
-      ),
-    },
-    {
-      colKey: 'label_ids',
-      title: t('标签'),
-      width: 160,
-      filter: {
-        type: 'multiple',
-        showConfirmAndReset: true,
-        resetValue: [],
-        list: labelsList.value,
-      },
-      cell: (h, { row }) => (
-        <div>
-          {!row.isEditLabel
-            ? (
-              <div
-                class="flex items-center gap-4px group"
-                onClick={() => handleEditLabel(row)}
-              >
-                {
-                  row.labels?.length
-                    ? (
-                      <RenderTagOverflow
-                        data={row.labels.map((label: any) => label.name)}
-                      />
-                    )
-                    : <span>--</span>
-                }
-                <ag-icon
-                  name="edit-small"
-                  class="hidden group-hover:inline hover:cursor-pointer hover:color-#3a84ff"
-                  size="22"
-                  onClick={() => handleEditLabel(row)}
-                />
-              </div>
-            )
-            : (
-              <section ref="selectCheckBoxParentRef">
-                <SelectCheckBox
-                  cur-select-label-ids={curLabelIds.value}
-                  labels-data={labelsData.value}
-                  resource-id={resourceId.value}
-                  width={(selectCheckBoxParentRef as any)?.offsetWidth}
-                  force-focus
-                  onClose={newLabelData => handleCloseSelect(row, newLabelData)}
-                  onUpdated={() => handleUpdateLabelSuccess()}
-                  onAdded={() => getLabelsData()}
-                />
-              </section>
-            )}
-        </div>
-      ),
-    },
-    {
-      colKey: 'updated_time',
-      title: t('更新时间'),
-      width: 260,
-      ellipsis: true,
-      sorter: true,
-    },
-    {
-      colKey: 'act',
-      title: t('操作'),
-      fixed: 'right',
-      cell: (h, { row }) => (
-        <div class="flex">
-          <bk-button
-            text
-            theme="primary"
-            onClick={() => handleEditResource(row.id, row.kind, 'edit')}
+        <div
+          class="ml-12px"
+          onClick={(e: MouseEvent) => e.preventDefault()}
+        >
+          <bk-dropdown
+            trigger="click"
+            popoverOptions={{
+              clickContentAutoHide: true,
+              hideIgnoreReference: true,
+            }}
           >
-            { t('编辑') }
-          </bk-button>
-          <div
-            class="ml-12px"
-            onClick={(e: MouseEvent) => e.preventDefault()}
-          >
-            <bk-dropdown
-              trigger="click"
-              popoverOptions={{
-                clickContentAutoHide: true,
-                hideIgnoreReference: true,
-              }}
-            >
-              {{
-                default: () => (
-                  <ag-icon
-                    class="flex items-center justify-center w-20px h-20px cursor-pointer rounded-2px  hover:bg-#EAEBF0"
-                    name="more-fill"
-                    size="16"
-                  />
-                ),
-                content: () => (
-                  <bk-dropdown-menu>
-                    <div>
-                      <bk-dropdown-item onClick={() => handleEditResource(row.id, row.kind, 'clone')}>
-                        <bk-button
-                          size="small"
-                          text
-                        >
-                          { t('克隆') }
-                        </bk-button>
-                      </bk-dropdown-item>
-                      <bk-dropdown-item onClick={() => handleConfirmDelete(row)}>
-                        <bk-button
-                          size="small"
-                          text
-                        >
-                          { t('删除') }
-                        </bk-button>
-                      </bk-dropdown-item>
-                    </div>
-                  </bk-dropdown-menu>
-                ),
-              }}
-            </bk-dropdown>
-          </div>
+            {{
+              default: () => (
+                <ag-icon
+                  class="flex items-center justify-center w-20px h-20px cursor-pointer rounded-2px  hover:bg-#EAEBF0"
+                  name="more-fill"
+                  size="16"
+                />
+              ),
+              content: () => (
+                <bk-dropdown-menu>
+                  <div>
+                    <bk-dropdown-item onClick={() => handleEditResource(row.id, row.kind, 'clone')}>
+                      <bk-button
+                        size="small"
+                        text
+                      >
+                        { t('克隆') }
+                      </bk-button>
+                    </bk-dropdown-item>
+                    <bk-dropdown-item onClick={() => handleDeprecation(row)}>
+                      <bk-button
+                        size="small"
+                        text
+                      >
+                        { row.is_deprecated ? t('取消弃用标记') : t('标记为弃用') }
+                      </bk-button>
+                    </bk-dropdown-item>
+                    <bk-dropdown-item onClick={() => handleConfirmDelete(row)}>
+                      <bk-button
+                        size="small"
+                        text
+                      >
+                        { t('删除') }
+                      </bk-button>
+                    </bk-dropdown-item>
+                  </div>
+                </bk-dropdown-menu>
+              ),
+            }}
+          </bk-dropdown>
         </div>
-      ),
-    },
-  ];
+      </div>
+    ),
+  },
+]);
 
-  return cols;
-});
-
-const getFilterValue = computed(() => {
-  const resultObj: Record<string, string | string[]> = {};
-  Object.keys(tableQueries.value).forEach((key) => {
-    const val = tableQueries.value[key];
-    if (!val) return;
-
-    if (Array.isArray(val) || !val.includes(',')) {
-      resultObj[key] = val;
-    }
-    else {
-      resultObj[key] = String(val).split(',');
-    }
-  });
-
-  return resultObj;
-});
-
-// 资源提示框（版本提示 + 路由冲突汇总）整体高度，含其下方 16px 间距；不可见时为 0
-const { height: windowHeight } = useWindowSize();
 const alertTipsRef = useTemplateRef('alertTipsRef');
-const { height: alertTipsHeight } = useElementSize(() => alertTipsRef.value?.$el as HTMLElement | undefined);
-const alertTipsAreaHeight = computed(() => (alertTipsHeight.value > 0 ? alertTipsHeight.value + 16 : 0));
-
-// 表格最大高度
-const tableMaxHeight = computed(() => {
-  const viewportHeight = windowHeight.value;
-  // 通知栏高度
-  const globalNoticeCompHeight = featureFlagStore.isEnabledNotice ? 40 : 0;
-  // 导航栏高度
-  const navBarHeight = 52;
-  // 路由标题高度
-  const routeTitleHeight = 52;
-  // 页面上下padding
-  const pageVerticalPadding = 40;
-  // 操作栏高度
-  const operationBarHeight = 48;
-  // 分页器高度
-  const paginationHeight = 64;
-  // 获取表格的最大可视化区域
-  const usableHeight = viewportHeight
-    - globalNoticeCompHeight
-    - navBarHeight
-    - routeTitleHeight
-    - pageVerticalPadding
-    - alertTipsAreaHeight.value
-    - operationBarHeight
-    - paginationHeight;
-  // 冲突汇总展开后提示框会很高，视口偏矮时给表格留一个可用的最小高度
-  return Math.max(usableHeight, 240);
-});
 
 watch(
   isCollapsed,
@@ -1153,229 +1233,6 @@ watch(
   },
 );
 
-// Search Select选中的值
-watch(
-  searchValue,
-  () => {
-    // 网关切换期间，route.params.id 尚未更新，跳过以避免 useRouteQuery 的 router.replace 中断导航
-    if (Number(route.params.id) !== gatewayId) {
-      return;
-    }
-    tableQueries.value = {
-      order_by: tableQueries.value.order_by,
-      label_ids: tableQueries.value.label_ids,
-      kind: tableQueries.value.kind,
-    };
-
-    if (route.query?.backend_id) {
-      const { backend_id } = route.query;
-      tableQueries.value.backend_id = backend_id;
-    }
-    else {
-      delete tableQueries.value.backend_id;
-    }
-
-    if (!tableQueries.value.order_by) {
-      delete tableQueries.value.order_by;
-    }
-
-    if (searchValue.value.length) {
-      searchValue.value.forEach((e: any) => {
-        if (e.id === e.name) {
-          tableQueries.value.keyword = e.name;
-        }
-        else {
-          if (e.id === 'method') {
-            tableQueries.value[e.id] = e.values?.map((item: any) => item.id)?.join(',');
-          }
-          else {
-            tableQueries.value[e.id] = e.values[0].id;
-          }
-        }
-
-        if (e.id === e.name) {
-          queryKeyword.value = e.name;
-        }
-        else if (e.id === 'name') {
-          queryName.value = e.values[0].id;
-        }
-        else if (e.id === 'path') {
-          queryPath.value = e.values[0].id;
-        }
-        else if (e.id === 'method') {
-          queryMethod.value = e.values?.map((item: any) => item.id)?.join(',');
-        }
-        else if (e.id === 'backend_name') {
-          queryBackendName.value = e.values[0].id;
-        }
-        else if (e.id === 'backend_id') {
-          queryBackendId.value = e.values[0].id;
-        }
-      });
-    }
-    else {
-      tableQueries.value = {
-        label_ids: tableQueries.value.label_ids,
-        kind: tableQueries.value.kind,
-      };
-      queryKeyword.value = undefined;
-      queryName.value = undefined;
-      queryPath.value = undefined;
-      queryMethod.value = undefined;
-      queryBackendName.value = undefined;
-      queryBackendId.value = undefined;
-    }
-
-    exportDropData.value.forEach((e: IDropList) => {
-      // 已选资源
-      if (['filtered'].includes(e.value)) {
-        e.disabled = false;
-      }
-    });
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
-
-watch(tableQueries, () => {
-  nextTick(() => {
-    tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
-  });
-}, { deep: true });
-
-// 标记是否刚从网关切换过渡期进入正常状态，用于清除旧网关残留的 query 参数
-const wasInTransition = ref(false);
-
-watch(
-  () => route.query,
-  () => {
-    // 网关切换期间，route.params.id 尚未更新而 gatewayId prop 已更新（:key 触发组件重建），
-    // 此时 route.query 仍来自旧网关，跳过该 watcher 避免 useRouteQuery 的 router.replace 中断导航
-    if (Number(route.params.id) !== gatewayId) {
-      wasInTransition.value = true;
-      return;
-    }
-
-    // 刚从网关切换过渡期进入正常状态，此时 route.query 可能携带旧网关残留的查询参数
-    // 需要主动清除（searchValue 为空表示新组件尚未有用户筛选操作）
-    if (wasInTransition.value) {
-      wasInTransition.value = false;
-      if (!searchValue.value.length && Object.keys(route.query).some(k => route.query[k])) {
-        // 使用 router.replace 清除所有 query 参数，避免旧网关数据污染新网关
-        router.replace({ query: {} });
-        return;
-      }
-    }
-
-    if (route.query?.keyword) {
-      queryKeyword.value = route.query.keyword as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === queryKeyword.value);
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: queryKeyword.value,
-          name: queryKeyword.value,
-          type: 'text',
-        });
-      }
-    }
-    if (route.query?.name) {
-      queryName.value = route.query.name as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'name');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'name',
-          name: t('资源名称'),
-          values: [
-            {
-              id: queryName.value,
-              name: queryName.value,
-            },
-          ],
-        });
-      }
-    }
-    if (route.query?.path) {
-      queryPath.value = route.query.path as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'path');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'path',
-          name: t('前端请求路径'),
-          values: [
-            {
-              id: queryPath.value,
-              name: queryPath.value,
-            },
-          ],
-        });
-      }
-    }
-    if (route.query?.method) {
-      queryMethod.value = route.query.method as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'method');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'method',
-          name: t('前端请求方法'),
-          values: queryMethod.value.split(',').map((item: string) => ({
-            id: item,
-            name: item,
-          })),
-        });
-      }
-    }
-    if (route.query?.backend_name) {
-      queryBackendName.value = route.query.backend_name as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'backend_name');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'backend_name',
-          name: t('后端服务'),
-          values: [
-            {
-              id: queryBackendName.value,
-              name: queryBackendName.value,
-            },
-          ],
-        });
-      }
-    }
-    if (route.query?.backend_id) {
-      queryBackendId.value = route.query.backend_id as string;
-      const searchValueItem = searchValue.value.find((item: any) => item.id === 'backend_id');
-      if (!searchValueItem) {
-        searchValue.value.push({
-          id: 'backend_id',
-          name: t('后端服务ID'),
-          values: [
-            {
-              id: queryBackendId.value,
-              name: queryBackendId.value,
-            },
-          ],
-        });
-      }
-    }
-    // 从资源详情页返回时，恢复翻页位置
-    if (!Object.keys(route.query).length && resourceSettingStore.previousPagination) {
-      nextTick(() => {
-        const { current, pageSize } = resourceSettingStore.previousPagination!;
-        tableRef.value?.setPagination({
-          current,
-          pageSize,
-        });
-        resourceSettingStore.setPagination(null);
-      });
-    }
-  },
-  {
-    immediate: true,
-    deep: true,
-  },
-);
-
 const init = () => {
   handleShowVersion();
   getLabelsData();
@@ -1428,7 +1285,7 @@ const handleEditResource = (id: number, kind: string, type: string) => {
 };
 
 // 删除资源
-const handleConfirmDelete = (row: TableRowData) => {
+const handleConfirmDelete = (row: IResourceRow) => {
   usePopInfoBox({
     isShow: true,
     title: t('确认删除资源{resourceName}？', { resourceName: row.name || '' }),
@@ -1455,6 +1312,73 @@ const handleConfirmDelete = (row: TableRowData) => {
   });
 };
 
+// 标记为弃用 / 取消弃用标记
+const deprecationFormRef = useTemplateRef<InstanceType<typeof import('bkui-vue')['Form']>>('deprecationFormRef');
+const deprecationDialog = reactive({
+  isShow: false,
+  loading: false,
+  resource: null as IResourceRow | null,
+  formData: { deprecated_note: '' },
+});
+
+const handleDeprecation = (row: IResourceRow) => {
+  if (row.is_deprecated) {
+    usePopInfoBox({
+      isShow: true,
+      title: t('确认取消弃用标记？'),
+      subTitle: t('去除后，API 文档中的“deprecated”标记将被移除'),
+      cancelText: t('取消'),
+      onConfirm: async () => {
+        await updateResourceDeprecation(gatewayId, row.id, {
+          is_deprecated: false,
+          deprecated_note: '',
+        });
+        row.is_deprecated = false;
+        row.deprecated_note = '';
+        Message({
+          message: t('更新成功'),
+          theme: 'success',
+          width: 'auto',
+        });
+        handleSuccess();
+      },
+    });
+  }
+  else {
+    deprecationDialog.resource = row;
+    deprecationDialog.formData.deprecated_note = '';
+    deprecationDialog.isShow = true;
+    setTimeout(() => {
+      deprecationFormRef.value?.clearValidate();
+    }, 0);
+  }
+};
+
+const handleDeprecationConfirm = async () => {
+  const row = deprecationDialog.resource;
+  if (!row) return;
+  try {
+    await deprecationFormRef.value?.validate();
+    deprecationDialog.loading = true;
+    await updateResourceDeprecation(gatewayId, row.id, {
+      is_deprecated: true,
+      deprecated_note: deprecationDialog.formData.deprecated_note,
+    });
+    row.is_deprecated = true;
+    row.deprecated_note = deprecationDialog.formData.deprecated_note;
+    Message({
+      message: t('更新成功'),
+      theme: 'success',
+      width: 'auto',
+    });
+    handleSuccess();
+    deprecationDialog.isShow = false;
+  }
+  finally {
+    deprecationDialog.loading = false;
+  }
+};
+
 // 展示右边内容
 const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
   resourceId.value = id;
@@ -1478,7 +1402,7 @@ const handleShowInfo = (id: number, curActive = 'resourceInfo') => {
 };
 
 const handleUpdatePlugin = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   handleShowVersion();
   isComponentLoading.value = false;
 };
@@ -1568,7 +1492,7 @@ const handleExport = async ({ value }: { value: string }) => {
       exportParams.resource_filter_condition = undefined;
       break;
     case 'filtered':
-      exportParams.resource_filter_condition = tableQueries.value;
+      exportParams.resource_filter_condition = apiQuery.value;
       exportParams.resource_ids = undefined;
       break;
     case 'all':
@@ -1649,7 +1573,7 @@ const handleBatchConfirm = async () => {
     width: 'auto',
   });
   handleClearSelection();
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
 };
 
 const handleBatchCancel = () => {
@@ -1684,7 +1608,7 @@ const handleUpdateTitle = (type: string, isUpdate?: boolean) => {
 
 // 处理保存成功 删除成功 重新请求列表
 const handleSuccess = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   handleShowVersion();
   refreshPathConflicts();
 };
@@ -1694,7 +1618,7 @@ const handleShowVersion = async () => {
   try {
     const res = await checkNeedNewVersion(gatewayId);
     versionConfigs.needNewVersion = res.need_new_version;
-    versionConfigs.versionMessage = res.msg ?? '';
+    versionConfigs.versionMessage = res.need_new_version ? res.msg : '';
   }
   catch (error: any) {
     versionConfigs.needNewVersion = false;
@@ -1730,7 +1654,7 @@ const handleCreateResourceVersion = async () => {
   else {
     diffSourceId.value = response.results[0]?.id || '';
   }
-  createResourceVersionRef.value.showReleaseSideslider();
+  createResourceVersionRef.value?.showReleaseSideslider();
 };
 
 // 获取标签数据
@@ -1748,7 +1672,7 @@ const handleCloseSelect = (row: any, newLabelData: any = []) => {
   if (newLabelData.length > 0) {
     const diff = differenceBy(row.labels, newLabelData, 'name');
     if (diff.length > 0) {
-      tableRef.value!.fetchData(tableQueries.value);
+      tableRef.value!.fetchData(apiQuery.value);
       init();
     }
   }
@@ -1756,17 +1680,17 @@ const handleCloseSelect = (row: any, newLabelData: any = []) => {
 
 // 更新成功
 const handleUpdateLabelSuccess = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   init();
 };
 
 const handleUpdated = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
 };
 
 // 删除成功
 const handleDeleteSuccess = () => {
-  tableRef.value!.fetchData(tableQueries.value);
+  tableRef.value!.fetchData(apiQuery.value);
   refreshPathConflicts();
   isCollapsed.value = true;
 };
@@ -1782,14 +1706,14 @@ const recoverPageStatus = () => {
 };
 
 const handleVersionCreated = () => {
-  tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
+  tableRef.value!.fetchData(apiQuery.value, { resetPage: true });
   handleShowVersion();
   refreshPathConflicts();
 };
 
 onBeforeRouteLeave((to) => {
   if (to.name === 'ResourceEdit') {
-    const { current, pageSize } = tableRef.value!.getPagination() as any;
+    const { current, pageSize } = tableRef.value!.getPagination();
     resourceSettingStore.setPagination({
       current,
       pageSize,
@@ -1802,17 +1726,7 @@ onBeforeRouteLeave((to) => {
 
 const getTableData = async (
   params: IGatewaysResourcesListQuery,
-): Promise<ICountAndResults<IResourceListPageOutput>> => {
-  const requestParams = { ...params };
-  const fieldsToJoin = ['label_ids'] as const;
-  fieldsToJoin.forEach((field) => {
-    if (requestParams[field] && Array.isArray(requestParams[field])) {
-      requestParams[field] = requestParams[field].join(',');
-    }
-  });
-  const res = await getResourceList(gatewayId, requestParams as IGatewaysResourcesListQuery);
-  return res;
-};
+): Promise<ICountAndResults<IResourceRow>> => getResourceList(gatewayId, params);
 
 const handleClearSelection = () => {
   selectedRows.value = [];
@@ -1820,35 +1734,9 @@ const handleClearSelection = () => {
   tableRef.value?.handleResetSelection();
 };
 
-const handleClearQueries = () => {
-  tableQueries.value = {};
-  searchValue.value = [];
-  tableRef.value!.fetchData(tableQueries.value, { resetPage: true });
-};
-
-const handleFilterChange: PrimaryTableProps['onFilterChange'] = (filterItem) => {
-  handleTableFilterChange({
-    filterItem,
-    filterData: tableQueries,
-    searchOptions: searchData,
-    searchParams: searchValue,
-  });
-};
-
-const handleSelectionChange = ({ selections, selectionsRowKeys }: any) => {
+const handleSelectionChange = ({ selections, selectionsRowKeys }: ITableSelection<TableRow<IResourceRow>>) => {
   selectedRows.value = selections;
-  selectedRowKeys.value = selectionsRowKeys;
-};
-
-const handleSortChange: PrimaryTableProps['onSortChange'] = (sort: any) => {
-  if (!sort) {
-    delete tableQueries.value.order_by;
-    return;
-  }
-  const { sortBy: colKey, descending } = sort;
-  if (colKey === 'updated_time') {
-    tableQueries.value.order_by = descending ? `-${colKey}` : colKey;
-  }
+  selectedRowKeys.value = selectionsRowKeys as number[];
 };
 
 const handleCollapseChange = (collapsed: boolean) => {
@@ -1867,6 +1755,20 @@ onMounted(() => {
   init();
   if (route.meta.pageStatus) {
     recoverPageStatus();
+  }
+
+  // 从资源编辑页返回且无筛选 query 时恢复原翻页位置，否则按当前筛选条件执行一次首屏查询
+  if (!Object.keys(route.query).length && resourceSettingStore.previousPagination) {
+    const { current, pageSize } = resourceSettingStore.previousPagination;
+    resourceSettingStore.setPagination(null);
+    markInitialFetchDispatched();
+    tableRef.value?.setPagination({
+      current,
+      pageSize,
+    });
+  }
+  else {
+    startInitialFetch();
   }
 });
 
@@ -1893,6 +1795,28 @@ onMounted(() => {
   .bk-resize-layout {
     height: 100%;
   }
+}
+
+:deep(.auth-config-col) {
+  overflow: visible !important;
+  white-space: normal !important;
+  vertical-align: middle;
+
+  .t-table__ellipsis,
+  .t-text-ellipsis {
+    display: block;
+    overflow: visible;
+    text-overflow: unset;
+    white-space: normal;
+  }
+}
+
+:deep(.auth-config-tags) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+  padding: 2px 0;
 }
 
 .nest-dropdown {
@@ -1968,8 +1892,16 @@ onMounted(() => {
     height: calc(100vh - 205px);
   }
 }
+
+.form-item-name {
+
+  :deep(.bk-form-error) {
+    position: relative;
+  }
+}
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的筛选弹层与确认气泡样式 -->
 <style lang="scss">
 .content-footer {
   justify-content: flex-end;

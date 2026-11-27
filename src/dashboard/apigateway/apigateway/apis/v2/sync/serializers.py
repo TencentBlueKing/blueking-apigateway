@@ -60,7 +60,7 @@ from apigateway.common.constants import (
     CallSourceTypeEnum,
     GatewayAPIDocMaintainerTypeEnum,
 )
-from apigateway.common.django.validators import NameValidator
+from apigateway.common.django.validators import FileSizeValidator, NameValidator
 from apigateway.common.fields import CurrentGatewayDefault
 from apigateway.common.i18n.field import SerializerTranslatedField
 from apigateway.common.mixins.serializers import ExtensibleFieldMixin
@@ -141,6 +141,10 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
     is_official = serializers.BooleanField(required=False)
     user_config = UserConfigSLZ(required=False)
     allow_delete_sensitive_params = serializers.BooleanField(default=True)
+    oauth2_app_enabled = serializers.BooleanField(
+        required=False,
+        help_text="是否开启 OAuth 应用通道；不传时新建网关为 true，已有网关保留当前值",
+    )
     kind = serializers.ChoiceField(
         choices=GatewaySyncKindEnum.get_choices(),
         default=GatewaySyncKindEnum.NORMAL.value,
@@ -172,6 +176,7 @@ class GatewaySyncInputSLZ(serializers.ModelSerializer):
             "is_official",
             "user_config",
             "allow_delete_sensitive_params",
+            "oauth2_app_enabled",
             "data_planes",
             "kind",
         ]
@@ -676,7 +681,9 @@ class SDKGenerateOutputSLZ(serializers.Serializer):
 
 
 class DocImportByArchiveInputSLZ(serializers.Serializer):
-    file = serializers.FileField(required=True, help_text="导入的归档文档文件")
+    file = serializers.FileField(
+        required=True, validators=[FileSizeValidator(max_size_mb=10)], help_text="导入的归档文档文件，最大 10MB"
+    )
 
     class Meta:
         ref_name = "apigateway.apis.v2.sync.serializers.DocImportByArchiveInputSLZ"
@@ -989,10 +996,12 @@ class MCPServerSLZ(ExtensibleFieldMixin, serializers.ModelSerializer):
         if not category_names:
             return category_names
 
-        existing_names = set(MCPServerCategory.objects.filter(name__in=category_names).values_list("name", flat=True))
+        existing_names = set(
+            MCPServerCategory.objects.filter(name__in=category_names, is_active=True).values_list("name", flat=True)
+        )
         invalid_names = set(category_names) - existing_names
         if invalid_names:
-            raise serializers.ValidationError(f"分类不存在: {', '.join(invalid_names)}")
+            raise serializers.ValidationError(f"分类不存在或已停用: {', '.join(invalid_names)}")
 
         return category_names
 

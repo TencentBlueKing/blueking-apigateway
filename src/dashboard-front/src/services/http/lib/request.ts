@@ -134,7 +134,9 @@ export default class Request {
   }
 
   setCache(data: CacheValue) {
-    this.isCachedable && this.cache.set(this.taskKey, data, this.config.payload?.cache as CacheExpire);
+    if (this.isCachedable) {
+      this.cache.set(this.taskKey, data, this.config.payload?.cache as CacheExpire);
+    }
   }
 
   deleteCache() {

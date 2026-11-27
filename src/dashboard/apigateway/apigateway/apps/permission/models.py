@@ -20,6 +20,7 @@ import json
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional
 
 from django.db import models
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
@@ -45,6 +46,32 @@ def generate_expire_time() -> datetime.datetime:
     return to_datetime_from_now(days=DEFAULT_PERMISSION_EXPIRE_DAYS)
 
 
+class PermissionExpirationField(models.DateTimeField):
+    def pre_save(self, model_instance, add):
+        value = super().pre_save(model_instance, add)
+        if value is None:
+            value = NeverExpiresTime.time
+            setattr(model_instance, self.attname, value)
+        return value
+
+    def get_db_prep_save(self, value, connection):
+        # Bulk writes and raw Django fixtures also pass through database preparation.
+        if value is None:
+            value = NeverExpiresTime.time
+        elif hasattr(value, "as_sql"):
+            value = Coalesce(
+                value,
+                models.Value(NeverExpiresTime.time, output_field=models.DateTimeField()),
+                output_field=self,
+            )
+        return super().get_db_prep_save(value, connection)
+
+    def deconstruct(self):
+        name, _, args, kwargs = super().deconstruct()
+        # The database column and historical migration state are unchanged.
+        return name, "django.db.models.DateTimeField", args, kwargs
+
+
 class AppGatewayPermission(TimestampedModelMixin):
     """
     蓝鲸应用访问网关权限
@@ -53,7 +80,7 @@ class AppGatewayPermission(TimestampedModelMixin):
 
     bk_app_code = models.CharField(max_length=32, db_index=True)
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
-    expires = models.DateTimeField(
+    expires = PermissionExpirationField(
         default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
     )
     grant_type = models.CharField(
@@ -100,7 +127,7 @@ class AppResourcePermission(TimestampedModelMixin):
     gateway = models.ForeignKey(Gateway, db_column="api_id", on_delete=models.CASCADE)
     # NOTE: resource 若为 ForeignKey，若资源删除，则权限被级联删除，但是发布版本中的资源配置存在，会导致应用无权限访问对应资源
     resource_id = models.IntegerField(blank=False, null=False, db_index=True)
-    expires = models.DateTimeField(
+    expires = PermissionExpirationField(
         default=generate_expire_time, blank=True, null=True, help_text=_("默认过期时间为180天")
     )
     grant_type = models.CharField(max_length=16, choices=GrantTypeEnum.get_choices(), db_index=True)

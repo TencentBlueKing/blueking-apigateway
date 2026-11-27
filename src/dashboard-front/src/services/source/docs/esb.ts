@@ -17,25 +17,23 @@
  */
 import http from '@/services/http';
 import type {
+  IDocsEsbBoardsSdksDocReadQuery,
   IDocsEsbBoardsSdksDocReadResponse,
+  IDocsEsbBoardsSdksLatestReadQuery,
   IDocsEsbBoardsSdksLatestReadResponse,
+  IDocsEsbBoardsSdksListQuery,
   IDocsEsbBoardsSdksListResponse,
+  IDocsEsbBoardsSdksUsageExampleReadQuery,
   IDocsEsbBoardsSdksUsageExampleReadResponse,
   IDocsEsbBoardsSystemsComponentsDocReadResponse,
+  IDocsEsbBoardsSystemsComponentsListQuery,
   IDocsEsbBoardsSystemsComponentsListResponse,
+  IDocsEsbBoardsSystemsComponentsSearchListQuery,
   IDocsEsbBoardsSystemsComponentsSearchListResponse,
+  IDocsEsbBoardsSystemsListQuery,
   IDocsEsbBoardsSystemsListResponse,
   IDocsEsbBoardsSystemsReadResponse,
-} from '@/services/types/responses/docs.ts';
-import type {
-  IDocsEsbBoardsSdksDocReadQuery,
-  IDocsEsbBoardsSdksLatestReadQuery,
-  IDocsEsbBoardsSdksListQuery,
-  IDocsEsbBoardsSdksUsageExampleReadQuery,
-  IDocsEsbBoardsSystemsComponentsListQuery,
-  IDocsEsbBoardsSystemsComponentsSearchListQuery,
-  IDocsEsbBoardsSystemsListQuery,
-} from '@/services/types/query/docs.ts';
+} from '@/services/types/docs/esb.ts';
 
 const path = '/docs/esb';
 

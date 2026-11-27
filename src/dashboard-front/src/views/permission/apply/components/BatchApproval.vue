@@ -30,7 +30,7 @@
         v-model:table-data="tableData"
         local-page
         show-cell-empty-content
-        :size="'small'"
+        size="small"
         :max-height="300"
         :columns="approvalColumns"
       />
@@ -90,11 +90,10 @@
 
 <script lang="tsx" setup>
 import { Form } from 'bkui-vue';
-import type { TableRowData } from '@blueking/tdesign-ui';
 import { t } from '@/locales';
 import type { IFormMethod } from '@/types/common';
 import { useFeatureFlag } from '@/stores';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable, { type ITableColumn } from '@/components/base/ag-table';
 
 type IDialogParams = {
   isShow: boolean
@@ -108,9 +107,16 @@ type IActionParams = {
   part_resource_ids?: Record<string, unknown>
 };
 
+interface IBatchApprovalRow {
+  id?: number
+  bk_app_code: string
+  applied_by?: string
+  created_time?: string | null
+}
+
 interface IProps {
   title?: string
-  selections?: any[]
+  selections?: IBatchApprovalRow[]
   dialogParams?: IDialogParams
   actionParams?: IActionParams
 }
@@ -141,8 +147,8 @@ const emits = defineEmits<IEmits>();
 
 const featureFlagStore = useFeatureFlag();
 
-const batchApprovalFormRef = ref<InstanceType<typeof Form> & IFormMethod>();
-const approvalColumns = shallowRef([
+const batchApprovalFormRef = useTemplateRef<InstanceType<typeof Form> & IFormMethod>('batchApprovalFormRef');
+const approvalColumns = shallowRef<ITableColumn<IBatchApprovalRow>[]>([
   {
     title: t('蓝鲸应用 ID'),
     colKey: 'bk_app_code',
@@ -152,7 +158,7 @@ const approvalColumns = shallowRef([
     title: t('申请人'),
     colKey: 'applied_by',
     ellipsis: true,
-    cell: (_: unknown, { row }: { row: TableRowData }) =>
+    cell: (_h, { row }) =>
       featureFlagStore.isEnableDisplayName && !!row.applied_by
         ? <span><bk-user-display-name user-id={row.applied_by} /></span>
         : <span>{row.applied_by || '--'}</span>,

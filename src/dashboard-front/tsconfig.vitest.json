@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "env.d.ts",
+    "shims-vue.d.ts",
+    "src/types/**/*.d.ts",
+    "src/**/__tests__/**/*",
+    "src/**/*.{test,spec}.{ts,tsx}"
+  ],
+  "exclude": ["src/assets/**"],
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo"
+  }
+}

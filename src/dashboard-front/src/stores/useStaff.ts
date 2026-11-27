@@ -16,7 +16,6 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import { defineStore } from 'pinia';
-import QueryString from 'qs';
 import { unionBy } from 'lodash-es';
 import { useEnv } from '@/stores/useEnv.ts';
 
@@ -51,7 +50,7 @@ export const useStaff = defineStore('useStaff', {
       const scriptTag = document.createElement('script'); // 创建 script 标签
       scriptTag.setAttribute('type', 'text/javascript'); // 设置 script 标签类型
       // 设置 script 标签的 src 属性
-      scriptTag.setAttribute('src', `${envStore.userSelectorAPI}?${QueryString.stringify(params)}`);
+      scriptTag.setAttribute('src', `${envStore.userSelectorAPI}?${new URLSearchParams(params)}`);
 
       const headTag = document.getElementsByTagName('head')[0]; // 获取 head 标签
       // @ts-expect-error ignore

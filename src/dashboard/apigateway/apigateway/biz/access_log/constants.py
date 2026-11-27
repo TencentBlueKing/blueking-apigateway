@@ -15,8 +15,6 @@
 # We undertake not to change the open source license (MIT license) applicable
 # to the current version of the project delivered to anyone in the future.
 #
-import re
-
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
@@ -195,43 +193,6 @@ TOOLBOX_LOG_FIELD_MAPPINGS = [
         "insert_at": 5,
     }
 ]
-
-
-# 完全匹配的敏感 key，如 key access_token 仅匹配字段 access_token
-SENSITIVE_KEYS = [
-    # apigateway sensitive keys
-    "skey",
-    "openkey",
-    "auth_token",
-    "access_token",
-    "bk_token",
-    "bk_ticket",
-    "oa_ticket",
-    "app_secret",
-    "signature",
-    "bk_nonce",
-    "bk_timestamp",
-    "bk_app_secret",
-    "bk_signature",
-]
-
-
-# 部分匹配的敏感 key，如 key password 匹配字段 my_password
-SENSITIVE_KEYS_PART_MATCH = [
-    # sentry Server-Side Scrubbing, https://docs.sentry.io/data-management/sensitive-data/#server-side-scrubbing
-    "password",
-    "secret",
-    "passwd",
-    "api_key",
-    "apikey",
-    "credentials",
-    "mysql_pwd",
-    "stripetoken",
-]
-
-
-SENSITIVE_KEYS_MATCH_PATTERN = re.compile(r"\b(%s)\b" % "|".join(SENSITIVE_KEYS))
-SENSITIVE_KEYS_PART_MATCH_PATTERN = re.compile(r"(%s)" % "|".join(SENSITIVE_KEYS_PART_MATCH))
 
 
 LOG_LINK_EXPIRE_SECONDS = 24 * 60 * 60

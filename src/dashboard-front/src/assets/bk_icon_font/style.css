@@ -515,50 +515,11 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 .icon-ag-geshihua:before {
 	content: "\e18e";
 }
-.icon-ag-plugin-fault-injection:before {
-	content: "\e190";
-}
 .icon-ag-plugin-proxy-mirror:before {
 	content: "\e191";
 }
-.icon-ag-plugin-bk-cors:before {
-	content: "\e196";
-}
-.icon-ag-plugin-bk-rate-limit:before {
-	content: "\e192";
-}
-.icon-ag-plugin-request-validation:before {
-	content: "\e193";
-}
-.icon-ag-plugin-api-breaker:before {
-	content: "\e195";
-}
-.icon-ag-plugin-response-rewrite:before {
-	content: "\e197";
-}
-.icon-ag-plugin-user-restriction:before {
-	content: "\e19a";
-}
-.icon-ag-plugin-redirect:before {
-	content: "\e199";
-}
-.icon-ag-plugin-csrf:before {
-	content: "\e198";
-}
-.icon-ag-plugin-bk-ip-restriction:before {
-	content: "\e19b";
-}
-.icon-ag-plugin-bk-mock:before {
-	content: "\e19c";
-}
 .icon-ag-plugin-serverless:before {
 	content: "\e19d";
-}
-.icon-ag-plugin-uri-blocker:before {
-	content: "\e19e";
-}
-.icon-ag-plugin-bk-header-rewrite:before {
-	content: "\e19f";
 }
 .icon-ag-fuwu-2:before {
 	content: "\e1ad";
@@ -610,24 +571,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-plugin-bk-opentelemetry:before {
 	content: "\e1da";
-}
-.icon-ag-plugin-bk-query-string-rewrite:before {
-	content: "\e1d7";
-}
-.icon-ag-plugin-bk-request-body-limit:before {
-	content: "\e1de";
-}
-.icon-ag-plugin-traffic-label:before {
-	content: "\e1d6";
-}
-.icon-ag-plugin-bk-user-restriction:before {
-	content: "\e1d9";
-}
-.icon-ag-plugin-bk-username-required:before {
-	content: "\e1db";
-}
-.icon-ag-plugin-proxy-cache:before {
-	content: "\e1dc";
 }
 .icon-ag-miaozhun:before {
 	content: "\e1df";
@@ -694,9 +637,6 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-oauth2:before {
 	content: "\e1f9";
-}
-.icon-ag-plugin-bk-traffic-label:before {
-	content: "\e1fd";
 }
 .icon-ag-jiantou:before {
 	content: "\e1fe";
@@ -853,4 +793,82 @@ url("fonts/iconcool.eot?#iefix") format("embedded-opentype");
 }
 .icon-ag-wangguanleixing-wangguan:before {
 	content: "\e25f";
+}
+.icon-ag-large-public-client-32:before {
+	content: "\e268";
+}
+.icon-ag-large-oauth-authorization-32:before {
+	content: "\e26b";
+}
+.icon-ag-large-user-token-32:before {
+	content: "\e26a";
+}
+.icon-ag-large-user-whitelist-32:before {
+	content: "\e26d";
+}
+.icon-ag-small-user-token-32:before {
+	content: "\e26c";
+}
+.icon-ag-small-user-whitelist-32:before {
+	content: "\e269";
+}
+.icon-ag-small-oauth-authorization-32:before {
+	content: "\e26e";
+}
+.icon-ag-small-public-client-32-2:before {
+	content: "\e274";
+}
+.icon-ag-plugin-fault-injection:before {
+	content: "\e27f";
+}
+.icon-ag-plugin-bk-cors:before {
+	content: "\e27a";
+}
+.icon-ag-plugin-bk-traffic-label:before {
+	content: "\e279";
+}
+.icon-ag-plugin-proxy-cache:before {
+	content: "\e280";
+}
+.icon-ag-bk-username-required:before {
+	content: "\e278";
+}
+.icon-ag-plugin-bk-request-body-limit:before {
+	content: "\e27c";
+}
+.icon-ag-plugin-request-validation:before {
+	content: "\e283";
+}
+.icon-ag-plugin-bk-rate-limit:before {
+	content: "\e27d";
+}
+.icon-ag-plugin-bk-resource-user-rate-limit:before {
+	content: "\e282";
+}
+.icon-ag-plugin-user-restriction:before {
+	content: "\e285";
+}
+.icon-ag-plugin-bk-ip-restriction:before {
+	content: "\e286";
+}
+.icon-ag-plugin-bk-mock:before {
+	content: "\e287";
+}
+.icon-ag-plugin-bk-query-string-rewrite:before {
+	content: "\e288";
+}
+.icon-ag-plugin-redirect:before {
+	content: "\e27e";
+}
+.icon-ag-plugin-api-breaker:before {
+	content: "\e277";
+}
+.icon-ag-plugin-bk-header-rewrite:before {
+	content: "\e281";
+}
+.icon-ag-plugin-uri-blocker:before {
+	content: "\e284";
+}
+.icon-ag-plugin-response-rewrite:before {
+	content: "\e27b";
 }

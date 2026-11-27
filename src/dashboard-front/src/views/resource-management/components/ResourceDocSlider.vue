@@ -125,7 +125,7 @@
                 v-if="isEdited"
                 class="ag-markdown-editor"
               >
-                <LazyMavonEditor
+                <AgMarkdownEditor
                   ref="markdownRef"
                   v-model="markdownDoc"
                   :class="{ 'content-editor': !isFullscreen }"
@@ -209,9 +209,9 @@ import {
 // import mitt from '@/common/event-bus';
 import { copy } from '@/utils';
 import { useRouteParams } from '@vueuse/router';
-import AiBluekingButton from '@/components/ai-seek/AiBluekingButton.vue';
-import LazyMavonEditor from '@/components/LazyMavonEditor';
-import hljs from 'highlight.js';
+import AiBluekingButton from '@/components/ai/ai-blueking-button/Index.vue';
+import AgMarkdownEditor from '@/components/base/ag-markdown-editor';
+import hljs from 'highlight.js/lib/common';
 import { useFeatureFlag } from '@/stores';
 
 type IDocItem = IExtractApiReturn<typeof getResourceDocs>[number];
@@ -274,7 +274,7 @@ const language = ref<'zh' | 'en'>('zh');
 const isSaving = ref(false);
 const isLoading = ref(true);
 const docId = ref<any>('');
-const markdownRef = ref(null);
+const markdownRef = useTemplateRef('markdownRef');
 const toolbars = ref<any>({
   bold: true,
   italic: true,
@@ -394,24 +394,27 @@ const initData = async () => {
   isLoading.value = false;
 };
 
-const isDocEmptyByLanguage = (lang: string) => !docData.value.find((item: any) => item.language === lang)?.id;
-
 const handleTranslateClick = async () => {
   if (isTranslating.value || !hasDocByLanguage(language.value)) {
     return;
   }
-  // 要翻译成什么语言
+
   const targetLanguage = language.value === 'zh' ? 'en' : 'zh';
-  const input = docData.value.find((item: any) => item.language === language.value)?.content;
-  if (input) {
-    // 判断目标语言的文档是否已存在，决定是调用创建文档接口还是更新文档接口
-    if (isDocEmptyByLanguage(targetLanguage)) {
-      Message({
-        theme: 'primary',
-        message: t('获取翻译中'),
-      });
-      isTranslating.value = true;
-      const response = await getAICompletion(gatewayId.value, {
+  const input = docData.value.find(item => item.language === language.value)?.content;
+  if (!input) {
+    return;
+  }
+
+  const targetDocId = docData.value.find(item => item.language === targetLanguage)?.id;
+  const requestGatewayId = gatewayId.value;
+  const resourceId = resource.id;
+  const translate = async () => {
+    if (isTranslating.value) {
+      return;
+    }
+    isTranslating.value = true;
+    try {
+      const { content } = await getAICompletion(requestGatewayId, {
         inputs: {
           input,
           type: 'doc_translate',
@@ -419,52 +422,55 @@ const handleTranslateClick = async () => {
           language: targetLanguage,
         },
       });
-      await createResourceDoc(gatewayId.value, resource.id, {
+      if (content === null) {
+        Message({
+          theme: 'warning',
+          message: t('AI 未返回内容，请重试'),
+        });
+        return;
+      }
+
+      const data = {
         language: targetLanguage,
-        content: response.content,
-      });
+        content,
+      };
+      if (targetDocId) {
+        await updateResourceDoc(requestGatewayId, resourceId, data, targetDocId);
+      }
+      else {
+        await createResourceDoc(requestGatewayId, resourceId, data);
+      }
+
+      const lang = targetLanguage === 'zh' ? t('中文') : t('英文');
       Message({
         theme: 'success',
-        message: t('{lang}文档创建成功', { lang: targetLanguage === 'zh' ? t('中文') : t('英文') }),
+        message: targetDocId ? t('{lang}文档更新成功', { lang }) : t('{lang}文档创建成功', { lang }),
       });
       initData();
       emit('fetch');
-      isTranslating.value = false;
       handleSelectLanguage(targetLanguage);
     }
-    else {
-      InfoBox({
-        title: t('文档已存在，确定更新吗？'),
-        infoType: 'warning',
-        confirmText: t('更新'),
-        cancelText: t('取消'),
-        onConfirm: async () => {
-          isTranslating.value = true;
-          const response = await getAICompletion(gatewayId.value, {
-            inputs: {
-              input,
-              type: 'doc_translate',
-              enable_streaming: false,
-              language: targetLanguage,
-            },
-          });
-          const docId = docData.value.find((item: any) => item.language === targetLanguage)!.id!;
-          await updateResourceDoc(gatewayId.value, resource.id!, {
-            language: targetLanguage,
-            content: response.content,
-          }, docId);
-          Message({
-            theme: 'success',
-            message: t('{lang}文档更新成功', { lang: language.value === 'zh' ? t('英文') : t('中文') }),
-          });
-          initData();
-          emit('fetch');
-          isTranslating.value = false;
-          handleSelectLanguage(targetLanguage);
-        },
-      });
+    finally {
+      isTranslating.value = false;
     }
+  };
+
+  if (targetDocId) {
+    InfoBox({
+      title: t('文档已存在，确定更新吗？'),
+      infoType: 'warning',
+      confirmText: t('更新'),
+      cancelText: t('取消'),
+      onConfirm: translate,
+    });
+    return;
   }
+
+  Message({
+    theme: 'primary',
+    message: t('获取翻译中'),
+  });
+  await translate();
 };
 
 // 保存markdown

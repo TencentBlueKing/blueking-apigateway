@@ -68,12 +68,12 @@
         <main class="docs-list">
           <AgTable
             ref="tableRef"
+            cache-identifier="ApiDocs"
             show-settings
             resizable
             default-row-size="large"
             :api-method="getTableData"
             :columns="columns"
-            :max-limit-config="tableMaxLimitConfig"
             @clear-filter="handleClearFilterKey"
           />
         </main>
@@ -232,18 +232,17 @@ import ComponentSearcher from './components/ComponentSearcher.vue';
 import type {
   IDocsEsbBoardsSdksListResponse,
   IDocsEsbBoardsSystemsListResponse,
-  IDocsGatewaysListResponse,
   ISystemCategorySLZ,
   ISystemSLZ,
-} from '@/services/types/responses/docs';
+} from '@/services/types/docs/esb.ts';
+import type { IDocsGatewaysListResponse } from '@/services/types/docs/gateway.ts';
 import type { ISdkItem } from './components/DocSdkSection.vue';
 import { type DocTab, docTabKey } from './utils/doc-context';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useTemplateRefsList } from '@vueuse/core';
 import { TENANT_MODE_TEXT_MAP } from '@/enums';
 import { useFeatureFlag } from '@/stores';
-import type { PrimaryTableProps } from '@blueking/tdesign-ui';
-import AgTable from '@/components/ag-table/Index.vue';
+import AgTable, { type IAgTableInstance, type ITableColumn } from '@/components/base/ag-table';
 import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 interface ICategory extends ISystemCategorySLZ { _navId: string }
@@ -252,9 +251,6 @@ interface IBoard extends IDocsEsbBoardsSystemsListResponse {
   categories: ICategory[]
   sdk?: IDocsEsbBoardsSdksListResponse & { language: string }
 }
-
-type GatewayRow = IDocsGatewaysListResponse & { isOverflow?: boolean };
-type TableCell = Exclude<NonNullable<PrimaryTableProps['columns']>[number]['cell'], string | undefined>;
 
 const { t } = useI18n();
 const route = useRoute();
@@ -266,13 +262,7 @@ const filterData = ref({
   show_plugin_gateway: false,
 });
 
-const tableRef = useTemplateRef<InstanceType<typeof AgTable>>('tableRef');
-
-// 传入该项后每页条数会随视口高度与行高自适应，避免行高较大时表格连同分页器超出可视区而被遮挡
-const tableMaxLimitConfig = computed(() => ({
-  allocatedHeight: featureFlagStore.isTenantMode ? 212 : 264,
-  mode: 'tdesign',
-}));
+const tableRef = useTemplateRef<IAgTableInstance<IDocsGatewaysListResponse>>('tableRef');
 
 // 组件分类模板引用列表
 const categoryRefs = useTemplateRefsList<HTMLElement>();
@@ -292,16 +282,12 @@ const curSdkBoard = ref('default');
 // 提供当前 tab 的值
 provide(docTabKey, curTab);
 
-// AgTable 暂不支持泛型，在单元格入口绑定 getTableData 返回的网关行类型。
-const gatewayCell = (render: (row: GatewayRow) => ReturnType<TableCell>): TableCell =>
-  (_h, { row }) => render(row as GatewayRow);
-
-const columns = computed<PrimaryTableProps['columns']>(() => [
+const columns = computed<ITableColumn<IDocsGatewaysListResponse>[]>(() => [
   {
     colKey: 'name',
     title: t('网关'),
     width: 280,
-    cell: gatewayCell((row) => {
+    cell: (_h, { row }) => {
       if (!row?.name) {
         return '--';
       }
@@ -382,7 +368,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
           }
         </div>
       );
-    }),
+    },
   },
   ...(featureFlagStore.isTenantMode
     ? [
@@ -391,22 +377,22 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         title: t('租户模式'),
         width: 120,
         ellipsis: true,
-        cell: gatewayCell(row => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode || ''] || '--' }</span>),
+        cell: (_h, { row }) => <span>{ TENANT_MODE_TEXT_MAP[row.tenant_mode || ''] || '--' }</span>,
       },
       {
         colKey: 'tenant_id',
         title: t('租户 ID'),
         width: 120,
         ellipsis: true,
-        cell: gatewayCell(row => <span>{ row.tenant_id || '--' }</span>),
+        cell: (_h, { row }) => <span>{ row.tenant_id || '--' }</span>,
       },
-    ]
+    ] satisfies ITableColumn<IDocsGatewaysListResponse>[]
     : []),
   {
     colKey: 'description',
     title: t('网关描述'),
     ellipsis: true,
-    cell: gatewayCell(row => <span>{ row.description || '--' }</span>),
+    cell: (_h, { row }) => <span>{ row.description || '--' }</span>,
   },
   ...(!featureFlagStore.isTenantMode
     ? [
@@ -414,7 +400,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         colKey: 'maintainers',
         title: t('网关负责人'),
         width: 180,
-        cell: gatewayCell(row => (
+        cell: (_h, { row }) => (
           row.maintainers?.length
             ? (
               <div
@@ -458,9 +444,9 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
               </div>
             )
             : '--'
-        )),
+        ),
       },
-    ]
+    ] satisfies ITableColumn<IDocsGatewaysListResponse>[]
     : []),
   {
     colKey: 'is_plugin_gateway',
@@ -476,18 +462,18 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
         </div>
       );
     },
-    cell: gatewayCell(row => (
+    cell: (_h, { row }) => (
       <span class={row.is_plugin_gateway ? undefined : 'color-#c4c6cc'}>
         {row.is_plugin_gateway ? t('是') : t('否')}
       </span>
-    )),
+    ),
   },
   {
     colKey: 'actions',
     title: t('操作'),
     width: 100,
     fixed: 'right',
-    cell: gatewayCell(row => (
+    cell: (_h, { row }) => (
       <bk-button
         v-bk-tooltips={{
           content: t('SDK未生成，可联系负责人生成SDK'),
@@ -500,7 +486,7 @@ const columns = computed<PrimaryTableProps['columns']>(() => [
       >
         {t('查看 SDK')}
       </bk-button>
-    )),
+    ),
   },
 ]);
 

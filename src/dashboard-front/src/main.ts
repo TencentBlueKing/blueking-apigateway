@@ -22,9 +22,8 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 import './styles/index.scss';
-// 引入 iconcool / bk-icon-font 样式
+// 引入 iconcool / bk-icon-font 样式（SVG 雪碧图 iconcool.js 在文件末尾异步加载）
 import './assets/bk_icon_font/style.css';
-import './assets/bk_icon_font/iconcool.js';
 
 // 全量引入 bkui-vue
 import bkui from 'bkui-vue';
@@ -32,8 +31,6 @@ import bkui from 'bkui-vue';
 import 'bkui-vue/dist/style.css';
 // 全局通知组件样式
 import '@blueking/notice-component/dist/style.css';
-// 版本发布通知组件样式
-import '@blueking/release-note/vue3/vue3.css';
 // UnoCSS
 import 'virtual:uno.css';
 import '@unocss/reset/tailwind-compat.css';
@@ -42,16 +39,16 @@ import i18n from './locales';
 import { BkXssFilterDirective } from '@blueking/xss-filter';
 
 import directive from '@/directives';
-import AgIcon from '@/components/ag-icon/Index.vue';
-import IconButton from '@/components/icon-button/Index.vue';
-import CopyButton from '@/components/copy-button/Index.vue';
-import CardContainer from '@/components/card-container/Index.vue';
+import AgIcon from '@/components/base/ag-icon/Index.vue';
+import AgIconButton from '@/components/base/ag-icon-button/Index.vue';
+import AgCopyButton from '@/components/base/ag-copy-button/Index.vue';
+import { AG_TABLE_CONTEXT_KEY } from '@/components/base/ag-table/context';
+import { pruneTablePreferences } from '@/components/base/ag-table/settings/table-preferences';
+import { useFeatureFlag } from '@/stores';
 //  highlight.js github代码高亮风格
 import 'highlight.js/styles/github.css';
 // 多租户组件样式
 import '@blueking/bk-user-selector/vue3/vue3.css';
-// status tag 业务组件
-import('@blueking/status-tag');
 
 const app = createApp(App);
 
@@ -63,12 +60,18 @@ app.use(createPinia())
   .use(directive)
   // 全局组件
   .component('AgIcon', AgIcon)
-  .component('IconButton', IconButton)
-  .component('CopyButton', CopyButton)
-  .component('CardContainer', CardContainer);
+  .component('AgIconButton', AgIconButton)
+  .component('AgCopyButton', AgCopyButton)
+  // 向基础表格组件注入应用级运行时信息，避免 base/ 组件直接依赖 stores/router
+  .provide(AG_TABLE_CONTEXT_KEY, {
+    getNoticeHeight: () => (useFeatureFlag().isEnabledNotice ? 40 : 0),
+  });
+
+// 每次新构建首次访问时清空旧构建残留的表格设置偏好缓存
+pruneTablePreferences(__APP_BUILD_ID__);
 
 // 等首次导航完成后再挂载：否则挂载时 currentRoute 仍是初始 location，
-// 依赖当前路由信息的逻辑（如 use-table-setting 的表格列缓存标识）会取到空值。
+// 依赖当前路由信息的页面与导航状态会先拿到空值。
 // 超时兜底：isReady 只在 resolve/reject 后 settle，若守卫内请求异常挂起会阻塞挂载，
 // 超过阈值则先挂载外壳（内容区仍由 App.vue 的 userLoaded 门控，路由就绪后状态会响应式补齐）。
 const ROUTER_READY_TIMEOUT = 10_000;
@@ -81,3 +84,16 @@ Promise.race([
 ]).then(() => {
   app.mount('#app');
 });
+
+// iconcool 的 SVG 雪碧图约 84 KB（gzip），只有 AgIcon 的 svg 模式、插件图标等少数地方用到，
+// 空闲时再加载，不占首屏。加载后插入 body，已渲染的 <use> 引用会自动显示。
+// 加载失败时记录错误，刷新页面后重新加载。
+const loadIconSprite = () => import('./assets/bk_icon_font/iconcool.js').catch((error) => {
+  console.error('SVG 图标雪碧图加载失败', error);
+});
+if (typeof window.requestIdleCallback === 'function') {
+  window.requestIdleCallback(loadIconSprite, { timeout: 2000 });
+}
+else {
+  setTimeout(loadIconSprite, 0);
+}

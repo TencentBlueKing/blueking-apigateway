@@ -169,7 +169,7 @@
                               {{ t('模型代理 API') }}
                             </BkTag>
                             <BkTag
-                              v-if="curTargetBasics?.is_deprecated"
+                              v-if="curTargetBasics?.is_deprecated || api.is_deprecated"
                               theme="danger"
                             >
                               deprecated
@@ -187,7 +187,7 @@
                   </BkCollapse>
                 </template>
                 <template v-else-if="keyword">
-                  <TableEmpty
+                  <AgTableEmpty
                     :empty-type="!!keyword ? 'searchEmpty' : 'empty'"
                     @clear-filter="keyword = ''"
                   />
@@ -213,7 +213,7 @@
               @show-gateway-detail="handleShowGatewayDetail"
               @show-apply-permission="handleShowApplyPermission"
             />
-            <TableEmpty
+            <AgTableEmpty
               v-else
               empty-type="empty"
               class="empty-wrapper"
@@ -263,11 +263,8 @@ import {
   getSystemComponentDoc,
 } from '@/services/source/docs/esb';
 import type { ComponentPublicInstance } from 'vue';
-import type {
-  IDocsEsbBoardsSystemsListResponse as IBoard,
-  IDocsGatewaysStagesListResponse as IStage,
-  ISystemSLZ as ISystem,
-} from '@/services/types/responses/docs';
+import type { IDocsEsbBoardsSystemsListResponse as IBoard, ISystemSLZ as ISystem } from '@/services/types/docs/esb.ts';
+import type { IDocsGatewaysStagesListResponse as IStage } from '@/services/types/docs/gateway.ts';
 import type { INavItem } from '../components/DocDetailSideNav.vue';
 import type { ISdkItem } from '../components/DocSdkSection.vue';
 import { type DocTab, docTabKey } from '../utils/doc-context';
@@ -275,7 +272,7 @@ import { createMarkdownRenderer } from '@/utils/markdown';
 import DocDetailMainContent, { type IDocApi, type IDocContent } from '../components/DocDetailMainContent.vue';
 import DocDetailSideContent, { type IDocBasics } from '../components/DocDetailSideContent.vue';
 import ApplyPermissionDialog from '../components/ApplyPermissionDialog.vue';
-import TableEmpty from '@/components/table-empty/Index.vue';
+import AgTableEmpty from '@/components/base/ag-table-empty/Index.vue';
 import { AngleUpFill } from 'bkui-vue/lib/icon';
 import { useEnv } from '@/stores';
 import { buildResourceUrl } from '../utils/compose-doc';
@@ -354,24 +351,27 @@ const defaultApiCategory = computed(() => ({
   name: t('默认分类'),
 }));
 
-// API 分类列表
+// API 分类列表：资源挂多个标签时，在每个所属标签的分组下都会展示
 const apiGroupList = computed(() => {
-  return filteredApiList.value.reduce<IApiGroup[]>((groupList, api) => {
-    const { id, name } = api.labels?.[0] || defaultApiCategory.value;
-    const group = groupList.find(item => item.id === id);
-
-    if (group) {
+  const groups: IApiGroup[] = [];
+  const labelIdToGroup = new Map<number, IApiGroup>();
+  filteredApiList.value.forEach((api) => {
+    const labels = api.labels?.length ? api.labels : [defaultApiCategory.value];
+    labels.forEach(({ id, name }) => {
+      let group = labelIdToGroup.get(id);
+      if (!group) {
+        group = {
+          id,
+          name,
+          apiList: [],
+        };
+        labelIdToGroup.set(id, group);
+        groups.push(group);
+      }
       group.apiList.push(api);
-    }
-    else {
-      groupList.push({
-        id,
-        name,
-        apiList: [api],
-      });
-    }
-    return groupList;
-  }, []);
+    });
+  });
+  return groups;
 });
 
 const allSystemList = computed(() => {
@@ -1187,6 +1187,7 @@ onBeforeMount(() => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的侧滑抽屉标题样式 -->
 <style lang="scss">
 .gateway-detail-sideslider {
 

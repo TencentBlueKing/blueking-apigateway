@@ -20,6 +20,8 @@
 * 资源版本相关类型
 *  */
 
+import type { IResourceVersionDiffOutput } from '@/services/types/gateway/resource-version.ts';
+
 export interface IVersionItem {
   id: number | string
   released_stages: {
@@ -34,11 +36,6 @@ export interface IVersionItem {
   created_by: string
 }
 
-export interface IDiffData {
-  add: Record<string, any>[]
-  delete: Record<string, any>[]
-  update: {
-    source: Record<string, any>
-    target: Record<string, any>
-  }[]
-}
+export type IDiffData = {
+  [K in keyof IResourceVersionDiffOutput]: (IResourceVersionDiffOutput[K][number] & { isExpanded: boolean })[]
+};

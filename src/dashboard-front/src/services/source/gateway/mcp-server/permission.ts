@@ -23,35 +23,20 @@
 import http from '@/services/http';
 import type { ICountAndResults } from '@/services/types/utils.ts';
 import type {
+  IGatewaysMcpServersAppPermissionApplyListQuery,
+  IGatewaysMcpServersPermissionsAppPermissionApplyApplicantListQuery,
+  IGatewaysMcpServersPermissionsListQuery,
   IMCPServerAppPermissionAppCodeListOutput,
   IMCPServerAppPermissionApplyApplicantOutput,
   IMCPServerAppPermissionApplyListOutput,
+  IMCPServerAppPermissionApplyPendingCountOutput,
+  IMCPServerAppPermissionApplyUpdateInputSLZ,
+  IMCPServerAppPermissionCreateInputSLZ,
+  IMCPServerAppPermissionExportInput,
   IMCPServerAppPermissionListOutput,
-} from '@/services/types/responses/gateways.ts';
-import type {
-  IGatewaysMcpServersAppPermissionApplyListQuery,
-  IGatewaysMcpServersPermissionsListQuery,
-} from '@/services/types/query/gateways.ts';
-import type { IMCPServerAppPermissionCreateInputSLZ } from '@/services/types/body/post/gateways.ts';
-import type { IMCPServerAppPermissionApplyUpdateInputSLZ } from '@/services/types/body/patch/gateways.ts';
+} from '@/services/types/gateway/mcp-server/permission.ts';
 
 const path = '/gateways';
-
-// 网关下 MCPServer 应用权限列表导出接口泛型
-export interface IAppPermissionExport {
-  bk_app_code?: string
-  state?: string
-  mcp_server_id?: number | string
-  grant_type?: IGrantType
-  export_type: IExportType
-  selected_ids?: number[]
-}
-
-// 授权类型
-export type IGrantType = 'grant' | 'apply' | '';
-
-// 导出类型
-export type IExportType = 'all' | 'filtered' | 'selected';
 
 /**
  *  已授权应用列表
@@ -71,9 +56,9 @@ export const getMcpAppPermissionList = (
  */
 export const exportMcpAppPermissions = (
   gatewayId: number,
-  data: IAppPermissionExport,
+  data: IMCPServerAppPermissionExportInput,
 ) =>
-  http.post(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permissions/-/export/`, data, {
+  http.post<void>(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permissions/-/export/`, data, {
     responseType: 'blob',
     catchError: true,
   });
@@ -89,7 +74,7 @@ export const grantMcpAppPermission = (
   mcp_server_id: number,
   data: IMCPServerAppPermissionCreateInputSLZ,
 ) =>
-  http.post(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/permissions/`, data);
+  http.post<void>(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/permissions/`, data);
 
 /**
  *  删除已授权应用
@@ -98,7 +83,7 @@ export const grantMcpAppPermission = (
  * @param id 应用权限id
  */
 export const deleteMcpAppPermission = (gatewayId: number, mcp_server_id: number, id: number) =>
-  http.delete(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/permissions/${id}/`);
+  http.delete<void>(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/permissions/${id}/`);
 
 /**
  *  权限审批列表
@@ -109,6 +94,13 @@ export const getMcpAppPermissionApplyList = (gatewayId: number, data: IGatewaysM
   http.get<ICountAndResults<IMCPServerAppPermissionApplyListOutput>>(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permission-apply/`, data);
 
 /**
+ *  待审批的应用权限申请数量（用于左侧菜单红点提示）
+ * @param gatewayId 网关id
+ */
+export const getMcpAppPermissionApplyPendingCount = (gatewayId: number) =>
+  http.get<IMCPServerAppPermissionApplyPendingCountOutput>(`${path}/${gatewayId}/mcp-servers/-/permissions/app-permission-apply/-/pending-count/`);
+
+/**
  *  授权审批申请人列表
  * @param gatewayId 网关id
  * @param mcp_server_id MCP Server id
@@ -117,7 +109,7 @@ export const getMcpAppPermissionApplyList = (gatewayId: number, data: IGatewaysM
 export const getMcpAppPermissionApplicants = (
   gatewayId: number,
   mcp_server_id: number | string,
-  query: IGatewaysMcpServersAppPermissionApplyListQuery,
+  query: IGatewaysMcpServersPermissionsAppPermissionApplyApplicantListQuery,
 ) =>
   http.get<IMCPServerAppPermissionApplyApplicantOutput>(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/applicant/`, query);
 
@@ -134,7 +126,7 @@ export const patchMcpAppPermissionApplyStatus = (
   id: number,
   data: IMCPServerAppPermissionApplyUpdateInputSLZ,
 ) =>
-  http.patch(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/${id}/status/`, data);
+  http.patch<void>(`${path}/${gatewayId}/mcp-servers/${mcp_server_id}/permissions/app-permission-apply/${id}/status/`, data);
 
 /**
  *  查询有 MCPServer 调用权限的 bk_app_code 列表（网关级别）

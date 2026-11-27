@@ -240,8 +240,8 @@ func newDefaultConfig() *Config {
 			DefaultGateway: "-",
 			DefaultStage:   "global",
 
-			AgentEventsWaitingTimeWindow: 2 * time.Second,
-			AgentForceUpdateTimeWindow:   10 * time.Second,
+			AgentEventsWaitingTimeWindow: 5 * time.Second,
+			AgentForceUpdateTimeWindow:   30 * time.Second,
 			AgentCommitTimeWindow:        5 * time.Second,
 			AgentConcurrencyLimit:        4,
 			GatewaySyncConcurrency:       DefaultGatewaySyncConcurrency,

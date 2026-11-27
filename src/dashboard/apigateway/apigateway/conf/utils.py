@@ -58,6 +58,10 @@ def get_plugin_metadata_config(env: Env) -> dict:
                 # "headers": "-",
                 "params": "$args",
                 "body": "$bk_log_request_body",
+                # 请求总长度（字节），包含请求行、请求头和已接收的请求体
+                "request_size": "$request_length",
+                # Content-Length 变量（字节），不保证等于实际完整接收的请求体大小
+                "content_length": "$content_length",
                 "app_code": "$bk_app_code",
                 "client_ip": "$remote_addr",
                 "request_id": "$bk_request_id",
@@ -436,6 +440,17 @@ def get_cli_function_overview(lang: str = "ZH") -> list[dict]:
         return [
             {"service": "API Gateway", "title": "Discover All Gateways and Interfaces, Query Logs"},
             {
+                "service": "Monitor",
+                "title": "Log search, metric queries, alerts and events, traces and profiling, dashboards",
+            },
+            {
+                "service": "AIDev",
+                "title": (
+                    "Spaces, Skills, MCP, Prompts, agents, knowledge bases and documents, "
+                    "credentials and artifact upload"
+                ),
+            },
+            {
                 "service": "CMDB",
                 "title": (
                     "Host management, business topology, cluster modules, dynamic groups, "
@@ -464,6 +479,11 @@ def get_cli_function_overview(lang: str = "ZH") -> list[dict]:
 
     return [
         {"service": "API 网关", "title": "发现所有网关及接口，查询日志"},
+        {"service": "监控平台", "title": "日志检索、指标查询、告警与事件、调用链与性能剖析、仪表盘"},
+        {
+            "service": "AIDev",
+            "title": "空间、Skill、MCP、Prompt、智能体、知识库与知识文档、凭证与制品上传",
+        },
         {"service": "配置平台", "title": "主机管理、业务拓扑、集群模块、动态分组、属性管理、关联查询"},
         {"service": "作业平台", "title": "脚本执行、文件分发、作业模板、定时任务、执行历史查询"},
         {"service": "标准运维", "title": "流程模板、任务执行、任务查询、参数填充、周期任务"},

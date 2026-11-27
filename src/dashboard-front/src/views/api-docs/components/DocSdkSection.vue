@@ -40,7 +40,7 @@
       <DocDetailField :label="t('SDK地址')">
         <span>{{ sdkUrl || '--' }}</span>
         <template v-if="sdkUrl">
-          <CopyButton :source="sdkUrl" />
+          <AgCopyButton :source="sdkUrl" />
           <AgIcon
             v-bk-tooltips="t('下载')"
             name="download"
@@ -51,7 +51,7 @@
       </DocDetailField>
       <DocDetailField :label="t('安装')">
         <span>{{ installCommand || '--' }}</span>
-        <CopyButton
+        <AgCopyButton
           v-if="installCommand"
           :source="installCommand"
         />
@@ -110,10 +110,10 @@
 
 <script setup lang="ts">
 import MarkdownIt from 'markdown-it';
-import hljs from 'highlight.js';
+import hljs from 'highlight.js/lib/common';
 import { getESBSDKDoc } from '@/services/source/docs/esb';
 import { getGatewaySDKDoc } from '@/services/source/docs/gateway';
-import type { IDocsSdksDocReadQuery } from '@/services/types/query/docs';
+import type { IDocsSdksDocReadQuery } from '@/services/types/docs/gateway.ts';
 import type { ISdk, ISdkDoc } from './SDKDetail.vue';
 import { docTabKey } from '../utils/doc-context';
 import DocDetailField from './DocDetailField.vue';

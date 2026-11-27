@@ -36,6 +36,7 @@
             class="gateway-select"
             filterable
             :clearable="false"
+            :scroll-height="408"
             :search-placeholder="t('请搜索网关')"
             :popover-options="{
               extCls: 'gateway-select-popover',
@@ -149,11 +150,13 @@
                       :name="menu.icon || ''"
                       size="18"
                     />
+                  </template>
+                  <template #title>
+                    {{ menu.title }}
                     <BkBadge
-                      v-if="['PermissionManage'].includes(menu.name) && permissionStore.count > 0"
+                      v-if="hasSubmenuPending(menu.name)"
                       dot
                       theme="danger"
-                      :class="{'en': locale !== 'zh-cn'}"
                     />
                   </template>
                   <template v-for="child in menu.children">
@@ -162,13 +165,18 @@
                       :key="child.name"
                       @click.stop="() => handleGoPage(child.name)"
                     >
-                      {{ child.title }}
+                      <span
+                        v-bk-tooltips="{
+                          content: child.title,
+                          disabled: !menuTitleOverflowMap[child.name],
+                        }"
+                        class="min-w-0 truncate"
+                        @mouseenter="handleMenuTitleMouseEnter($event, child.name)"
+                      >{{ child.title }}</span>
                       <BkBadge
-                        v-if="['PermissionApply'].includes(child.name ) && permissionStore.count > 0"
-                        :count="permissionStore.count"
-                        :max="99"
+                        v-if="getMenuItemPendingCount(child.name) > 0"
+                        :count="getMenuItemPendingCount(child.name)"
                         theme="danger"
-                        :class="{'en': locale !== 'zh-cn'}"
                       />
                     </BkMenuItem>
                   </template>
@@ -193,10 +201,7 @@
           </template>
         </BkMenu>
       </template>
-      <div
-        class="content-view"
-        style="padding-top: 0;"
-      >
+      <div class="content-view pt-0!">
         <!-- 默认头部 -->
         <div
           v-if="!route.meta.customHeader"
@@ -228,7 +233,7 @@
       </div>
     </BkNavigation>
     <!-- 1.13 版本升级提示 -->
-    <Version113UpdateNotice ref="version113UpdateNoticeRef" />
+    <V113ReleaseNoteDialog ref="version113UpdateNoticeRef" />
   </div>
 </template>
 
@@ -244,9 +249,10 @@ import {
 import { getGatewayList } from '@/services/source/gateway/gateway';
 import { getStageList } from '@/services/source/gateway/stage';
 import { getPermissionApplyList } from '@/services/source/gateway/permission';
+import { getMcpAppPermissionApplyPendingCount } from '@/services/source/gateway/mcp-server/permission';
 import type { IExtractListApiResults } from '@/services/types/utils';
 import type { IMenu } from '@/types/common';
-import Version113UpdateNotice from '@/components/version-113-update-notice/Index.vue';
+import V113ReleaseNoteDialog from './components/V113ReleaseNoteDialog.vue';
 import { useGatewayRole } from '@/hooks';
 import { canAccessByRole } from '@/utils/gateway-permission';
 import { isGatewayNavigationPending } from '@/router/gateway-role-guard';
@@ -254,8 +260,9 @@ import { getGatewayErrorRoute } from '@/utils/gateway-access-error';
 import { getGatewayDisplayName, getGatewayFullName, hasDistinctDisplayName } from '@/utils/gateway-name';
 
 type GatewayItemType = IExtractListApiResults<typeof getGatewayList>;
+type PendingCountKey = 'count' | 'mcpCount';
 
-const { t, locale } = useI18n();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -272,7 +279,7 @@ const activeMenuKey = ref('StageOverview');
 const gatewayList = ref<GatewayItemType[]>([]);
 // 网关名称是否溢出（用于决定是否显示 tooltip）
 const nameOverflowMap = ref(new Map<number, boolean>());
-const gatewaySelectContainerRef = ref<HTMLElement>();
+const gatewaySelectContainerRef = useTemplateRef<HTMLElement>('gatewaySelectContainerRef');
 const openedKeys = ref<string[]>(['StageManagement', 'ResourceManagement']);
 const needMenu = ref(true);
 const pageName = ref('');
@@ -284,7 +291,7 @@ const gatewaySelectVersion = ref(0);
 const headerTitle = ref('');
 
 const isMenuCollapsed = ref(false);
-const version113UpdateNoticeRef = ref();
+const version113UpdateNoticeRef = useTemplateRef('version113UpdateNoticeRef');
 
 const isShowNoticeAlert = computed(() => featureFlagStore.isEnabledNotice);
 const isAIGateway = computed(() => gatewayStore.isAIGateway);
@@ -379,7 +386,7 @@ const menuList = computed<IMenu[]>(() => [
     name: 'apigwOperatingData',
     enabled: featureFlagStore.flags.ENABLE_RUN_DATA,
     title: t('运行数据'),
-    icon: 'runtime-data',
+    icon: 'keguancexing',
     permission: 'runtime',
     children: [
       {
@@ -739,8 +746,17 @@ const syncGatewayListItem = (gateway: Record<string, any>) => {
   }
 };
 
+// 待审批数量请求的批次序号：切换网关/角色后仅允许最新一批请求回写 store，旧响应直接丢弃
+let pendingCountBatchId = 0;
+// 组件卸载后不再回写全局 store
+let isLayoutUnmounted = false;
+onUnmounted(() => {
+  isLayoutUnmounted = true;
+});
+
 // 获取权限审批的数量
 const getPermissionData = async (id: number) => {
+  const batchId = pendingCountBatchId;
   const res = await getPermissionApplyList(
     id,
     {
@@ -748,16 +764,64 @@ const getPermissionData = async (id: number) => {
       limit: 10,
     },
   );
+  if (isLayoutUnmounted || batchId !== pendingCountBatchId) {
+    return;
+  }
   if (id === Number(route.params.id) && canAccess('permission')) {
     permissionStore.setCount(res.count);
   }
+};
+
+// 获取 MCP 权限管理的待审批数量
+const getMcpPermissionData = async (id: number) => {
+  const batchId = pendingCountBatchId;
+  const res = await getMcpAppPermissionApplyPendingCount(id);
+  if (isLayoutUnmounted || batchId !== pendingCountBatchId) {
+    return;
+  }
+  if (id === Number(route.params.id) && canAccess('mcp-perm')) {
+    permissionStore.setMcpCount(res?.count ?? 0);
+  }
+};
+
+// 菜单名 -> 全局待审批数量字段的映射，新增菜单时在此登记
+const menuItemPendingCountKeyMap: Record<string, PendingCountKey> = {
+  PermissionApply: 'count',
+  MCPServerPermission: 'mcpCount',
+};
+
+const submenuPendingCountKeyMap: Record<string, PendingCountKey> = {
+  PermissionManage: 'count',
+  MCP: 'mcpCount',
+};
+
+// 子菜单项上的待审批数量
+const getMenuItemPendingCount = (name: string) => {
+  const key = menuItemPendingCountKeyMap[name];
+  return key ? permissionStore[key] : 0;
+};
+
+// 子菜单标题是否溢出（溢出时 hover 展示 tooltip）
+const menuTitleOverflowMap = reactive<Record<string, boolean>>({});
+
+const handleMenuTitleMouseEnter = (e: MouseEvent, name: string) => {
+  const el = e.currentTarget as HTMLElement;
+  menuTitleOverflowMap[name] = el.scrollWidth > el.clientWidth;
+};
+
+// 子菜单收起时，父级菜单展示红点提示
+const hasSubmenuPending = (name: string) => {
+  const key = submenuPendingCountKeyMap[name];
+  return Boolean(key && permissionStore[key] > 0);
 };
 
 // 附加数据只能在目标网关角色就绪后查询，运营者不调用管理员的环境接口。
 watch(
   [() => route.params.id, currentRole, roleStatus],
   () => {
+    pendingCountBatchId += 1;
     permissionStore.setCount(0);
+    permissionStore.setMcpCount(0);
     const id = Number(route.params.id);
     if (!Number.isSafeInteger(id) || id <= 0 || roleStatus.value !== 'ready') {
       return;
@@ -768,6 +832,9 @@ watch(
     }
     if (canAccess('permission')) {
       requests.push(getPermissionData(id));
+    }
+    if (canAccess('mcp-perm')) {
+      requests.push(getMcpPermissionData(id));
     }
     Promise.all(requests).catch(() => {
       // 附加数据失败不影响导航，错误由统一 HTTP 封装提示。
@@ -911,20 +978,20 @@ onMounted(() => {
     .submenu-header {
       position: relative;
 
-      .bk-badge-main {
-        position: absolute;
-        top: 1px;
-        left: 120px;
+      .submenu-header-content {
 
-        &.en {
-          left: 142px;
-        }
+        .bk-badge-main {
+          position: relative;
+          top: -6px;
+          left: 4px;
+          vertical-align: top;
 
-        .bk-badge {
-          width: 6px;
-          height: 6px;
-          min-width: 6px;
-          background-color: #ff5656;
+          .bk-badge {
+            width: 6px;
+            height: 6px;
+            min-width: 6px;
+            background-color: #ff5656;
+          }
         }
       }
     }
@@ -935,15 +1002,16 @@ onMounted(() => {
 
         .item-content {
           position: relative;
+          display: flex;
+          min-width: 0;
+          overflow: hidden;
+          align-items: center;
 
           .bk-badge-main {
-            position: absolute;
-            top: 6px;
-            left: 58px;
-
-             &.en {
-              left: 130px;
-            }
+            position: relative;
+            top: -6px;
+            margin-left: 4px;
+            flex-shrink: 0;
 
             .bk-badge {
               height: 18px;
@@ -1133,6 +1201,7 @@ onMounted(() => {
 }
 </style>
 
+<!-- eslint-disable-next-line vue/enforce-style-attribute -- 覆盖挂载在 body 下的网关选择器弹层与导航布局样式 -->
 <style lang="scss">
 .bk-popover.bk-pop2-content.gateway-select-popover .bk-select-content-wrapper {
 

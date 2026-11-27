@@ -20,29 +20,10 @@
   <div class="body-payload">
     <div class="table-header">
       <div class="body-type">
-        <!-- <div
-          class="body-type-item"
-          :class="[type === 'fromData' ? 'active' : '']"
-          @click="() => handleTabChange('fromData')"
-          >
-          form-data
-          </div>
-          <div
-          class="body-type-item"
-          :class="[type === 'urlencoded' ? 'active' : '']"
-          @click="() => handleTabChange('urlencoded')"
-          >
-          x-www-form-urlencoded
-          </div> -->
-        <div
-          class="body-type-item"
-          :class="[type === 'raw' ? 'active' : '']"
-          @click="() =>handleTabChange('raw')"
-        >
+        <div class="body-type-item active">
           raw
         </div>
         <BkSelect
-          v-show="type === 'raw'"
           v-model="rawType"
           class="raw-select"
           :clearable="false"
@@ -57,34 +38,9 @@
           />
         </BkSelect>
       </div>
-      <!-- <div class="payload-type">
-        <div class="payload-type-item active">
-        <span class="icon apigateway-icon icon-ag-menu"></span>
-        表格模式
-        </div>
-        <div class="payload-type-item">
-        <span class="icon apigateway-icon icon-ag-menu"></span>
-        代码模式
-        </div>
-        </div> -->
     </div>
-    <EditTable
-      v-show="type === 'fromData'"
-      ref="dataRef"
-      :list="fromDataList"
-      @change="handleListChange"
-    />
-    <EditTable
-      v-show="type === 'urlencoded'"
-      ref="urlencodedRef"
-      :list="urlencodedList"
-      @change="handleListChange"
-    />
-    <div
-      v-show="type === 'raw'"
-      class="raw-content"
-    >
-      <EditorMonaco
+    <div class="raw-content">
+      <AgCodeEditor
         ref="resourceEditorRef"
         v-model="editorText"
         theme="Visual Studio"
@@ -99,27 +55,15 @@
 </template>
 
 <script lang="ts" setup>
-import EditTable from '@/views/online-debugging/components/EditTable.vue';
-import EditorMonaco from '@/components/ag-editor/Index.vue';
+import AgCodeEditor from '@/components/base/ag-code-editor/Index.vue';
 
 interface IProps {
-  fromDataPayload?: any[]
   rawPayload?: any
 }
 
-const {
-  fromDataPayload = [],
-  rawPayload = {},
-} = defineProps<IProps>();
+const { rawPayload = {} } = defineProps<IProps>();
 
-const emit = defineEmits<{ change: [data: any ] }>();
-
-const type = ref<string>('raw');
 const rawType = ref<string>('JSON');
-const dataRef = ref();
-const fromDataList = ref([]);
-const urlencodedList = ref([]);
-const urlencodedRef = ref();
 const datasource = ref([
   {
     value: 'JSON',
@@ -138,59 +82,19 @@ const datasource = ref([
     label: 'TEXT',
   },
 ]);
-const resourceEditorRef = ref<InstanceType<typeof EditorMonaco>>();
+const resourceEditorRef = useTemplateRef<InstanceType<typeof AgCodeEditor>>('resourceEditorRef');
 const editorText = ref(JSON.stringify(rawPayload, null, 2));
 
-const validate = async () => {
-  const formData = await dataRef.value?.validate();
-  const urlencoded = await urlencodedRef.value?.validate();
-
-  if (formData && urlencoded) {
-    return true;
-  }
-  return false;
-};
+// Body 固定为 raw 模式，无需表格校验
+const validate = async () => true;
 
 const getData = () => {
   return {
-    type: type.value,
-    formData: dataRef.value?.getTableData(),
-    urlencoded: urlencodedRef.value?.getTableData(),
+    type: 'raw',
     raw: editorText.value,
     rawType: rawType.value,
   };
 };
-
-const handleListChange = (list: any) => {
-  const data = {
-    source: type.value,
-    list,
-  };
-  emit('change', data);
-};
-
-const handleTabChange = (key: string) => {
-  type.value = key;
-
-  let list = [];
-  if (key === 'fromData') {
-    list = dataRef.value?.getTableData();
-  }
-  else if (key === 'urlencoded') {
-    list = urlencodedRef.value?.getTableData();
-  }
-  list = list?.filter((item: any) => item.name);
-
-  handleListChange(list);
-};
-
-watch(
-  () => fromDataPayload,
-  (value: any) => {
-    fromDataList.value = value;
-  },
-  { deep: true },
-);
 
 watch(
   () => rawPayload,

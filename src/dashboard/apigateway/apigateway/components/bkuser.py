@@ -19,9 +19,9 @@
 
 from typing import Dict, List
 
-from cachetools import TTLCache, cached
 from django.conf import settings
 
+from apigateway.common.cache import cache_on_arguments
 from apigateway.common.tenant.request import gen_operation_tenant_header, gen_tenant_header
 from apigateway.utils.url import url_join
 
@@ -42,7 +42,7 @@ def _call_bkuser_api(http_func, path, data, more_headers=None, timeout=10) -> Di
     return do_blueking_http_request("bk-user", http_func, url, data, headers, timeout)
 
 
-@cached(cache=TTLCache(maxsize=100, ttl=300))
+@cache_on_arguments(expiration_time=300)
 def list_tenants():
     url_path = "/prod/api/v3/open/tenants/"
 
@@ -76,7 +76,6 @@ def query_display_names(tenant_id: str, bk_usernames: List[str]):
     """查询用户列表对应的显示名称
     注意：非查看态的，保持原样，返回一个新的字段带对应的数据结构
     """
-    # TODO: can we use redis to cache the display names? the ttlcache is not good enough
     if not bk_usernames:
         return {}
     if len(bk_usernames) > 100:
@@ -87,7 +86,7 @@ def query_display_names(tenant_id: str, bk_usernames: List[str]):
     return query_display_names_cached(tenant_id, bk_usernames_str)
 
 
-@cached(cache=TTLCache(maxsize=100, ttl=300))
+@cache_on_arguments(expiration_time=300)
 def query_display_names_cached(
     tenant_id: str,
     bk_usernames: str,

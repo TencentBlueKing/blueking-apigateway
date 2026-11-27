@@ -16,16 +16,10 @@
  * to the current version of the project delivered to anyone in the future.
  */
 import http from '@/services/http';
+import type { IUserInfoOutput } from '@/services/types/platform/account.ts';
 
 /**
  * 当前用户信息
  */
 export const getUserInfo = () =>
-  http.get<{
-    avatar_url: string
-    chinese_name: string
-    display_name: string
-    tenant_id: string | null
-    username: string
-    time_zone: string
-  }>('/accounts/userinfo/');
+  http.get<IUserInfoOutput>('/accounts/userinfo/');

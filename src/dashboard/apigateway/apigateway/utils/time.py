@@ -225,7 +225,7 @@ class MetricsSmartTimeRange(SmartTimeRange):
             index = 4
         elif gap_minutes <= 10080:  # 7d
             index = 5
-        else:  # >7d (max is 14d)
+        else:  # >7d
             index = 6
 
         return step_options[index]
